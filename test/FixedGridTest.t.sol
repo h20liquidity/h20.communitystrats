@@ -261,7 +261,7 @@ contract FixedGridTest is StrategyTests {
             getEncodedBuyRoute(BASE_USDC_POOL,address(ARB_INSTANCE)),
             0,
             0,
-            5000e18,
+            50000e18,
             1000000e6,
             0,
             0,

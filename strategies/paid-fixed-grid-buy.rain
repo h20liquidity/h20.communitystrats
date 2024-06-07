@@ -1,84 +1,94 @@
 # Strategy: Fixed Grid
 #
-# High level, this strategy buys mean amount of WLTH tokens at the end of every cooldown period
-# provided that current price feteched from the WLTH/USDC uni-v3 pool falls in a particular range.
+# High level, this strategy buys mean amount of PAID tokens at the end of every cooldown period
+# provided that current price feteched from the PAID/USDC uni-v3 pool falls in a particular range.
 #
-# - Amount of WLTH bought per trade within the price band is randomized and centered around a mean,
+# - Amount of PAID bought per trade within the price band is randomized and centered around a mean,
 #   value for which can be set within the bindings.
 # - Range for the grid can also be provided within the bindings
 # - Strategy provides a guard against 
 
 networks:
-  base-wlth: 
+  base-paid: 
     rpc: https://mainnet.base.org 
     chain-id: 8453 
     network-id: 8453 
     currency: ETH
 
 subgraphs:
-  base-wlth: https://api.thegraph.com/subgraphs/name/h20liquidity/base-0x2aee87
+  base-paid: https://api.thegraph.com/subgraphs/name/h20liquidity/base-0x2aee87
   
 orderbooks:
-  base-wlth:
+  base-paid:
     address: 0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76
-    network: base-wlth
-    subgraph: base-wlth
+    network: base-paid
+    subgraph: base-paid
 
 deployers:
-  base-wlth:
+  base-paid:
     address: 0xfca89cD12Ba1346b1ac570ed988AB43b812733fe
-    network: base-wlth
+    network: base-paid
 
 tokens:
-  base-cw-wlth:
-    network: base-wlth
-    address: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+  base-paid:
+    network: base-paid
+    address: 0x71DDE9436305D2085331AF4737ec6f1fe876Cf9f
   base-usdc:
-    network: base-wlth
+    network: base-paid
     address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+  base-weth:
+    network: base-paid
+    address: 0x4200000000000000000000000000000000000006
 
 orders:
   # vault-id generated with `openssl rand -hex 32`
-  base-wlth-buy:
-    orderbook: base-wlth
+  base-paid-buy:
+    orderbook: base-paid
     inputs:
-      - token: base-cw-wlth
-        vault-id: 0x2127c093052ddbaab74a719a06a4f70c29fcd259dfdfea34e30a24d1b1cc635a
+      - token: base-paid
+        vault-id: 0x753620adad4586f5db51c507cee11eb8cc76fe4ea2cec0601bea94de81da3483
     outputs:
       - token: base-usdc
-        vault-id: 0x2127c093052ddbaab74a719a06a4f70c29fcd259dfdfea34e30a24d1b1cc635a
+        vault-id: 0x753620adad4586f5db51c507cee11eb8cc76fe4ea2cec0601bea94de81da3483
 
-  base-wlth-sell:
-    orderbook: base-wlth
+  base-paid-sell:
+    orderbook: base-paid
     inputs:
       - token: base-usdc
-        vault-id: 0x8c76bd3a0a7383a77186863534a49f5302ac3b6eacec14b8b6227c4c3ad7949f
+        vault-id: 0x4fceab68b4e60fcda947ad61b302501bf15aaf6d9833ad735d1b76bbb234b537
     outputs:
-      - token: base-cw-wlth
-        vault-id: 0x8c76bd3a0a7383a77186863534a49f5302ac3b6eacec14b8b6227c4c3ad7949f
+      - token: base-paid
+        vault-id: 0x4fceab68b4e60fcda947ad61b302501bf15aaf6d9833ad735d1b76bbb234b537
 
 scenarios:
-    base-wlth-fixed-grid:
-        network: base-wlth
-        deployer: base-wlth
-        orderbook: base-wlth
+    base-paid-fixed-grid:
+        network: base-paid
+        deployer: base-paid
+        orderbook: base-paid
         bindings:
           uniswap-words: 0xae8c077205C4B5659b67e7527AF0094845DD35d0
-          orderbook-subparser: 0xee873E21F8a6A256cb9f53BE491E569eA6cdd63E
-          input-token: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+          orderbook-subparser: 0xee873E21F8a6A256cb9f53BE491E569eA6cdd63E 
+
+          #Input and output token from the perspective of the pool.
+          input-token: 0x71DDE9436305D2085331AF4737ec6f1fe876Cf9f
           input-token-decimals: 18
-          output-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
-          output-token-decimals: 6
-          twap-fee: '[uniswap-v3-fee-medium]' 
+          output-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 
+          output-token-decimals: 6 
+          intermediate-token: 0x4200000000000000000000000000000000000006
+          intermediate-token-decimals: 18
+          
+          twap-io-fee: '[uniswap-v3-fee-high]'
+          twap-multiplier-fee: '[uniswap-v3-fee-low]'
+          
           jittery-binomial-bits: 10 
-          bounty-amount: 5e16
+          bounty-amount: 3e16
         scenarios:
           buy:
             bindings:
               cooldown-time: 14400 
-              mean-input-usdc-amount: 10e18 
-              grid-min: 6e16
-              grid-max: 100e18
+              mean-input-usdc-amount: 2e18 
+              grid-min: 1e12
+              grid-max: 10e18
               calculate-exact-quote: '''calculate-exact-buy-quote'
               calculate-io-ratio: '''calculate-io-ratio-buy'
             scenarios:
@@ -94,21 +104,19 @@ scenarios:
                   twap-deviation: 1e16
                   ensure-grid-band: '''ensure-grid-band-prod'
                   ensure-cooldown: '''ensure-cooldown-prod'
-                  
               chart:
                 runs: 1000
                 bindings:
                   twap-deviation: 1e18
                   ensure-grid-band: '''ensure-grid-band-chart'
                   ensure-cooldown: '''ensure-cooldown-chart'
-                  
 
           sell:
             bindings:
               cooldown-time: 14400 
-              mean-input-usdc-amount: 10e18 
-              grid-min: 6e16
-              grid-max: 100e18
+              mean-input-usdc-amount: 2e18 
+              grid-min: 1e12
+              grid-max: 10e18
               calculate-exact-quote: '''calculate-exact-sell-quote'
               calculate-io-ratio: '''calculate-io-ratio-sell'
             scenarios:
@@ -118,52 +126,48 @@ scenarios:
                   twap-deviation: 3e16
                   ensure-grid-band: '''ensure-grid-band-prod'
                   ensure-cooldown: '''ensure-cooldown-prod'
-                  
               test-twap:
                 runs: 1
                 bindings:
                   twap-deviation: 1e16
                   ensure-grid-band: '''ensure-grid-band-prod'
                   ensure-cooldown: '''ensure-cooldown-prod'
-                  
               chart:
                 runs: 1000
                 bindings:
                   twap-deviation: 1e18
                   ensure-grid-band: '''ensure-grid-band-chart'
                   ensure-cooldown: '''ensure-cooldown-chart'
-                  
-          
-              
+
 charts:
-  wlth-buy-fixed-grid: 
-    scenario: base-wlth-fixed-grid.buy.chart
+  paid-buy-fixed-grid: 
+    scenario: base-paid-fixed-grid.buy.chart
     metrics:
-      - label: Current WLTH price.
-        value: 0.2.2
+      - label: Current PAID price.
+        value: 0.3.3
         unit-prefix: $
-        description: Price of WLTH at current block.
-      - label: Minimum WLTH buy price.
-        value: 0.2.0
+        description: Price of PAID at current block.
+      - label: Minimum PAID buy price.
+        value: 0.3.0
         unit-prefix: $
-        description: Grid minimum USDC/WLTH ratio.
-      - label: Maximum WLTH buy price.
-        value: 0.2.1
+        description: Grid minimum USDC/PAID ratio.
+      - label: Maximum PAID buy price.
+        value: 0.3.1
         unit-prefix: $
-        description: Grid maximum USDC/WLTH ratio.
+        description: Grid maximum USDC/PAID ratio.
       - label: Amount of USDC offered for first trade.
         value: 0.6
         description: Amount of USDC offered for the current block.
-      - label: Amount of WLTH received for frist trade.
+      - label: Amount of PAID received for frist trade.
         value: 0.5
-        description: Amount of WLTH received for USDC offered.
-      - label: io-ratio WLTH/USDC
+        description: Amount of PAID received for USDC offered.
+      - label: io-ratio PAID/USDC
         value: 0.7
         description: Ratio offered by the order for the current block accounting for bounty.
     plots:
 
-  buy-wlth-simulation:
-    scenario: base-wlth-fixed-grid.buy.chart
+  buy-paid-simulation:
+    scenario: base-paid-fixed-grid.buy.chart
     plots:
       Mean amount of USDC offered:
         marks:
@@ -175,10 +179,10 @@ charts:
                   outputs:
                     y: "count"
                   options:
-                    x: "0.2"
-                    thresholds: 20
+                    x: "0.3"
+                    thresholds: 25
                     
-      Mean amount of WLTH received:
+      Mean amount of PAID received:
         marks:
           - type: recty
             options:
@@ -189,44 +193,38 @@ charts:
                     y: "count"
                   options:
                     x: "0.5"
-                    thresholds: 20
+                    thresholds: 25
               
-  wlth-sell-fixed-grid: 
-    scenario: base-wlth-fixed-grid.sell.chart
+  paid-sell-fixed-grid: 
+    scenario: base-paid-fixed-grid.sell.chart
     metrics:
-      - label: Quote (Input) / Base (Output) ratio
-        value: 0.7       
-        description: '# USDC bought with 1 unit of WLTH'
-      - label: Base (Output) / Quote (Input) ratio
-        value: 0.2.3        
-        description: '# WLTH bought with 1 unit of USDC'
-      - label: Minimum sell price
-        value: 0.2.0
-        description: Strategy will not sell WLTH below this price
-      - label: Maximum sell price
-        value: 0.2.1
-        description: Strategy will not sell WLTH above this price
-      - label: Current WLTH price
-        value: 0.2.2
+      - label: Current PAID price.
+        value: 0.3.3
         unit-prefix: $
-        description: Price of WLTH at current block
-      - label: First order, WLTH sold
+        description: Price of PAID at current block.
+      - label: Minimum PAID buy price.
+        value: 0.3.0
+        unit-prefix: $
+        description: Grid minimum USDC/PAID ratio.
+      - label: Maximum PAID buy price.
+        value: 0.3.1
+        unit-prefix: $
+        description: Grid maximum USDC/PAID ratio.
+      - label: Amount of PAID offered for first trade.
         value: 0.6
-        description: Amount of WLTH sold
-      - label: First order, USDC bought
-        value: 0.2
-        unit-prefix: $        
-        description: Amount of USDC bought
+        description: Amount of PAID offered for the current block.
+      - label: Amount of USDC received for frist trade.
+        value: 0.3
+        description: Amount of USDC received for PAID offered.
+      - label: io-ratio USDC/PAID
+        value: 0.7
+        description: Ratio offered by the order for the current block accounting for bounty.
 
-  sell-wlth-simulation:
-    scenario: base-wlth-fixed-grid.sell.chart
+  sell-paid-simulation:
+    scenario: base-paid-fixed-grid.sell.chart
     plots:
-      Simulated distribution of WLTH sales:
-       x:
-            label: 'WLTH sold'
-       y:
-            label: 'Frequency (count)'
-       marks:
+      Mean amount of PAID offered:
+        marks:
           - type: recty
             options:
               transform:
@@ -238,12 +236,8 @@ charts:
                     x: "0.5"
                     thresholds: 25
                     
-      Simulated distribution of USDC purchases:
-       x:
-            label: 'USDC bought'
-       y:
-            label: 'Frequency (count)'      
-       marks:
+      Mean amount of USDC received:
+        marks:
           - type: recty
             options:
               transform:
@@ -252,29 +246,35 @@ charts:
                   outputs:
                     y: "count"
                   options:
-                    x: "0.2"
+                    x: "0.3"
                     thresholds: 25
-    
+                  
+                      
 deployments:
-  base-wlth-buy:
-    scenario: base-wlth-fixed-grid.buy.prod
-    order: base-wlth-buy
-  base-wlth-sell:
-    scenario: base-wlth-fixed-grid.sell.prod
-    order: base-wlth-sell
+  base-paid-buy:
+    scenario: base-paid-fixed-grid.buy.prod
+    order: base-paid-buy
+  base-paid-sell:
+    scenario: base-paid-fixed-grid.sell.prod
+    order: base-paid-sell
 ---
 #cooldown-time !The minimum amount of seconds that must elapse between trades.
 #bounty-amount !Amount of bounty offered.
 #input-token !Input token from the perspective of order
 #input-token-decimals !Input token decimals
 #output-token !Output token from the perspective of order
-#output-token-decimals !Output token decimals
+#output-token-decimals !Output token decimals 
+
+#intermediate-token !Intermediate token
+#intermediate-token-decimals !Intermediate token decimals
+
 #grid-min !Minimum trade ratio
 #grid-max !Maximum trade ratio
-#mean-input-usdc-amount !Mean amount in wlth received
+#mean-input-usdc-amount !Mean amount in PAID received
 #jittery-binomial-bits !Number of bits for jittery binomial
 
-#twap-fee !Twap fee for the pool.
+#twap-io-fee !Twap fee for the pool.
+#twap-multiplier-fee !Twap multiplier fee.
 #twap-deviation !Percentage twap deviation.
 
 #test-last-time !Test last time for plotting.
@@ -290,7 +290,7 @@ deployments:
 
 #twap-check
   io-ratio: ,
-  twap-30: uniswap-v3-twap-output-ratio(output-token output-token-decimals input-token input-token-decimals 1800 0 twap-fee),
+  twap-30: uniswap-v3-twap-output-ratio(intermediate-token intermediate-token-decimals input-token input-token-decimals 1800 0 twap-io-fee),
   twap-ratio: decimal18-div(twap-30 io-ratio),
   :ensure(
     every(
@@ -326,25 +326,28 @@ deployments:
  :set(hash(order-hash() cooldown-key) now);
 
 #ensure-grid-band-chart
-  grid-min-price grid-max-price: ,
-  current-price: uniswap-v3-twap-output-ratio(
-    input-token input-token-decimals
-    output-token output-token-decimals
-    0 0
-    twap-fee
-  ),
-  effective-current-price: decimal18-inv(current-price),
-  effective-grid-min: decimal18-inv(grid-min-price),
-  effective-grid-max: decimal18-inv(grid-max-price);
-
+  _ _ ratio-multiplier: ,
+  current-price: decimal18-mul(
+      uniswap-v3-twap-output-ratio(
+        input-token input-token-decimals
+        intermediate-token intermediate-token-decimals
+        0 0
+        twap-io-fee
+      ) 
+      ratio-multiplier
+  );
+  
 
 #ensure-grid-band-prod
-  grid-min-price grid-max-price: ,
-  current-price: uniswap-v3-twap-output-ratio(
-    input-token input-token-decimals
-    output-token output-token-decimals
-    0 0
-    twap-fee
+  grid-min-price grid-max-price ratio-multiplier: ,
+  current-price: decimal18-mul(
+      uniswap-v3-twap-output-ratio(
+        input-token input-token-decimals
+        intermediate-token intermediate-token-decimals
+        0 0
+        twap-io-fee
+      ) 
+      ratio-multiplier
   ),
   :ensure(
     every(
@@ -356,45 +359,54 @@ deployments:
 
 #calculate-io-ratio-buy
   usdc-amount18
-  wlth-amount18: ,
-  io-ratio: decimal18-div(wlth-amount18 decimal18-add(usdc-amount18 bounty-amount)),
-  :call<'twap-check>(io-ratio),
+  paid-amount18
+  ratio-multiplier: ,
+  io-ratio: decimal18-div(paid-amount18 decimal18-add(usdc-amount18 bounty-amount)),
+  :call<'twap-check>(decimal18-mul(io-ratio decimal18-inv(ratio-multiplier))),
   /* Add io-ratio and max-op on stack*/
   _: usdc-amount18,
   _: io-ratio;
 
 #calculate-io-ratio-sell
   usdc-amount18
-  wlth-amount18: ,
-  io-ratio: decimal18-div(decimal18-saturating-sub(usdc-amount18 bounty-amount) wlth-amount18),
-  :call<'twap-check>(decimal18-inv(io-ratio)),
+  paid-amount18
+  ratio-multiplier: ,
+  io-ratio: decimal18-div(decimal18-saturating-sub(usdc-amount18 bounty-amount) paid-amount18),
+  :call<'twap-check>(decimal18-inv(decimal18-mul(io-ratio ratio-multiplier))),
   /* Add io-ratio and max-op on stack*/
-  _: wlth-amount18,
+  _: paid-amount18,
   _: io-ratio;
 
 #calculate-exact-buy-quote
-  amount-usdc6: ,
-  _: uniswap-v3-quote-exact-input(output-token input-token amount-usdc6 twap-fee);
+  amount-usdc18 ratio-multiplier: ,
+  _: uniswap-v3-quote-exact-input(intermediate-token input-token decimal18-mul(amount-usdc18 ratio-multiplier) twap-io-fee);
 
 #calculate-exact-sell-quote
-  amount-usdc6: ,
-  _: uniswap-v3-quote-exact-output(input-token output-token amount-usdc6 twap-fee);
+  amount-usdc18 ratio-multiplier: ,
+  _: uniswap-v3-quote-exact-output(input-token intermediate-token decimal18-mul(amount-usdc18 ratio-multiplier) twap-io-fee);
+
+#io-multiplier
+  _: uniswap-v3-twap-output-ratio(
+    output-token output-token-decimals
+    intermediate-token intermediate-token-decimals
+    0 0
+    twap-multiplier-fee
+  );
 
 #calculate-io
   using-words-from uniswap-words orderbook-subparser
 
-  :call<'ensure-grid-band>(grid-min grid-max),
+  io-ratio-multiplier: call<'io-multiplier>(),
+  :call<'ensure-grid-band>(grid-min grid-max decimal18-inv(io-ratio-multiplier)),
   last-time: call<'ensure-cooldown>(),
   random-multiplier18: call<'jittery-binomial>(last-time), 
   jittered-amount-usdc18: decimal18-mul(
     decimal18-mul(mean-input-usdc-amount 2e18)
     random-multiplier18
-  ),
-  jittered-amount-usdc6: decimal18-scale-n-dynamic(output-token-decimals jittered-amount-usdc18), 
-  wlth-amount-output: call<'calculate-exact-quote>(jittered-amount-usdc6),
-  wlth-amount18: decimal18-scale-18-dynamic(input-token-decimals wlth-amount-output),
-  max-output final-io-ratio: call<'calculate-io-ratio>(jittered-amount-usdc18 wlth-amount18);
-
+  ), 
+  paid-amount-output: call<'calculate-exact-quote>(jittered-amount-usdc18 io-ratio-multiplier),
+  paid-amount18: decimal18-scale-18-dynamic(input-token-decimals paid-amount-output),
+  max-output final-io-ratio: call<'calculate-io-ratio>(jittered-amount-usdc18 paid-amount18 io-ratio-multiplier); 
 
 #handle-io
 :;

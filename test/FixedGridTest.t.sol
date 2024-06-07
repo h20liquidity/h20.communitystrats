@@ -23,42 +23,56 @@ import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {SafeERC20, IERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "h20.test-std/lib/LibProcessStream.sol";
 
+uint256 constant VAULT_ID = uint256(keccak256("vault"));
+
+string constant WLTH_FIXED_GRID = "strategies/wlth-006-100-dca.rain";
+string constant WLTH_BUY_FIXED_GRID_PROD = "base-wlth-fixed-grid.buy.prod";
+string constant WLTH_BUY_FIXED_GRID_TEST_TWAP = "base-wlth-fixed-grid.buy.test-twap";
+string constant WLTH_SELL_FIXED_GRID_PROD = "base-wlth-fixed-grid.sell.prod";
+string constant WLTH_SELL_FIXED_GRID_TEST_TWAP = "base-wlth-fixed-grid.sell.test-twap";
+
+/// @dev https://basescan.org/address/0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+IERC20 constant WLTH_TOKEN = IERC20(0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D); 
+
+/// @dev https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+IERC20 constant USDC_TOKEN = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
+
+/// @dev https://basescan.org/address/0x4200000000000000000000000000000000000006
+IERC20 constant WETH_TOKEN = IERC20(0x4200000000000000000000000000000000000006);
+
+/// @dev https://basescan.org/address/0x71DDE9436305D2085331AF4737ec6f1fe876Cf9f
+IERC20 constant PAID_TOKEN = IERC20(0x71DDE9436305D2085331AF4737ec6f1fe876Cf9f);
+
+function baseWlthIo() pure returns (IO memory) {
+    return IO(address(WLTH_TOKEN), 18, VAULT_ID);
+}
+
+function basePaidIo() pure returns (IO memory) {
+    return IO(address(PAID_TOKEN), 18, VAULT_ID);
+}
+
+function baseWethIo() pure returns (IO memory) {
+    return IO(address(WETH_TOKEN), 18, VAULT_ID);
+}
+
+function baseUsdcIo() pure returns (IO memory) {
+    return IO(address(USDC_TOKEN), 6, VAULT_ID);
+}
+
 contract FixedGridTest is StrategyTests {
 
     using SafeERC20 for IERC20;
     using Strings for address;
 
-    uint256 constant FORK_BLOCK_NUMBER = 15388752;
-    uint256 constant VAULT_ID = uint256(keccak256("vault"));
-
+    uint256 constant FORK_BLOCK_NUMBER = 15485600;
+    
     address public BASE_USDC_POOL;
 
-    string constant WLTH_FIXED_GRID = "strategies/fixed-grid.rain";
-    string constant WLTH_BUY_FIXED_GRID_PROD = "base-wlth-fixed-grid.buy.prod";
-    string constant WLTH_BUY_FIXED_GRID_TEST_TWAP = "base-wlth-fixed-grid.buy.test-twap";
-    string constant WLTH_SELL_FIXED_GRID_PROD = "base-wlth-fixed-grid.sell.prod";
-    string constant WLTH_SELL_FIXED_GRID_TEST_TWAP = "base-wlth-fixed-grid.sell.test-twap";
-
-    /// @dev https://basescan.org/address/0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
-    IERC20 constant WLTH_TOKEN = IERC20(0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D); 
-
-    /// @dev https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
-    IERC20 constant USDC_TOKEN = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
-
-
-
+    
     function selectFork() internal {
         uint256 fork = vm.createFork(vm.envString("RPC_URL_BASE"));
         vm.selectFork(fork);
         vm.rollFork(FORK_BLOCK_NUMBER);
-    }
-
-    function baseWlthIo() internal pure returns (IO memory) {
-        return IO(address(WLTH_TOKEN), 18, VAULT_ID);
-    }
-
-    function baseUsdcIo() internal pure returns (IO memory) {
-        return IO(address(USDC_TOKEN), 6, VAULT_ID);
     }
 
     function getNamespace() public view returns (FullyQualifiedNamespace) {
@@ -81,6 +95,70 @@ contract FixedGridTest is StrategyTests {
 
         BASE_USDC_POOL = address(0x1536EE1506e24e5A36Be99C73136cD82907A902E);
 
+    }
+
+    function testBuyPaidFixedGrid() public {
+
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = basePaidIo();
+
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = baseUsdcIo();
+
+        uint256 expectedRatio = 0;
+        uint256 expectedAmountOutputMax = 1e18;
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            "",
+            getEncodedBuyPaidRoute(address(ARB_INSTANCE)),
+            0,
+            0,
+            0,
+            10000e6,
+            expectedRatio,
+            expectedAmountOutputMax,
+            "strategies/paid-fixed-grid-buy.rain",
+            "base-paid-fixed-grid.buy.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+        OrderV2 memory order = addOrderDepositOutputTokens(strategy);
+        takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);    
+    } 
+
+    function testSellPaidFixedGrid() public {
+
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = baseUsdcIo();
+
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = basePaidIo();
+
+        uint256 expectedRatio = 0;
+        uint256 expectedAmountOutputMax = 1e18;
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            "",
+            getEncodedSellPaidRoute(address(ARB_INSTANCE)),
+            0,
+            0,
+            0,
+            10000000e18,
+            expectedRatio,
+            expectedAmountOutputMax,
+            "strategies/paid-fixed-grid-buy.rain",
+            "base-paid-fixed-grid.sell.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+        OrderV2 memory order = addOrderDepositOutputTokens(strategy);
+        takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex); 
     }
 
     function testCwGridArbSellHappyPath() public {
@@ -183,7 +261,7 @@ contract FixedGridTest is StrategyTests {
             takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
         }
         {
-            vm.warp(block.timestamp + 119);
+            vm.warp(block.timestamp + 14399);
             vm.expectRevert("cooldown");
             takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
         }
@@ -208,8 +286,8 @@ contract FixedGridTest is StrategyTests {
             getEncodedBuyRoute(BASE_USDC_POOL,address(ARB_INSTANCE)),
             0,
             0,
-            8000000e18,
-            1000000e6,
+            8000000000e18,
+            1000000000e6,
             0,
             0,
             WLTH_FIXED_GRID,
@@ -261,7 +339,7 @@ contract FixedGridTest is StrategyTests {
             getEncodedBuyRoute(BASE_USDC_POOL,address(ARB_INSTANCE)),
             0,
             0,
-            50000e18,
+            100000e18,
             1000000e6,
             0,
             0,
@@ -278,6 +356,7 @@ contract FixedGridTest is StrategyTests {
         // Price within twap threshold.
         {
             takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            vm.warp(block.timestamp + 14400);
         }
         
         // Change the 30min twap price
@@ -289,6 +368,7 @@ contract FixedGridTest is StrategyTests {
                 strategy.makerRoute
             );
             vm.warp(block.timestamp + 1200);
+
             // Assert twap-check
             vm.expectRevert("twap check");
             takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
@@ -325,6 +405,7 @@ contract FixedGridTest is StrategyTests {
         // Price within twap threshold.
         {
             takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            vm.warp(block.timestamp + 14400);
         }
         
         // Change the 30min twap price
@@ -376,5 +457,19 @@ contract FixedGridTest is StrategyTests {
                 abi.encodePacked(address(toAddress))
             )
         );
-    } 
+    }
+
+    function getEncodedBuyPaidRoute(address toAddress) internal pure returns (bytes memory) {
+        bytes memory ROUTE_PRELUDE =
+            hex"02833589fCD6eDb6E08f4c7C32D4f71b54bdA0291301ffff00ab067c01C7F5734da168C699Ae9d23a4512c9FdB0083eC81Ae54dD8dca17C3Dd4703141599090751D101420000000000000000000000000000000000000601ffff013e170f4509A9CB5edC4FD98Ed0b461B78d7F31ea01";
+            
+        return abi.encode(bytes.concat(ROUTE_PRELUDE, abi.encodePacked(address(toAddress))));
+    }
+
+    function getEncodedSellPaidRoute(address toAddress) internal pure returns (bytes memory) {
+        bytes memory ROUTE_PRELUDE =
+            hex"0271DDE9436305D2085331AF4737ec6f1fe876Cf9f01ffff013e170f4509A9CB5edC4FD98Ed0b461B78d7F31ea0088A43bbDF9D098eEC7bCEda4e2494615dfD9bB9C0442000000000000000000000000000000000000060088A43bbDF9D098eEC7bCEda4e2494615dfD9bB9C01";
+            
+        return abi.encode(bytes.concat(ROUTE_PRELUDE, abi.encodePacked(address(toAddress))));
+    }
 }

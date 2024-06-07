@@ -66,10 +66,11 @@ scenarios:
         deployer: base-paid
         orderbook: base-paid
         bindings:
+          # Ask for now, registry in future.
           uniswap-words: 0xae8c077205C4B5659b67e7527AF0094845DD35d0
           orderbook-subparser: 0xee873E21F8a6A256cb9f53BE491E569eA6cdd63E 
 
-          #Input and output token from the perspective of the pool.
+          # Input and Output Tokens from perspective of the Orcale
           input-token: 0x71DDE9436305D2085331AF4737ec6f1fe876Cf9f
           input-token-decimals: 18
           output-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 
@@ -77,17 +78,27 @@ scenarios:
           intermediate-token: 0x4200000000000000000000000000000000000006
           intermediate-token-decimals: 18
           
+          # Twap fee for tokens
           twap-io-fee: '[uniswap-v3-fee-high]'
           twap-multiplier-fee: '[uniswap-v3-fee-low]'
           
-          jittery-binomial-bits: 10 
+          #Jittery binomial bits
+          jittery-binomial-bits: 10
+
+          # Bounty amount in $. For gas expensive networks this amount will be higher 
           bounty-amount: 3e16
         scenarios:
           buy:
             bindings:
-              cooldown-time: 14400 
+              # Cooldown between two trades in seconds.
+              cooldown-time: 14400
+              # Mean amount of usdc offered per trade.
+              # For gas expensive networks mean amount needs to be higher to compensate
+              # for gas fee and bounty.
               mean-input-usdc-amount: 2e18 
+              # Grid minimum price
               grid-min: 1e12
+              # Grid maximum price
               grid-max: 10e18
               calculate-exact-quote: '''calculate-exact-buy-quote'
               calculate-io-ratio: '''calculate-io-ratio-buy'
@@ -113,9 +124,15 @@ scenarios:
 
           sell:
             bindings:
-              cooldown-time: 14400 
+              # Cooldown between two trades in seconds.
+              cooldown-time: 14400
+              # Mean amount of usdc offered per trade.
+              # For gas expensive networks mean amount needs to be higher to compensate
+              # for gas fee and bounty.
               mean-input-usdc-amount: 2e18 
+              # Grid minimum price
               grid-min: 1e12
+              # Grid maximum price
               grid-max: 10e18
               calculate-exact-quote: '''calculate-exact-sell-quote'
               calculate-io-ratio: '''calculate-io-ratio-sell'

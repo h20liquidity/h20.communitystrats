@@ -194,33 +194,39 @@ charts:
   wlth-sell-fixed-grid: 
     scenario: base-wlth-fixed-grid.sell.chart
     metrics:
-      - label: Current WLTH price.
+      - label: Quote (Input) / Base (Output) ratio
+        value: 0.7       
+        description: '# USDC bought with 1 unit of WLTH'
+      - label: Base (Output) / Quote (Input) ratio
+        value: 0.2.3        
+        description: '# WLTH bought with 1 unit of USDC'
+      - label: Minimum sell price
+        value: 0.2.0
+        description: Strategy will not sell WLTH below this price
+      - label: Maximum sell price
+        value: 0.2.1
+        description: Strategy will not sell WLTH above this price
+      - label: Current WLTH price
         value: 0.2.2
         unit-prefix: $
-        description: Price of WLTH at current block.
-      - label: Minimum WLTH buy price.
-        value: 0.2.0
-        unit-prefix: $
-        description: Grid minimum USDC/WLTH ratio.
-      - label: Maximum WLTH buy price.
-        value: 0.2.1
-        unit-prefix: $
-        description: Grid maximum USDC/WLTH ratio.
-      - label: Amount of WLTH offered for first trade.
+        description: Price of WLTH at current block
+      - label: First order, WLTH sold
         value: 0.6
-        description: Amount of WLTH offered for the current block.
-      - label: Amount of USDC received for frist trade.
+        description: Amount of WLTH sold
+      - label: First order, USDC bought
         value: 0.2
-        description: Amount of USDC received for WLTH offered.
-      - label: io-ratio USDC/WLTH
-        value: 0.7
-        description: Ratio offered by the order for the current block accounting for bounty.
+        unit-prefix: $        
+        description: Amount of USDC bought
 
   sell-wlth-simulation:
     scenario: base-wlth-fixed-grid.sell.chart
     plots:
-      Mean amount of WLTH offered:
-        marks:
+      Simulated distribution of WLTH sales:
+       x:
+            label: 'WLTH sold'
+       y:
+            label: 'Frequency (count)'
+       marks:
           - type: recty
             options:
               transform:
@@ -230,10 +236,14 @@ charts:
                     y: "count"
                   options:
                     x: "0.5"
-                    thresholds: 20
+                    thresholds: 25
                     
-      Mean amount of USDC received:
-        marks:
+      Simulated distribution of USDC purchases:
+       x:
+            label: 'USDC bought'
+       y:
+            label: 'Frequency (count)'      
+       marks:
           - type: recty
             options:
               transform:
@@ -243,7 +253,7 @@ charts:
                     y: "count"
                   options:
                     x: "0.2"
-                    thresholds: 20
+                    thresholds: 25
     
 deployments:
   base-wlth-buy:

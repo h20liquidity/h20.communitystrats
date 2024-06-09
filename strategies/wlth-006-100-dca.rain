@@ -103,12 +103,15 @@ scenarios:
                   twap-deviation: 3e16
                   ensure-grid-band: '''ensure-grid-band-prod'
                   ensure-cooldown: '''ensure-cooldown-prod'
+                  plottables: '''plottables-prod'
+
               test-twap:
                 runs: 1
                 bindings:
                   twap-deviation: 1e16
                   ensure-grid-band: '''ensure-grid-band-prod'
                   ensure-cooldown: '''ensure-cooldown-prod'
+                  plottables: '''plottables-chart'
                   
               chart:
                 runs: 1000
@@ -116,6 +119,7 @@ scenarios:
                   twap-deviation: 1e18
                   ensure-grid-band: '''ensure-grid-band-chart'
                   ensure-cooldown: '''ensure-cooldown-chart'
+                  plottables: '''plottables-chart'
                   
 
           sell:
@@ -139,6 +143,7 @@ scenarios:
                   twap-deviation: 3e16
                   ensure-grid-band: '''ensure-grid-band-prod'
                   ensure-cooldown: '''ensure-cooldown-prod'
+                  plottables: '''plottables-prod'
                   
               test-twap:
                 runs: 1
@@ -146,6 +151,7 @@ scenarios:
                   twap-deviation: 1e16
                   ensure-grid-band: '''ensure-grid-band-prod'
                   ensure-cooldown: '''ensure-cooldown-prod'
+                  plottables: '''plottables-chart'
                   
               chart:
                 runs: 1000
@@ -153,6 +159,7 @@ scenarios:
                   twap-deviation: 1e18
                   ensure-grid-band: '''ensure-grid-band-chart'
                   ensure-cooldown: '''ensure-cooldown-chart'
+                  plottables: '''plottables-chart'
                   
           
               
@@ -181,6 +188,22 @@ charts:
       - label: io-ratio WLTH/USDC
         value: 0.7
         description: Ratio offered by the order for the current block accounting for bounty.
+      - label: Bounty amount
+        value: 0.7.2
+        unit-prefix: $        
+        description: Bounty paid for first order
+      - label: Bounty ratio
+        value: 0.7.5
+        unit-suffix: '%'   
+        description: Ratio of bounty amount to order amount
+      - label: Mean amount
+        value: 0.7.1
+        unit-prefix: $        
+        description: Mean amount of USDC sold 
+      - label: Cooldown in minutes
+        value: 0.7.6        
+        description: Number of minutes between strategy running   
+
     plots:
 
   buy-wlth-simulation:
@@ -238,6 +261,21 @@ charts:
         value: 0.2
         unit-prefix: $        
         description: Amount of USDC bought
+      - label: Bounty amount
+        value: 0.7.2
+        unit-prefix: $        
+        description: Bounty paid for first order
+      - label: Bounty ratio
+        value: 0.7.5
+        unit-suffix: '%'   
+        description: Ratio of bounty amount to order amount
+      - label: Mean amount
+        value: 0.7.1
+        unit-prefix: $        
+        description: Mean amount of USDC sold 
+      - label: Cooldown in minutes
+        value: 0.7.6        
+        description: Number of minutes between strategy running   
 
   sell-wlth-simulation:
     scenario: base-wlth-fixed-grid.sell.chart
@@ -304,6 +342,7 @@ deployments:
 #ensure-grid-band !Binding to ensure price grid
 #calculate-exact-quote !Binding to calculate exact quote.
 #calculate-io-ratio !Binding to calculate io-ratio.
+#plottables !The binding for additional things we want to plot during testing.
 
 #uniswap-words !The subparser for the Uniswap words
 #orderbook-subparser !The subparser for the Orderbook words
@@ -401,14 +440,17 @@ deployments:
   amount-usdc6: ,
   _: uniswap-v3-quote-exact-output(input-token output-token amount-usdc6 twap-fee);
 
-#plottables
+#plottables-chart
   cooldown
   mean-input-amount
   bounty-offered
   max-output-amount
   io-ratio: ,
-  bounty-ratio: decimal18-div(bounty-amount mean-input-amount),
+  bounty-ratio: decimal18-mul(decimal18-div(bounty-amount mean-input-amount) 100e18),
   cooldown-in-minutes: int-to-decimal18(int-div(cooldown 60));
+
+#plottables-prod
+  _ _ _ _ _: ;
 
 #calculate-io
   using-words-from uniswap-words orderbook-subparser

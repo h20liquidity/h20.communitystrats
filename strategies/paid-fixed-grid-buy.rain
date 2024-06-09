@@ -410,6 +410,15 @@ deployments:
     twap-multiplier-fee
   );
 
+#plottables
+  cooldown
+  mean-input-amount
+  bounty-offered
+  max-output-amount
+  io-ratio: ,
+  bounty-ratio: decimal18-div(bounty-amount mean-input-amount),
+  cooldown-in-minutes: int-to-decimal18(int-div(cooldown 60));
+
 #calculate-io
   using-words-from uniswap-words orderbook-subparser
 
@@ -423,7 +432,8 @@ deployments:
   ), 
   paid-amount-output: call<'calculate-exact-quote>(jittered-amount-usdc18 io-ratio-multiplier),
   paid-amount18: decimal18-scale-18-dynamic(input-token-decimals paid-amount-output),
-  max-output final-io-ratio: call<'calculate-io-ratio>(jittered-amount-usdc18 paid-amount18 io-ratio-multiplier); 
+  max-output final-io-ratio: call<'calculate-io-ratio>(jittered-amount-usdc18 paid-amount18 io-ratio-multiplier),
+  :call<'plottables>(cooldown-time mean-input-usdc-amount bounty-amount max-output final-io-ratio); 
 
 #handle-io
 :;

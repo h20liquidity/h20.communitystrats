@@ -103,24 +103,27 @@ scenarios:
               calculate-exact-quote: '''calculate-exact-buy-quote'
               calculate-io-ratio: '''calculate-io-ratio-buy'
             scenarios:
-              prod:
-                runs: 1
+              deviation:
                 bindings:
                   twap-deviation: 3e16
-                  ensure-grid-band: '''ensure-grid-band-prod'
-                  ensure-cooldown: '''ensure-cooldown-prod'
-                  plottables: '''plottables-prod'
-              test-twap:
-                runs: 1
+                scenarios:
+                  prod:
+                    bindings:
+                      twap-check: '''twap-check-prod'
+                      ensure-grid-band: '''ensure-grid-band-prod'
+                      ensure-cooldown: '''ensure-cooldown-prod'
+                      plottables: '''plottables-prod'
+                  chart:
+                    runs: 1000
+                    bindings:
+                      twap-check: '''twap-check-chart'
+                      ensure-grid-band: '''ensure-grid-band-chart'
+                      ensure-cooldown: '''ensure-cooldown-chart'
+                      plottables: '''plottables-chart'
+              test:
                 bindings:
                   twap-deviation: 1e16
-                  ensure-grid-band: '''ensure-grid-band-prod'
-                  ensure-cooldown: '''ensure-cooldown-prod'
-                  plottables: '''plottables-chart'
-              chart:
-                runs: 1000
-                bindings:
-                  twap-deviation: 1e18
+                  twap-check: '''twap-check-prod'
                   ensure-grid-band: '''ensure-grid-band-chart'
                   ensure-cooldown: '''ensure-cooldown-chart'
                   plottables: '''plottables-chart'
@@ -140,31 +143,34 @@ scenarios:
               calculate-exact-quote: '''calculate-exact-sell-quote'
               calculate-io-ratio: '''calculate-io-ratio-sell'
             scenarios:
-              prod:
-                runs: 1
+              deviation:
                 bindings:
                   twap-deviation: 3e16
-                  ensure-grid-band: '''ensure-grid-band-prod'
-                  ensure-cooldown: '''ensure-cooldown-prod'
-                  plottables: '''plottables-prod'
-              test-twap:
-                runs: 1
+                scenarios:
+                  prod:
+                    bindings:
+                      twap-check: '''twap-check-prod'
+                      ensure-grid-band: '''ensure-grid-band-prod'
+                      ensure-cooldown: '''ensure-cooldown-prod'
+                      plottables: '''plottables-prod'
+                  chart:
+                    runs: 1000
+                    bindings:
+                      twap-check: '''twap-check-chart'
+                      ensure-grid-band: '''ensure-grid-band-chart'
+                      ensure-cooldown: '''ensure-cooldown-chart'
+                      plottables: '''plottables-chart'
+              test:
                 bindings:
                   twap-deviation: 1e16
-                  ensure-grid-band: '''ensure-grid-band-prod'
-                  ensure-cooldown: '''ensure-cooldown-prod'
-                  plottables: '''plottables-chart'
-              chart:
-                runs: 1000
-                bindings:
-                  twap-deviation: 1e18
+                  twap-check: '''twap-check-prod'
                   ensure-grid-band: '''ensure-grid-band-chart'
                   ensure-cooldown: '''ensure-cooldown-chart'
                   plottables: '''plottables-chart'
 
 charts:
   paid-buy-fixed-grid: 
-    scenario: base-paid-fixed-grid.buy.chart
+    scenario: base-paid-fixed-grid.buy.deviation.chart
     metrics:
       - label: Current PAID price.
         value: 0.3.3
@@ -179,33 +185,44 @@ charts:
         unit-prefix: $
         description: Grid maximum USDC/PAID ratio.
       - label: Amount of USDC offered for first trade.
-        value: 0.6
+        value: 0.7
         description: Amount of USDC offered for the current block.
       - label: Amount of PAID received for frist trade.
         value: 0.5
         description: Amount of PAID received for USDC offered.
       - label: io-ratio PAID/USDC
-        value: 0.7
+        value: 0.8
         description: Ratio offered by the order for the current block accounting for bounty.
       - label: Bounty amount
-        value: 0.8.2
+        value: 0.8.5
         unit-prefix: $        
         description: Bounty paid for first order
       - label: Bounty ratio
-        value: 0.8.5
+        value: 0.8.8
         unit-suffix: '%'   
         description: Ratio of bounty amount to order amount
       - label: Mean amount
-        value: 0.8.1
+        value: 0.8.4
         unit-prefix: $        
         description: Mean amount of USDC sold 
       - label: Cooldown in minutes
-        value: 0.8.6        
-        description: Number of minutes between strategy running   
+        value: 0.8.9        
+        description: Number of minutes between strategy running
+      - label: Trades per hour
+        value: 0.8.10       
+        description: Number of trades per hour  
+      - label: Strategy twap deviation
+        value: 0.8.6
+        unit-suffix: '%'         
+        description: Twap deviation percentage acceptable     
+      - label: Current twap deviation
+        value: 0.8.7
+        unit-suffix: '%'       
+        description: Twap deviation occuring at current block.       
     plots:
 
   buy-paid-simulation:
-    scenario: base-paid-fixed-grid.buy.chart
+    scenario: base-paid-fixed-grid.buy.deviation.chart
     plots:
       Mean amount of USDC offered:
         marks:
@@ -234,7 +251,7 @@ charts:
                     thresholds: 25
               
   paid-sell-fixed-grid: 
-    scenario: base-paid-fixed-grid.sell.chart
+    scenario: base-paid-fixed-grid.sell.deviation.chart
     metrics:
       - label: Current PAID price.
         value: 0.3.3
@@ -249,32 +266,43 @@ charts:
         unit-prefix: $
         description: Grid maximum USDC/PAID ratio.
       - label: Amount of PAID offered for first trade.
-        value: 0.6
+        value: 0.7
         description: Amount of PAID offered for the current block.
       - label: Amount of USDC received for frist trade.
         value: 0.3
         description: Amount of USDC received for PAID offered.
       - label: io-ratio USDC/PAID
-        value: 0.7
+        value: 0.8
         description: Ratio offered by the order for the current block accounting for bounty.
       - label: Bounty amount
-        value: 0.8.2
+        value: 0.8.5
         unit-prefix: $        
         description: Bounty paid for first order
       - label: Bounty ratio
-        value: 0.8.5
+        value: 0.8.8
         unit-suffix: '%'   
         description: Ratio of bounty amount to order amount
       - label: Mean amount
-        value: 0.8.1
+        value: 0.8.4
         unit-prefix: $        
         description: Mean amount of USDC sold 
       - label: Cooldown in minutes
-        value: 0.8.6        
-        description: Number of minutes between strategy running   
+        value: 0.8.9        
+        description: Number of minutes between strategy running
+      - label: Trades per hour
+        value: 0.8.10       
+        description: Number of trades per hour
+      - label: Strategy twap deviation
+        value: 0.8.6
+        unit-suffix: '%'         
+        description: Twap deviation percentage acceptable     
+      - label: Current twap deviation
+        value: 0.8.7
+        unit-suffix: '%'       
+        description: Twap deviation occuring at current block.         
 
   sell-paid-simulation:
-    scenario: base-paid-fixed-grid.sell.chart
+    scenario: base-paid-fixed-grid.sell.deviation.chart
     plots:
       Mean amount of PAID offered:
         marks:
@@ -305,10 +333,10 @@ charts:
                       
 deployments:
   base-paid-buy:
-    scenario: base-paid-fixed-grid.buy.prod
+    scenario: base-paid-fixed-grid.buy.deviation.prod
     order: base-paid-buy
   base-paid-sell:
-    scenario: base-paid-fixed-grid.sell.prod
+    scenario: base-paid-fixed-grid.sell.deviation.prod
     order: base-paid-sell
 ---
 #cooldown-time !The minimum amount of seconds that must elapse between trades.
@@ -336,13 +364,19 @@ deployments:
 #ensure-grid-band !Binding to ensure price grid
 #calculate-exact-quote !Binding to calculate exact quote.
 #calculate-io-ratio !Binding to calculate io-ratio.
+#twap-check !Binding to enforce oracle manipulation protection.
 #plottables !The binding for additional things we want to plot during testing.
 
 #uniswap-words !The subparser for the Uniswap words
 #orderbook-subparser !The subparser for the Orderbook words
 #cooldown-key "cooldown-key"
 
-#twap-check
+#twap-check-chart
+  io-ratio: ,
+  twap-30: uniswap-v3-twap-output-ratio(intermediate-token intermediate-token-decimals input-token input-token-decimals 1800 0 twap-io-fee),
+  twap-ratio: decimal18-div(twap-30 io-ratio);
+
+#twap-check-prod
   io-ratio: ,
   twap-30: uniswap-v3-twap-output-ratio(intermediate-token intermediate-token-decimals input-token input-token-decimals 1800 0 twap-io-fee),
   twap-ratio: decimal18-div(twap-30 io-ratio),
@@ -416,7 +450,7 @@ deployments:
   paid-amount18
   ratio-multiplier: ,
   io-ratio: decimal18-div(paid-amount18 decimal18-add(usdc-amount18 bounty-amount)),
-  :call<'twap-check>(decimal18-mul(io-ratio decimal18-inv(ratio-multiplier))),
+  _ :call<'twap-check>(decimal18-mul(io-ratio decimal18-inv(ratio-multiplier))),
   /* Add io-ratio and max-op on stack*/
   _: usdc-amount18,
   _: io-ratio;
@@ -426,7 +460,7 @@ deployments:
   paid-amount18
   ratio-multiplier: ,
   io-ratio: decimal18-div(decimal18-saturating-sub(usdc-amount18 bounty-amount) paid-amount18),
-  :call<'twap-check>(decimal18-inv(decimal18-mul(io-ratio ratio-multiplier))),
+  _ :call<'twap-check>(decimal18-inv(decimal18-mul(io-ratio ratio-multiplier))),
   /* Add io-ratio and max-op on stack*/
   _: paid-amount18,
   _: io-ratio;
@@ -448,16 +482,22 @@ deployments:
   );
 
 #plottables-chart
-  cooldown
-  mean-input-amount
-  bounty-offered
-  max-output-amount
-  io-ratio: ,
-  bounty-ratio: decimal18-mul(decimal18-div(bounty-amount mean-input-amount) 100e18),
-  cooldown-in-minutes: int-to-decimal18(int-div(cooldown 60));
+  max-output-amount io-ratio twap-ratio: ,
+  _: cooldown-time,
+  _: mean-input-usdc-amount,
+  _: bounty-amount,
+  _: decimal18-mul(twap-deviation 100e18),
+  current-twap-deviation: if(
+    greater-than(1e18 twap-ratio)
+    decimal18-mul(decimal18-saturating-sub(1e18 twap-ratio) 100e18)
+    decimal18-mul(decimal18-saturating-sub(twap-ratio 1e18) 100e18)
+  ),
+  bounty-ratio: decimal18-mul(decimal18-div(bounty-amount mean-input-usdc-amount) 100e18),
+  cooldown-in-minutes: int-to-decimal18(int-div(cooldown-time 60)),
+  cooldown-in-hours: decimal18-div(60e18 cooldown-in-minutes);
 
 #plottables-prod
-  _ _ _ _ _: ;
+  _ _ _: ;
 
 #calculate-io
   using-words-from uniswap-words orderbook-subparser
@@ -472,8 +512,8 @@ deployments:
   ), 
   paid-amount-output: call<'calculate-exact-quote>(jittered-amount-usdc18 io-ratio-multiplier),
   paid-amount18: decimal18-scale-18-dynamic(input-token-decimals paid-amount-output),
-  max-output final-io-ratio: call<'calculate-io-ratio>(jittered-amount-usdc18 paid-amount18 io-ratio-multiplier),
-  :call<'plottables>(cooldown-time mean-input-usdc-amount bounty-amount max-output final-io-ratio); 
+  twap-ratio max-output final-io-ratio: call<'calculate-io-ratio>(jittered-amount-usdc18 paid-amount18 io-ratio-multiplier),
+  :call<'plottables>(max-output final-io-ratio twap-ratio); 
 
 #handle-io
 :;

@@ -26,10 +26,10 @@ import "h20.test-std/lib/LibProcessStream.sol";
 uint256 constant VAULT_ID = uint256(keccak256("vault"));
 
 string constant WLTH_FIXED_GRID = "strategies/wlth-006-100-dca.rain";
-string constant WLTH_BUY_FIXED_GRID_PROD = "base-wlth-fixed-grid.buy.prod";
-string constant WLTH_BUY_FIXED_GRID_TEST_TWAP = "base-wlth-fixed-grid.buy.test-twap";
-string constant WLTH_SELL_FIXED_GRID_PROD = "base-wlth-fixed-grid.sell.prod";
-string constant WLTH_SELL_FIXED_GRID_TEST_TWAP = "base-wlth-fixed-grid.sell.test-twap";
+string constant WLTH_BUY_FIXED_GRID_PROD = "base-wlth-fixed-grid.buy.deviation.prod";
+string constant WLTH_BUY_FIXED_GRID_TEST_TWAP = "base-wlth-fixed-grid.buy.test";
+string constant WLTH_SELL_FIXED_GRID_PROD = "base-wlth-fixed-grid.sell.deviation.prod";
+string constant WLTH_SELL_FIXED_GRID_TEST_TWAP = "base-wlth-fixed-grid.sell.test";
 
 /// @dev https://basescan.org/address/0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
 IERC20 constant WLTH_TOKEN = IERC20(0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D); 
@@ -64,7 +64,7 @@ contract FixedGridTest is StrategyTests {
     using SafeERC20 for IERC20;
     using Strings for address;
 
-    uint256 constant FORK_BLOCK_NUMBER = 15485600;
+    uint256 constant FORK_BLOCK_NUMBER = 15612566;
     
     address public BASE_USDC_POOL;
 
@@ -118,7 +118,7 @@ contract FixedGridTest is StrategyTests {
             expectedRatio,
             expectedAmountOutputMax,
             "strategies/paid-fixed-grid-buy.rain",
-            "base-paid-fixed-grid.buy.prod",
+            "base-paid-fixed-grid.buy.deviation.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
@@ -150,7 +150,7 @@ contract FixedGridTest is StrategyTests {
             expectedRatio,
             expectedAmountOutputMax,
             "strategies/paid-fixed-grid-buy.rain",
-            "base-paid-fixed-grid.sell.prod",
+            "base-paid-fixed-grid.sell.deviation.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,

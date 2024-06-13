@@ -89,6 +89,80 @@ contract PolygonFixedGridDecimal is StrategyTests {
         ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
     }
 
+    function testBountyAuction() public {
+
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = polygonUsdcIo();
+
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = polygonLinkIo();
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            getEncodedBuyLinkRoute(address(ARB_INSTANCE)),
+            getEncodedSellLinkRoute(address(ARB_INSTANCE)),
+            0,
+            0,
+            1e6,
+            10000e18,
+            0,
+            0,
+            "strategies/polygon-link-fixed-grid.rain",
+            "polygon-link-fixed-grid.sell.deviation.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        ); 
+
+        OrderV2 memory order = addOrderDepositOutputTokens(strategy);
+        {
+            vm.recordLogs();
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            uint256 bounty = getBounty(entries);
+
+            // Assert greater than max bounty.
+            assertGe(bounty, 0.3e6);
+        }
+
+        // Cooldown
+        vm.warp(block.timestamp + 14400); 
+        {
+            vm.recordLogs();
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            uint256 bounty = getBounty(entries);
+
+            // Assert greater than min-bounty + (bounty-units * time-since-cooldown)
+            // 0.015 + (0.01 * 0)
+            assertGe(bounty, 0.015e6);
+        }
+        // 60 seconds after cooldown
+        vm.warp(block.timestamp + 14400 + 60); 
+        {
+            vm.recordLogs();
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            uint256 bounty = getBounty(entries);
+
+            // Assert greater than min-bounty + (bounty-units * time-since-cooldown)
+            // 0.015 + (0.01 * 1)
+            assertGe(bounty, 0.025e6);
+        }
+        // 120 seconds after cooldown
+        vm.warp(block.timestamp + 14400 + 120); 
+        {
+            vm.recordLogs();
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            uint256 bounty = getBounty(entries);
+
+            // Assert greater than min-bounty + (bounty-units * time-since-cooldown)
+            // 0.015 + (0.01 * 2)
+            assertGe(bounty, 0.035e6);
+        }
+    }
+
     function testLinkBuyLinkHappyPath() public {
 
         IO[] memory inputVaults = new IO[](1);
@@ -202,6 +276,23 @@ contract PolygonFixedGridDecimal is StrategyTests {
 
     }
 
+    function getBounty(Vm.Log[] memory entries)
+        public
+        view
+        returns (uint256 bounty)
+    {
+        for (uint256 j = 0; j < entries.length; j++) { 
+            if (
+                entries[j].topics[0] == keccak256("Transfer(address,address,uint256)") && 
+                address(ARB_INSTANCE) == abi.decode(abi.encodePacked(entries[j].topics[1]), (address)) &&
+                address(APPROVED_EOA) == abi.decode(abi.encodePacked(entries[j].topics[2]), (address))
+                ) {
+
+                bounty = abi.decode(entries[j].data, (uint256));
+            }   
+        }
+    }
+
     function getEncodedBuyLinkRoute(address toAddress) internal pure returns (bytes memory) {
         bytes memory ROUTE_PRELUDE =
             hex"022791Bca1f2de4661ED88A30C99A7a9449Aa8417401ffff0122177148e681A6ca5242c9888Ace170EE7eC47BD01";
@@ -216,4 +307,4 @@ contract PolygonFixedGridDecimal is StrategyTests {
         return abi.encode(bytes.concat(ROUTE_PRELUDE, abi.encodePacked(address(toAddress))));
     }
 
-}
+}//0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174::transfer(0x669845c29D9B1A64FFF66a55aA13EB4adB889a88

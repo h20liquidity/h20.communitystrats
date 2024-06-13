@@ -402,24 +402,24 @@ charts:
 #stable-token !The stable token that is used as a reference for the TWAP to offer dollar equivalent conversions.
 #reserve-token !The token that will be used to compare against the stable token to calculate the TWAP for dollar equivalent conversions.
 
-#grid-min !Minimum trade ratio
-#grid-max !Maximum trade ratio
-#mean-input-usdc-amount !Mean amount in LINK received
-#jittery-binomial-bits !Number of bits for jittery binomial
+#grid-min !Minimum dollar denominated price to trade distribution token for and against stable token.
+#grid-max !Maximum dollar denominated price to trade distribution token for and against stable token.
+#mean-input-usdc-amount !Mean dollar denominated amount of stable tokens traded.
+#jittery-binomial-bits !Number of bits for jittery binomial to calculate random amount of stable token traded per trade.
 
-#twap-io-fee !Twap fee for the pool.
-#twap-multiplier-fee !Twap multiplier fee.
-#twap-deviation !Percentage twap deviation.
+#twap-io-fee !Twap fee for the distribution token pool, paired with either stable or reserve token.
+#twap-multiplier-fee !Twap fee for reserve token paired with stable token.
+#twap-deviation !Acceptable percentage twap deviation to guard against the 30min price change.
 
 #test-current-time !Test current time for plotting.
 #test-last-time !Test last time for plotting.
 
 #ensure-cooldown !Binding to enforce cooldown check.
-#ensure-grid-band !Binding to ensure price grid
-#calculate-exact-quote !Binding to calculate exact quote.
-#calculate-io-ratio !Binding to calculate io-ratio.
-#twap-check !Binding to enforce oracle manipulation protection.
-#io-multiplier !Binding to set io-multiplier.
+#ensure-grid-band !Binding to enforce price remains between minimum and maximum price set.
+#calculate-exact-quote !Binding to calculate exact amount of distribution tokens required for buys and sells.
+#calculate-io-ratio !Binding to calculate io-ratio for the order.
+#twap-check !Binding to enforce oracle manipulation protection guard
+#io-multiplier !Binding to get the ratio multiplier for distribution token.
 #plottables !The binding for additional things we want to plot during testing.
 
 #uniswap-words !The subparser for the Uniswap words

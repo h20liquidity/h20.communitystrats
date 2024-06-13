@@ -1,0 +1,489 @@
+# Strategy: Fixed Grid
+#
+# High level, this strategy buys mean amount of LINK tokens at the end of every cooldown period
+# provided that current price feteched from the LINK/USDC uni-v3 pool falls in a particular range.
+#
+# - Amount of LINK bought per trade within the price band is randomized and centered around a mean,
+#   value for which can be set within the bindings.
+# - Range for the grid can also be provided within the bindings
+# - Strategy provides a guard against 
+
+networks:
+  polygon-link: 
+    rpc: https://rpc.ankr.com/polygon 
+    chain-id: 137 
+    network-id: 137 
+    currency: MATIC
+
+subgraphs:
+  polygon-link: https://api.thegraph.com/subgraphs/name/h20liquidity/polygon-0xc95a5f8e
+  
+orderbooks:
+  polygon-link:
+    address: 0xc95A5f8eFe14d7a20BD2E5BAFEC4E71f8Ce0B9A6
+    network: polygon-link
+    subgraph: polygon-link
+
+deployers:
+  polygon-link:
+    address: 0xB3aC858bEAf7814892d3946A8C109A7D701DF8E7
+    network: polygon-link
+
+tokens:
+  polygon-link:
+    network: polygon-link
+    address: 0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39
+  polygon-usdt:
+    network: polygon-link
+    address: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+  polygon-usdc:
+    network: polygon-link
+    address: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
+  polygon-wmatic:
+    network: polygon-link
+    address: 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
+
+
+scenarios:
+    polygon-link-fixed-grid:
+        network: polygon-link
+        deployer: polygon-link
+        orderbook: polygon-link
+        bindings:
+          # Ask for now, registry in future.
+          uniswap-words: 0x2382e861cF4F47578aC29B50944b3b445577aF74
+          orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1
+
+          # Input and Output Tokens from perspective of the Orcale
+          input-token: 0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39
+          input-token-decimals: 18
+          output-token: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
+          output-token-decimals: 6
+
+          # Twap fee for tokens
+          twap-fee: '[uniswap-v3-fee-medium]'
+
+          #Jittery binomial bits 
+          jittery-binomial-bits: 10 
+
+          # Bounty amount in $. For gas expensive networks this amount will be higher 
+          bounty-amount: 0.03
+
+        scenarios:
+          buy:
+            bindings:
+              # Cooldown between two trades in seconds.
+              cooldown-time: 14400
+              # Mean amount of usdc offered per trade.
+              # For gas expensive networks mean amount needs to be higher to compensate
+              # for gas fee and bounty. 
+              mean-input-usdc-amount: 10
+              # Grid minimum price 
+              grid-min: 0.06
+              # Grid maximum price
+              grid-max: 100
+              calculate-exact-quote: '''calculate-exact-buy-quote'
+              calculate-io-ratio: '''calculate-io-ratio-buy'
+
+            scenarios:
+              deviation:
+                bindings:
+                  twap-deviation: 0.03
+                scenarios:
+                  prod:
+                    bindings:
+                      twap-check: '''twap-check-prod'
+                      ensure-grid-band: '''ensure-grid-band-prod'
+                      ensure-cooldown: '''ensure-cooldown-prod'
+                      plottables: '''plottables-prod'
+                  chart:
+                    runs: 1000
+                    bindings:
+                      twap-check: '''twap-check-chart'
+                      ensure-grid-band: '''ensure-grid-band-chart'
+                      ensure-cooldown: '''ensure-cooldown-chart'
+                      plottables: '''plottables-chart'
+
+              test:
+                bindings:
+                  twap-deviation: 0.0055
+                  twap-check: '''twap-check-prod'
+                  ensure-grid-band: '''ensure-grid-band-chart'
+                  ensure-cooldown: '''ensure-cooldown-chart'
+                  plottables: '''plottables-chart'
+
+          sell:
+            bindings:
+              # Cooldown between two trades in seconds.
+              cooldown-time: 14400
+              # Mean amount of usdc offered per trade.
+              # For gas expensive networks mean amount needs to be higher to compensate
+              # for gas fee and bounty. 
+              mean-input-usdc-amount: 10
+              # Grid minimum price 
+              grid-min: 0.06
+              # Grid maximum price
+              grid-max: 100
+              calculate-exact-quote: '''calculate-exact-sell-quote'
+              calculate-io-ratio: '''calculate-io-ratio-sell'
+
+            scenarios:
+              deviation:
+                bindings:
+                  twap-deviation: 0.03
+                scenarios:
+                  prod:
+                    bindings:
+                      twap-check: '''twap-check-prod'
+                      ensure-grid-band: '''ensure-grid-band-prod'
+                      ensure-cooldown: '''ensure-cooldown-prod'
+                      plottables: '''plottables-prod'
+                  chart:
+                    runs: 1000
+                    bindings:
+                      twap-check: '''twap-check-chart'
+                      ensure-grid-band: '''ensure-grid-band-chart'
+                      ensure-cooldown: '''ensure-cooldown-chart'
+                      plottables: '''plottables-chart'
+
+              test:
+                bindings:
+                  twap-deviation: 0.0055
+                  twap-check: '''twap-check-prod'
+                  ensure-grid-band: '''ensure-grid-band-chart'
+                  ensure-cooldown: '''ensure-cooldown-chart'
+                  plottables: '''plottables-chart'
+                     
+charts:
+  link-buy-fixed-grid: 
+    scenario: polygon-link-fixed-grid.buy.deviation.chart
+    metrics:
+      - label: Current LINK price.
+        value: 0.2.2
+        unit-prefix: $
+        description: Price of LINK at current block.
+      - label: Minimum LINK buy price.
+        value: 0.2.0
+        unit-prefix: $
+        description: Grid minimum USDC/LINK ratio.
+      - label: Maximum LINK buy price.
+        value: 0.2.1
+        unit-prefix: $
+        description: Grid maximum USDC/LINK ratio.
+      - label: Amount of USDC offered for first trade.
+        value: 0.2
+        description: Amount of USDC offered for the current block.
+      - label: Amount of LINK received for frist trade.
+        value: 0.3
+        description: Amount of LINK received for USDC offered.
+      - label: io-ratio LINK/USDC
+        value: 0.6
+        description: Ratio offered by the order for the current block accounting for bounty.
+      - label: Bounty amount
+        value: 0.7.5
+        unit-prefix: $        
+        description: Bounty paid for first order
+      - label: Bounty ratio
+        value: 0.7.8
+        unit-suffix: '%'   
+        description: Ratio of bounty amount to order amount
+      - label: Mean amount
+        value: 0.7.4
+        unit-prefix: $        
+        description: Mean amount of USDC sold 
+      - label: Cooldown in minutes
+        value: 0.7.9        
+        description: Number of minutes between strategy running
+      - label: Trades per hour
+        value: 0.7.10       
+        description: Number of trades per hour
+      - label: Strategy twap deviation
+        value: 0.7.6
+        unit-suffix: '%'         
+        description: Twap deviation percentage acceptable     
+      - label: Current twap deviation
+        value: 0.7.7
+        unit-suffix: '%'       
+        description: Twap deviation occuring at current block.       
+
+    plots:
+
+  buy-link-simulation:
+    scenario: polygon-link-fixed-grid.buy.deviation.chart
+    plots:
+      Mean amount of USDC offered:
+        marks:
+          - type: recty
+            options:
+              transform:
+                type: binx
+                content:
+                  outputs:
+                    y: "count"
+                  options:
+                    x: "0.2"
+                    thresholds: 20
+                    
+      Mean amount of LINK received:
+        marks:
+          - type: recty
+            options:
+              transform:
+                type: binx
+                content:
+                  outputs:
+                    y: "count"
+                  options:
+                    x: "0.3"
+                    thresholds: 20
+  
+  link-sell-fixed-grid: 
+    scenario: polygon-link-fixed-grid.sell.deviation.chart
+    metrics:
+      - label: Current LINK price
+        value: 0.2.2
+        unit-prefix: $
+        description: Price of LINK at current block
+      - label: Minimum sell price
+        value: 0.2.0
+        description: Strategy will not sell LINK below this price
+      - label: Maximum sell price
+        value: 0.2.1
+        description: Strategy will not sell LINK above this price
+      - label: First order, LINK sold
+        value: 0.3
+        description: Amount of LINK sold
+      - label: First order, USDC bought
+        value: 0.2
+        unit-prefix: $        
+        description: Amount of USDC bought
+      - label: io-ratio USDC/LINK
+        value: 0.6       
+        description: Ratio offered by the order for the current block accounting for bounty.
+      - label: Bounty amount
+        value: 0.7.5
+        unit-prefix: $        
+        description: Bounty paid for first order
+      - label: Bounty ratio
+        value: 0.7.8
+        unit-suffix: '%'   
+        description: Ratio of bounty amount to order amount
+      - label: Mean amount
+        value: 0.7.4
+        unit-prefix: $        
+        description: Mean amount of USDC sold 
+      - label: Cooldown in minutes
+        value: 0.7.9        
+        description: Number of minutes between strategy running
+      - label: Trades per hour
+        value: 0.7.10       
+        description: Number of trades per hour
+      - label: Strategy twap deviation
+        value: 0.7.6
+        unit-suffix: '%'         
+        description: Twap deviation percentage acceptable     
+      - label: Current twap deviation
+        value: 0.7.7
+        unit-suffix: '%'       
+        description: Twap deviation occuring at current block.   
+
+  sell-link-simulation:
+    scenario: polygon-link-fixed-grid.sell.deviation.chart
+    plots:
+      Simulated distribution of LINK sales:
+       x:
+            label: 'LINK sold'
+       y:
+            label: 'Frequency (count)'
+       marks:
+          - type: recty
+            options:
+              transform:
+                type: binx
+                content:
+                  outputs:
+                    y: "count"
+                  options:
+                    x: "0.5"
+                    thresholds: 25
+                    
+      Simulated distribution of USDC purchases:
+       x:
+            label: 'USDC bought'
+       y:
+            label: 'Frequency (count)'      
+       marks:
+          - type: recty
+            options:
+              transform:
+                type: binx
+                content:
+                  outputs:
+                    y: "count"
+                  options:
+                    x: "0.2"
+                    thresholds: 25
+              
+  
+    
+---
+#cooldown-time !The minimum amount of seconds that must elapse between trades.
+#bounty-amount !Amount of bounty offered.
+#input-token !Input token from the perspective of order
+#input-token-decimals !Input token decimals
+#output-token !Output token from the perspective of order
+#output-token-decimals !Output token decimals
+#grid-min !Minimum trade ratio
+#grid-max !Maximum trade ratio
+#mean-input-usdc-amount !Mean amount in link received
+#jittery-binomial-bits !Number of bits for jittery binomial
+
+#twap-fee !Twap fee for the pool.
+#twap-deviation !Percentage twap deviation.
+
+#test-last-time !Test last time for plotting.
+
+#ensure-cooldown !Binding to enforce cooldown check.
+#ensure-grid-band !Binding to ensure price grid
+#calculate-exact-quote !Binding to calculate exact quote.
+#calculate-io-ratio !Binding to calculate io-ratio.
+#twap-check !Binding to enforce oracle guard protection.
+#plottables !The binding for additional things we want to plot during testing.
+
+#uniswap-words !The subparser for the Uniswap words
+#orderbook-subparser !The subparser for the Orderbook words
+#cooldown-key "cooldown-key"
+
+#twap-check-chart
+  io-ratio: ,
+  twap-30: uniswap-v3-twap-output-ratio(output-token input-token 1800 0 twap-fee),
+  twap-ratio: div(twap-30 io-ratio);
+
+#twap-check-prod
+  io-ratio: ,
+  twap-30: uniswap-v3-twap-output-ratio(output-token input-token 1800 0 twap-fee),
+  twap-ratio: div(twap-30 io-ratio),
+  :ensure(
+    every(
+      less-than(twap-ratio add(1 twap-deviation)) greater-than(twap-ratio saturating-sub(1 twap-deviation))
+    )
+    "twap check"
+  );
+
+#jittery-binomial
+  seed:,
+  binomial18-10:
+    bitwise-count-ones(bitwise-decode<0 jittery-binomial-bits>(hash(seed))),
+  noise18-1:
+    mod(hash(seed 0) 1),
+  jittery-combined:
+    add(binomial18-10 noise18-1),
+  jittery-combined-normalized:
+    div(jittery-combined add(1 jittery-binomial-bits));
+
+#ensure-cooldown-chart
+ _: test-last-time;
+ 
+#ensure-cooldown-prod
+ current-time: block-timestamp(),
+ last-time: get(hash(order-hash() cooldown-key)),
+ :ensure(
+   greater-than-or-equal-to(
+     current-time
+     add(last-time cooldown-time)
+   )
+   "cooldown"
+ ),
+ :set(hash(order-hash() cooldown-key) current-time);
+
+#ensure-grid-band-chart
+  grid-min-price grid-max-price: ,
+  current-price: uniswap-v3-twap-output-ratio(
+    input-token
+    output-token
+    0 0
+    twap-fee
+  ),
+  effective-current-price: inv(current-price),
+  effective-grid-min: inv(grid-min-price),
+  effective-grid-max: inv(grid-max-price);
+
+
+#ensure-grid-band-prod
+  grid-min-price grid-max-price: ,
+  current-price: uniswap-v3-twap-output-ratio(
+    input-token 
+    output-token
+    0 0
+    twap-fee
+  ),
+  :ensure(
+    every(
+      greater-than-or-equal-to(current-price grid-min-price)
+      less-than-or-equal-to(current-price grid-max-price)
+    )
+    "grid band"
+  );
+
+#calculate-io-ratio-buy
+  usdc-amount18
+  link-amount18: ,
+  io-ratio: div(link-amount18 add(usdc-amount18 bounty-amount)),
+  _ :call<'twap-check>(io-ratio),
+  /* Add io-ratio and max-op on stack*/
+  _: usdc-amount18,
+  _: io-ratio;
+
+#calculate-io-ratio-sell
+  usdc-amount18
+  link-amount18: ,
+  io-ratio: div(saturating-sub(usdc-amount18 bounty-amount) link-amount18),
+  _ :call<'twap-check>(inv(io-ratio)),
+  /* Add io-ratio and max-op on stack*/
+  _: link-amount18,
+  _: io-ratio;
+
+#calculate-exact-buy-quote
+  amount-usdc18: ,
+  _: uniswap-v3-quote-exact-input(output-token input-token amount-usdc18 twap-fee);
+
+#calculate-exact-sell-quote
+  amount-usdc18: ,
+  _: uniswap-v3-quote-exact-output(input-token output-token amount-usdc18 twap-fee);
+
+#plottables-chart
+  max-output-amount io-ratio twap-ratio: ,
+  _: cooldown-time,
+  _: mean-input-usdc-amount,
+  _: bounty-amount,
+  _: mul(twap-deviation 100),
+  current-twap-deviation: if(
+    greater-than(1 twap-ratio)
+    mul(saturating-sub(1 twap-ratio) 100)
+    mul(saturating-sub(twap-ratio 1) 100)
+  ),
+  bounty-ratio: mul(div(bounty-amount mean-input-usdc-amount) 100),
+  cooldown-in-minutes: div(cooldown-time 60),
+  cooldown-in-hours: div(60 cooldown-in-minutes);
+
+#plottables-prod
+  _ _ _: ;
+
+#calculate-io
+  using-words-from uniswap-words orderbook-subparser
+
+  :call<'ensure-grid-band>(grid-min grid-max),
+  last-time: call<'ensure-cooldown>(),
+  random-multiplier18: call<'jittery-binomial>(last-time), 
+  jittered-amount-usdc18: mul(
+    mul(mean-input-usdc-amount 2)
+    random-multiplier18
+  ), 
+  link-amount-output18: call<'calculate-exact-quote>(jittered-amount-usdc18),
+  twap-ratio max-output final-io-ratio: call<'calculate-io-ratio>(jittered-amount-usdc18 link-amount-output18),
+  :call<'plottables>(max-output final-io-ratio twap-ratio);
+  
+
+
+#handle-io
+:;

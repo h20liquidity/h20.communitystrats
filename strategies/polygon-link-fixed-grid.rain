@@ -1,12 +1,13 @@
 # Strategy: Fixed Grid
 #
-# High level, this strategy buys mean amount of LINK tokens at the end of every cooldown period
-# provided that current price feteched from the LINK/USDC uni-v3 pool falls in a particular range.
+# High level, this strategy trades mean amount of USDC denominated LINK tokens at the end of every cooldown period
+# provided that current calculated dollar price of LINK falls within the price gird.
 #
-# - Amount of LINK bought per trade within the price band is randomized and centered around a mean,
+# - Amount of LINK bought/sold per trade within the price band is randomized and centered around a mean,
 #   value for which can be set within the bindings.
 # - Range for the grid can also be provided within the bindings
-# - Strategy provides a guard against 
+# - Strategy provides a guard against orcale manipulation, where a binding can be provided to check against
+#   the 30 min twap deviation.
 
 networks:
   polygon-link: 
@@ -53,28 +54,66 @@ scenarios:
           uniswap-words: 0x2382e861cF4F47578aC29B50944b3b445577aF74
           orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1 
 
-          # Input and Output Tokens from perspective of the Orcale
-          input-token: 0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39
-          input-token-decimals: 18
-          output-token: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174 
-          output-token-decimals: 6 
-          intermediate-token: 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
-          intermediate-token-decimals: 18
+          # Distribution token, i.e token that is bought or sold, for and against the stable token.
+          distribution-token: 0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39
+          # Stable token, token with price pegged to one dollar.
+          stable-token: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
+
+          # If the distribution token is paired with a stable token in a univ3 pool,
+          # then address for this binding is same as the stable token address.
+          # Eg: If the uniswap-v3 pair is TKN-USDC, then reserve token address is same as USDC address.
+          #
+          # If the distribution token is paired with native wrapped token in a univ3 pool,
+          # then address for this binding is the address of the native wrapped token.
+          # Eg: If the uniswap-v3 pair is TKN-WETH, then reserve token address is same as WETH address.
+          # This reserve token will be compared against stable token to calculate the dollar
+          # equivalent twap.
+          reserve-token: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
           
           # Twap fee for tokens
+          # `twap-io-fee`: Uniswap-v3 pool fee for token pair.
+          # If distribution token is paired with a stable token, the binding value is the fee
+          # for the TKN-STABLE pool.
+          #
+          # If distribution token is paired with native wrapped token, for eg WETH, then the 
+          # binding value is the fee for TKN-WETH pool.
           twap-io-fee: '[uniswap-v3-fee-medium]'
+
+          # `twap-multiplier-feee`: Uniswap-v3 pool fee for stable-reserve pair.
+          # If distribution token is paired with a stable token then binding value is irrelevant.
+          #
+          # If distribution token is paired with native wrapped token, for eg WETH, then the 
+          # binding value is the fee for WETH-STABLE pool eg : WETH-USDC.
           twap-multiplier-fee: '[uniswap-v3-fee-low]'
+
+          # IO multiplier binding
+          # Binding used to calculate multiplier for distribution token to get its dollor equivalent.
+          #
+          # If distribution token is paired with a stable token, the binding value is the stable multiplier.
+          # io-multiplier: '''io-multiplier-stable'
+          #
+          # If distribution token is paired with a reserve token, the binding value is the reserve multiplier
+          # io-multiplier: '''io-multiplier-reserve'
+          io-multiplier: '''io-multiplier-stable'
           
           #Jittery binomial bits
           jittery-binomial-bits: 10
 
-          #Multiplier binding
-          io-multiplier: '''io-multiplier-reserve'
+          # Bounty amount offered for trade in dollar.
+          #
+          # Minimum amount of bounty offered for the trade, depending upon the network this value might change.
+          bounty-min: 0.015
 
-          # Bounty amount offered for trade in USD
-          bounty-min: 0.01
+          # Maximum amount of bounty offered for the trade, this will also the amount offered for the first trade,
+          # as well as to calculate the twap deviation for the first trade which is visible in the metrics.
           bounty-max: 0.3
+
+          # Bounty unit increase, amount by which to increase the bounty amount.
           bounty-unit-increase: 0.01
+
+          # Bounty unit time in seconds, time in which bounty increased by `bounty-unit-increase`
+          # Eg: If `bounty-unit-increase` is 0.01 and `bounty-unit-time` is 60, then the bounty will increase linearly
+          # by `0.01` every 60 seconds.
           bounty-unit-time: 60
 
         scenarios:
@@ -95,6 +134,7 @@ scenarios:
             scenarios:
               deviation:
                 bindings:
+                  # Percentage acceptable twap deviation
                   twap-deviation: 0.03
                 scenarios:
                   prod:
@@ -142,6 +182,7 @@ scenarios:
             scenarios:
               deviation:
                 bindings:
+                  # Percentage acceptable twap deviation
                   twap-deviation: 0.03
                 scenarios:
                   prod:
@@ -208,7 +249,7 @@ charts:
       - label: Bounty increase per minute
         value: 0.8.10
         unit-prefix: $   
-        description: Ratio of max bounty amount to order amount
+        description: Amount by which bounty increases every minute after cooldown.
       - label: Max Bounty ratio
         value: 0.8.9
         unit-suffix: '%'   
@@ -230,11 +271,7 @@ charts:
       - label: Current twap deviation
         value: 0.8.8
         unit-suffix: '%'       
-        description: Twap deviation occuring at current block.
-      - label: Current twap ratio
-        value: 0.8.2
-        unit-suffix: '%'       
-        description: Twap ratio  at current block.          
+        description: Twap deviation occuring at current block with maximum bounty.        
     plots:
 
   buy-link-simulation:
@@ -301,7 +338,7 @@ charts:
       - label: Bounty increase per minute
         value: 0.8.10
         unit-prefix: $   
-        description: Ratio of max bounty amount to order amount
+        description: Amount by which bounty increases every minute after cooldown.
       - label: Max Bounty ratio
         value: 0.8.9
         unit-suffix: '%'   
@@ -323,11 +360,7 @@ charts:
       - label: Current twap deviation
         value: 0.8.8
         unit-suffix: '%'       
-        description: Twap deviation occuring at current block.
-      - label: Current twap ratio
-        value: 0.8.2
-        unit-suffix: '%'       
-        description: Twap ratio at current block.
+        description: Twap deviation occuring at current block with maximum bounty.
 
   sell-link-simulation:
     scenario: polygon-link-fixed-grid.sell.deviation.chart
@@ -365,13 +398,9 @@ charts:
 #bounty-unit-time !Unit of time to increase the bounty.
 #bounty-max !Maximum bounty that can be offered. 
 
-#input-token !Input token from the perspective of order
-#input-token-decimals !Input token decimals
-#output-token !Output token from the perspective of order
-#output-token-decimals !Output token decimals 
-
-#intermediate-token !Intermediate token
-#intermediate-token-decimals !Intermediate token decimals
+#distribution-token !The distribution token, the token that is bought and sold against the stable token.
+#stable-token !The stable token that is used as a reference for the TWAP to offer dollar equivalent conversions.
+#reserve-token !The token that will be used to compare against the stable token to calculate the TWAP for dollar equivalent conversions.
 
 #grid-min !Minimum trade ratio
 #grid-max !Maximum trade ratio
@@ -400,7 +429,7 @@ charts:
 #twap-check-chart
   io-ratio ratio-multiplier: ,
   twap-30: mul(
-    uniswap-v3-twap-output-ratio(intermediate-token input-token 1800 0 twap-io-fee)
+    uniswap-v3-twap-output-ratio(reserve-token distribution-token 1800 0 twap-io-fee)
     ratio-multiplier
   ),
   twap-ratio: div(twap-30 io-ratio);
@@ -408,7 +437,7 @@ charts:
 #twap-check-buy
   io-ratio ratio-multiplier: ,
   twap-30: mul(
-    uniswap-v3-twap-output-ratio(intermediate-token input-token 1800 0 twap-io-fee)
+    uniswap-v3-twap-output-ratio(reserve-token distribution-token 1800 0 twap-io-fee)
     ratio-multiplier
   ),
   twap-ratio: div(twap-30 io-ratio),
@@ -423,7 +452,7 @@ charts:
 #twap-check-sell
   io-ratio ratio-multiplier: ,
   twap-30: mul(
-    uniswap-v3-twap-output-ratio(intermediate-token input-token 1800 0 twap-io-fee)
+    uniswap-v3-twap-output-ratio(reserve-token distribution-token 1800 0 twap-io-fee)
     ratio-multiplier
   ),
   twap-ratio: div(twap-30 io-ratio),
@@ -479,8 +508,8 @@ charts:
   _ _ ratio-multiplier: ,
   current-price: mul(
       uniswap-v3-twap-output-ratio(
-        input-token
-        intermediate-token
+        distribution-token
+        reserve-token
         0 0
         twap-io-fee
       ) 
@@ -492,8 +521,8 @@ charts:
   grid-min-price grid-max-price ratio-multiplier: ,
   current-price: mul(
       uniswap-v3-twap-output-ratio(
-        input-token
-        intermediate-token
+        distribution-token
+        reserve-token
         0 0
         twap-io-fee
       ) 
@@ -531,16 +560,16 @@ charts:
 
 #calculate-exact-buy-quote
   amount-usdc18 ratio-multiplier: ,
-  _: uniswap-v3-quote-exact-input(intermediate-token input-token mul(amount-usdc18 ratio-multiplier) twap-io-fee);
+  _: uniswap-v3-quote-exact-input(reserve-token distribution-token mul(amount-usdc18 ratio-multiplier) twap-io-fee);
 
 #calculate-exact-sell-quote
   amount-usdc18 ratio-multiplier: ,
-  _: uniswap-v3-quote-exact-output(input-token intermediate-token mul(amount-usdc18 ratio-multiplier) twap-io-fee);
+  _: uniswap-v3-quote-exact-output(distribution-token reserve-token mul(amount-usdc18 ratio-multiplier) twap-io-fee);
 
 #io-multiplier-reserve
   _: uniswap-v3-twap-output-ratio(
-    output-token
-    intermediate-token
+    stable-token
+    reserve-token
     0 0
     twap-multiplier-fee
   );

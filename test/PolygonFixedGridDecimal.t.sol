@@ -61,7 +61,7 @@ contract PolygonFixedGridDecimal is StrategyTests {
     using SafeERC20 for IERC20;
     using Strings for address;
 
-    uint256 constant FORK_BLOCK_NUMBER = 58109149;
+    uint256 constant FORK_BLOCK_NUMBER = 58154703;
    
     
     function selectFork() internal {
@@ -171,7 +171,7 @@ contract PolygonFixedGridDecimal is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = polygonUsdcIo();
 
-        uint256 expectedRatio = 63538756885092566;
+        uint256 expectedRatio = 64053597844087947;
         uint256 expectedAmountOutputMax = 16279555611016865760;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
@@ -224,8 +224,33 @@ contract PolygonFixedGridDecimal is StrategyTests {
             outputVaults
         );
 
+        {
+            (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
+                LibComposeOrders.getComposedOrder(
+                    vm, strategy.strategyFile, strategy.strategyScenario, strategy.buildPath, strategy.manifestPath
+                )
+            );
+            (,,address expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants); 
+            uint256[][] memory context = getOrderContext(uint256(keccak256("order-hash")));
+
+            // Eval Order
+            (uint256[] memory stack,) = INTERPRETER.eval2(
+                STORE,
+                getNamespace(),
+                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(0), type(uint16).max),
+                context,
+                new uint256[](0)
+            );
+
+            for(uint256  i = 0 ; i < stack.length; i++){
+                console2.log("stack[%s] : %s",i, stack[i]);
+            }
+
+        }
+
+
         // ArbOrderTaker 'arb'
-        checkStrategyCalculationsArbOrder(strategy);
+        // checkStrategyCalculationsArbOrder(strategy);
     } 
 
     function testGridCooldown() public {

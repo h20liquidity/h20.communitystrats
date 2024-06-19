@@ -163,10 +163,6 @@ scenarios:
               auction-start-time: 300
               # Number of seconds for which bounty auction will last.
               auction-duration: 1800
-    
-              # Uniswap v3 pool fees for input-output token pair
-              twap-io-fee: '[uniswap-v3-fee-medium]'
-              twap-multiplier-fee: '[uniswap-v3-fee-low]'
 
               # Uniswap v3 pool fees to calcualte budget from the pool.
               # Uniswap v3 pool fees of pool which the output token is paired with.

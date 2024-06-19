@@ -1,0 +1,413 @@
+# Strategy: Streaming DCA
+
+networks:
+  polygon-dolz: 
+    rpc: https://polygon-mainnet.g.alchemy.com/v2/y3BXawVv5uuP_g8BaDlKbKoTBGHo9zD9
+    chain-id: 137 
+    network-id: 137 
+    currency: MATIC
+
+subgraphs:
+  polygon-dolz: https://api.thegraph.com/subgraphs/name/h20liquidity/polygon-0xc95a5f8e
+  
+orderbooks:
+  polygon-dolz:
+    address: 0xc95A5f8eFe14d7a20BD2E5BAFEC4E71f8Ce0B9A6
+    network: polygon-dolz
+    subgraph: polygon-dolz
+
+deployers:
+  polygon-dolz:
+    address: 0xB3aC858bEAf7814892d3946A8C109A7D701DF8E7
+    network: polygon-dolz
+
+tokens:
+  polygon-dolz:
+    network: polygon-dolz
+    address: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
+  polygon-usdt:
+    network: polygon-dolz
+    address: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+
+orders:
+  # vault-id generated with `openssl rand -hex 32`
+  polygon-dolz-sell:
+    orderbook: polygon-dolz
+    inputs:
+      - token: polygon-usdt
+        vault-id: 0x6049f8ee79b82dd5bc82b368114bb0a69f34d539b04b43208241e1f68da134a8
+    outputs:
+      - token: polygon-dolz
+        vault-id: 0x6049f8ee79b82dd5bc82b368114bb0a69f34d539b04b43208241e1f68da134a8
+  polygon-dolz-buy:
+    orderbook: polygon-dolz
+    inputs:
+      - token: polygon-dolz
+        vault-id: 0x6049f8ee79b82dd5bc82b368114bb0a69f34d539b04b43208241e1f68da134a8
+    outputs:
+      - token: polygon-usdt
+        vault-id: 0x6049f8ee79b82dd5bc82b368114bb0a69f34d539b04b43208241e1f68da134a8
+
+scenarios:
+    streaming-dca:
+        network: polygon-dolz
+        deployer: polygon-dolz
+        orderbook: polygon-dolz
+        bindings:
+          # Ask for now, registry in future.
+          uniswap-words: 0x2382e861cF4F47578aC29B50944b3b445577aF74
+          orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1
+        scenarios:
+          sell-dolz:
+            bindings:
+              # Input and Output token addresses are from perspective of order.
+              input-token-address: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+              output-token-address: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
+
+              # If the order's input-output tokens are NOT paired on the uniswap v3 pool,
+              # then the reserve token address is the address of the token which is paired with order's output token on uniswapv3 pool.
+              # Eg: If DOLZ is paired with WETH on the uniswap v3 pool for a USDT-DOLZ order, reserve token address is the WETH address.
+              # If the order's input-output tokens are paired on the uniswap v3 pool, then reserve token address is same as the input token address.
+              # Eg: For DOLZ/USDT pair where USDT is also the order's input token, reserve token address is same as the input token address.
+              reserve-token-address: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+
+              # Ratio multiplier for calculating the io-ratio.
+              # If the order's input-output token are paired on the uniswap v3 pool, then set to identity
+              # If the order's input-output token are NOT paired on the uniswap v3 pool, then set to reserve.
+              io-multiplier: '''io-multiplier-identity'
+    
+              # Number of output tokens offered per second.
+              # Total number of output tokens offered / Total time duration.
+              # Eg : 100 tokens cost averaged in 1 hours: 100/3600 = 0.027777777777777778  
+              per-second-rate: 0.027777777777777778
+    
+              # Unix timestamp for strating of the strategy.
+              # Ideally set it 15 minutes ahead of the whatever the timestamp is while you're deploying the order.
+              # https://www.epochconverter.com/
+              strat-start-time: 1718717107
+                                
+              # Bounty amount denominated in input tokens
+              #
+              # Minimum bounty offered in input token denominations. 
+              bounty-min: 0.02
+              # Maximum bounty offered in input token denominations.
+              bounty-max: 2
+              # Number of seconds after which the bounty auction starts once the order is evaling.
+              auction-start-time: 300
+              # Number of seconds for which bounty auction will last.
+              auction-duration: 1800
+    
+              # Uniswap v3 pool fees to calcualte budget from the pool.
+              # Uniswap v3 pool fees of pool which the output token is paired with.
+              # If the order's input-output tokens are NOT paired on the uniswap v3 pool, then fee is the pool fee for output-reserve token pool.
+              # If the order's input-output tokens are paired on the uniswap v3 pool, then fee is the pool fee for output-input token pool.
+              twap-io-fee: '[uniswap-v3-fee-medium]'
+              
+              # Uniswap v3 pool fees to calcualte multiplier for the io-ratio.
+              # If the order's input-output tokens are NOT paired on the uniswap v3 pool, then fee is the pool fee for input-reserve token pool.
+              # If the order's input-output tokens are paired on the uniswap v3 pool, then this binding is irrelevant.
+              twap-multiplier-fee: '[uniswap-v3-fee-low]'
+
+              # Minimum input/output token ratio accepatble for the order.
+              # Eg: For sell DOLZ, min-ratio is the minimum USDT/DOLZ value to sell above.
+              min-ratio: 0.005
+    
+            scenarios:
+              prod:
+                bindings:
+                  plottables: '''plottables-prod'
+                  get-last-time: '''get-last-time-prod'
+                  ensure-ratio: '''ensure-ratio-prod'
+              chart:
+                runs: 1000
+                bindings:
+                  plottables: '''plottables-plot'
+                  get-last-time: '''get-last-time-plot'
+                  ensure-ratio: '''ensure-ratio-plot'
+
+          buy-dolz:
+            bindings:
+              # Input and Output token addresses from perspective of order
+              input-token-address: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
+              output-token-address: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+
+              # If the order's input-output tokens are NOT paired on the uniswap v3 pool,
+              # then the reserve token address is the address of the token which is paired with order's output token on uniswapv3 pool.
+              # Eg: If DOLZ is paired with WETH on the uniswap v3 pool for a USDT-DOLZ order, reserve token address is the WETH address.
+              # If the order's input-output tokens are paired on the uniswap v3 pool, then reserve token address is same as the input token address.
+              # Eg: For DOLZ/USDT pair where USDT is also the order's input token, reserve token address is same as the input token address.
+              reserve-token-address: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
+
+              # Ratio multiplier for calculating the io-ratio.
+              # If the order's input-output token are paired on the uniswap v3 pool, then set to identity
+              # If the order's input-output token are NOT paired on the uniswap v3 pool, then set to reserve.
+              io-multiplier: '''io-multiplier-identity'
+    
+              # Number of output tokens offered per second.
+              # Total number of output tokens offered / Total time duration.
+              # Eg : 100 tokens cost averaged in 1 hours: 100/3600 = 0.027777777777777778  
+              per-second-rate: 0.027777777777777778
+    
+              # Unix timestamp for strating of the strategy.
+              # Ideally set it 15 minutes ahead of the whatever the timestamp is while you're deploying the order.
+              # https://www.epochconverter.com/
+              strat-start-time: 1718717107
+
+              # Bounty amount denominated in input tokens
+              #
+              # Minimum bounty offered in input token denominations. 
+              bounty-min: 1.77
+              # Maximum bounty offered in input token denominations.
+              bounty-max: 177
+              # Number of seconds after which the bounty auction starts once the order is evaling.
+              auction-start-time: 300
+              # Number of seconds for which bounty auction will last.
+              auction-duration: 1800
+    
+              # Uniswap v3 pool fees for input-output token pair
+              twap-io-fee: '[uniswap-v3-fee-medium]'
+              twap-multiplier-fee: '[uniswap-v3-fee-low]'
+
+              # Uniswap v3 pool fees to calcualte budget from the pool.
+              # Uniswap v3 pool fees of pool which the output token is paired with.
+              # If the order's input-output tokens are NOT paired on the uniswap v3 pool, then fee is the pool fee for output-reserve token pool.
+              # If the order's input-output tokens are paired on the uniswap v3 pool, then fee is the pool fee for output-input token pool.
+              twap-io-fee: '[uniswap-v3-fee-medium]'
+              
+              # Uniswap v3 pool fees to calcualte multiplier for the io-ratio.
+              # If the order's input-output tokens are NOT paired on the uniswap v3 pool, then fee is the pool fee for input-reserve token pool.
+              # If the order's input-output tokens are paired on the uniswap v3 pool, then this binding is irrelevant.
+              twap-multiplier-fee: '[uniswap-v3-fee-low]'
+
+              # Minimum input/output token ratio
+              # Eg: For buy DOLZ, min-ratio is the minimum DOLZ/USDT value to buy above.
+              min-ratio: 70
+    
+            scenarios:
+              prod:
+                bindings:
+                  plottables: '''plottables-prod'
+                  get-last-time: '''get-last-time-prod'
+                  ensure-ratio: '''ensure-ratio-prod'
+              chart:
+                runs: 1000
+                bindings:
+                  plottables: '''plottables-plot'
+                  get-last-time: '''get-last-time-plot'
+                  ensure-ratio: '''ensure-ratio-plot'              
+
+charts:
+  sell-streaming-dca:
+    scenario: streaming-dca.sell-dolz.chart
+    metrics:
+      - label: DOLZ Per second rate
+        value: 0.6.0
+        description: Amount of DOLZ tokens sold per second.
+      - label: DOLZ sold per hour
+        value: 0.6.1
+        description: Amount of DOLZ tokens sold per hour.
+      - label: DOLZ sold per day
+        value: 0.6.2
+        description: Amount of DOLZ tokens sold per day.
+      - label: Minimum bounty
+        value: 0.6.3
+        description: Minimum bounty offered in USDT tokens.
+      - label: Maximum bounty
+        value: 0.6.4
+        description: Maximum bounty offered in USDT tokens.
+      - label: Bounty auction start
+        value: 0.6.5
+        description: Number of seconds after which the bounty auction strats after order evals.
+      - label: Bounty duration
+        value: 0.6.6
+        description: Duration for which the bounty lasts
+      - label: Minimum ratio
+        value: 0.6.7
+      - label: Strategy start unix timestamp
+        value: 0.6.8
+
+  sell-dca-simulation:
+        scenario: streaming-dca.sell-dolz.chart
+        plots:
+          Number of RED tokens sold vs time difference:
+            marks:
+              - type: line
+                options:
+                  x: 0.2
+                  y: 0.3
+          Bounty offered vs time difference:
+            marks:
+              - type: line
+                options:
+                  x: 0.2
+                  y: 0.4
+
+  buy-streaming-dca:
+    scenario: streaming-dca.buy-dolz.chart
+    metrics:
+      - label: USDT Per second rate
+        value: 0.6.0
+        description: Amount of USDT tokens sold per second.
+      - label: USDT sold per hour
+        value: 0.6.1
+        description: Amount of USDT tokens sold per hour.
+      - label: USDT sold per day
+        value: 0.6.2
+        description: Amount of USDT tokens sold per day.
+      - label: Minimum bounty
+        value: 0.6.3
+        description: Minimum bounty offered in DOLZ tokens.
+      - label: Maximum bounty
+        value: 0.6.4
+        description: Maximum bounty offered in DOLZ tokens.
+      - label: Bounty auction start
+        value: 0.6.5
+        description: Number of seconds after which the bounty auction strats after order evals.
+      - label: Bounty duration
+        value: 0.6.6
+        description: Duration for which the bounty lasts
+      - label: Minimum ratio
+        value: 0.6.7
+      - label: Strategy start unix timestamp
+        value: 0.6.8
+
+  buy-dca-simulation:
+        scenario: streaming-dca.buy-dolz.chart
+        plots:
+          Number of BLUE tokens sold vs time difference:
+            marks:
+              - type: line
+                options:
+                  x: 0.2
+                  y: 0.3
+          Bounty offered vs time difference:
+            marks:
+              - type: line
+                options:
+                  x: 0.2
+                  y: 0.4
+    
+      
+deployments:
+  dolz-dca:
+    scenario: streaming-dca.sell-dolz.prod
+    order: polygon-dolz-sell    
+  usdt-dca:
+    scenario: streaming-dca.buy-dolz.prod
+    order: polygon-dolz-buy    
+---
+#input-token-address !Order input token address.
+#output-token-address !Order output token address.
+#reserve-token-address !Reserve token address.
+
+#twap-io-fee !Twap fee for the distribution token pool, paired with either stable token.
+#twap-multiplier-fee !Twap fee for io-ratio mulitplier for the pool which distribution token is paired with.
+#min-ratio !Minimum input ouput ratio for the order.
+
+#auction-start-time !Minimum time elapsed before the auction begans.
+#auction-duration !Total time for which the auction lasts.
+#bounty-min !Minimum bounty to offer for each trade in USD.
+#bounty-max !Maximum bounty that can be offered. 
+
+#per-second-rate !The rate of stable denominated distributed tokens distributed per second.
+#strat-start-time !Strategy start timestamp
+#get-last-time !Binding to get last time and current time
+#plottables !Binding for charting metrics.
+#ensure-ratio !Binding to enfore minimum io-ratio check.
+#io-multiplier !Binding to calculate multiplier for io-ratio.
+#test-current-time !Binding to have test current time.
+
+#uniswap-words !The subparser for the Uniswap words
+#orderbook-subparser !The subparser for the Orderbook words
+#last-time-key "last-time-key"
+
+#bounty-auction
+  current-time last-time: ,
+  time-since-start: saturating-sub(current-time add(last-time auction-start-time)),
+  growth-index: if(
+          greater-than(current-time add(last-time auction-start-time))
+          min(
+            div(time-since-start auction-duration)
+            1
+          )
+          0
+        ),
+  bounty: min(
+    linear-growth(
+      bounty-min
+      saturating-sub(bounty-max bounty-min)
+      growth-index
+    )
+    bounty-max
+  );
+
+#get-last-time-plot
+ current-time: test-current-time,
+ last-time: sub(current-time mod(current-time 86400));
+
+#get-last-time-prod
+ current-time: now(),
+ last-time: any(
+    get(hash(order-hash() last-time-key))
+    strat-start-time
+  );
+
+#calculate-budget-input
+  current-budget: ,
+  _: mul(
+    uniswap-v3-quote-exact-input(
+      output-token-address reserve-token-address
+      current-budget twap-io-fee
+    )
+    call<'io-multiplier>()
+  );
+
+#plottables-plot
+  _: per-second-rate,
+  tokens-per-hour: mul(per-second-rate 3600),
+  tokens-per-day: mul(per-second-rate 86400),
+  _: bounty-min,
+  _: bounty-max,
+  _: auction-start-time,
+  _: auction-duration,
+  _: min-ratio,
+  _: strat-start-time;
+
+#plottables-prod
+ :;
+
+#ensure-ratio-prod
+  io-ratio: ,
+  :ensure(
+    greater-than-or-equal-to(io-ratio min-ratio)
+    "min ratio"
+  );
+
+#ensure-ratio-plot
+  io-ratio: ;
+
+#io-multiplier-identity
+  _: 1;
+
+#io-multiplier-reserve
+  _: uniswap-v3-twap-output-ratio(
+    reserve-token-address input-token-address 
+    0 0
+    twap-multiplier-fee
+  );
+
+#calculate-io
+  using-words-from uniswap-words orderbook-subparser
+  
+  current-time last-time: call<'get-last-time>(), 
+  elapsed-time: saturating-sub(current-time last-time),
+  current-budget: mul(per-second-rate elapsed-time),
+  bounty-amount: call<'bounty-auction>(current-time last-time),
+  input-amount: call<'calculate-budget-input>(current-budget),
+  max-amount: current-budget,
+  io-ratio: div(saturating-sub(input-amount bounty-amount) current-budget),
+  :call<'ensure-ratio>(io-ratio),
+  :call<'plottables>();
+
+#handle-io
+ :;

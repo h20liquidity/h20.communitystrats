@@ -1,4 +1,15 @@
 # Strategy: Streaming DCA
+#
+# Strategy Description:
+# - Strategy cost averages output token against the input token for an input-ouput token pair,
+#   buy offering tokens at a fixed rate per unit time which can be provided in the bindings, along with a minimum 
+#   io-ratio for the order.
+# - Bounty auction to pay for gas denominated in input token terms, with a min and max bounty offered for the trade.
+# - Since the strategy has a per-second budget, any external order taker can offer any amount of input token and
+#   take the output tokens from the orderbook provided the trade pays for the gas as well. So even if multiple order 
+#   takers come in and try to take the order, the strategy just cost averages the tokens for a taker and 
+#   calculates the budget amount for next. This prevents external takers to DDos the order as ouput amount is calculated
+#   for each taker individually.
 
 networks:
   polygon-dolz: 

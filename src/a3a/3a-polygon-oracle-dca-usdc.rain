@@ -1,0 +1,544 @@
+# Strategy: Oracle based DCA
+#
+# High level, this strategy buys USDC denominated FXA3A tokens at the end of every cooldown period
+# provided that current calculated USDC denominated price of FXA3A falls within the price gird.
+#
+# - Amount of FXA3A bought per trade within the price band is randomized and centered around a mean,
+#   value for which can be set within the bindings.
+# - Range for the grid can also be provided within the bindings.
+# - Strategy provides a guard against orcale manipulation by enforcing that the ratio of the current price offered
+#   by the order to the 30 min average price is within the threshold, which can be provided as a binding in the strategy.
+# - Strategy implements a bounty auction for gas management 
+# 
+# Target Network: Polygon
+# Quote (Input): USDC
+# Base (Output): FXA3A
+# Token contract: 0x58c7b2828e7f2b2caa0cc7feef242fa3196d03df
+# Token github: NA
+# Liquidity protocol: Quickswap V3
+# Liquidity pool address: https://www.dextools.io/app/en/polygon/pair-explorer/0xdcf937e79c4f730111143b2345c6028c5051f304?t=1719266575032
+# Liquidity pool fee: tbc
+# Stable used https://polygonscan.com/token/0x2791bca1f2de4661ed88a30c99a7a9449aa84174?a=0xdcf937e79c4f730111143b2345c6028c5051f304
+# Stable used 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
+
+networks:
+  polygon-h20liquidity: 
+    rpc: https://polygon-mainnet.g.alchemy.com/v2/y3BXawVv5uuP_g8BaDlKbKoTBGHo9zD9
+    chain-id: 137 
+    network-id: 137 
+    currency: MATIC
+
+subgraphs:
+  polygon-h20liquidity: https://api.thegraph.com/subgraphs/name/h20liquidity/polygon-0xc95a5f8e
+  
+orderbooks:
+  polygon-h20liquidity:
+    address: 0xc95A5f8eFe14d7a20BD2E5BAFEC4E71f8Ce0B9A6
+    network: polygon-h20liquidity
+    subgraph: polygon-h20liquidity
+
+deployers:
+  polygon-h20liquidity:
+    address: 0xB3aC858bEAf7814892d3946A8C109A7D701DF8E7
+    network: polygon-h20liquidity
+
+tokens:
+  tkn-fxa3a:
+    network: polygon-h20liquidity
+    address: 0x58c7b2828e7f2b2caa0cc7feef242fa3196d03df
+  tkn-usdc:
+    network: polygon-h20liquidity
+    address: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
+
+orders:
+  # vault-id generated with `openssl rand -hex 32`
+  polygon-h20liquidity-sell:
+    orderbook: polygon-h20liquidity
+    inputs:
+      - token: tkn-usdc
+        vault-id: 
+    outputs:
+      - token: tkn-fxa3a
+        vault-id: 
+
+scenarios:
+    polygon-h20liquidity-oracle-dca:
+        network: polygon-h20liquidity
+        deployer: polygon-h20liquidity
+        orderbook: polygon-h20liquidity
+        bindings:
+          # Ask for now, registry in future.
+          uniswap-words: 0x80DE00e3cA96AE0569426A1bb1Ae22CD4181dE6F
+          orderbook-subparser: 0x59401c9302e79eb8ac6aea659b8b3ae475715e86 
+
+          # Distribution token, i.e token that is bought or sold, for and against the stable token.
+          distribution-token: 0xAD86d0E9764ba90DDD68747D64BFfBd79879a238
+          # Stable token, token with price pegged to one dollar.
+          stable-token: 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d
+
+          # If the distribution token is paired with a stable token in a univ3 pool,
+          # then address for this binding is same as the stable token address.
+          # Eg: If the uniswap-v3 pair is PAID-USDC, then reserve token address is same as USDC address.
+          #
+          # If the distribution token is paired with native wrapped token in a univ3 pool,
+          # then address for this binding is the address of the native wrapped token.
+          # Eg: If the uniswap-v3 pair is PAID-WETH, then reserve token address is same as WETH address.
+          # This reserve token will be compared against stable token to calculate the dollar
+          # equivalent twap.
+          reserve-token: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
+          
+          # Twap fee for tokens
+          # `twap-io-fee`: Uniswap-v3 pool fee for token pair.
+          # If distribution token is paired with a stable token, the binding value is the fee
+          # for the PAID-USDC pool.
+          #
+          # If distribution token is paired with native wrapped token, for eg WETH, then the 
+          # binding value is the fee for PAID-WETH pool.
+          twap-io-fee: '[uniswap-v3-fee-high]'
+
+          # `twap-multiplier-feee`: Uniswap-v3 pool fee for stable-reserve pair.
+          # If distribution token is paired with a stable token then binding value is irrelevant.
+          #
+          # If distribution token is paired with native wrapped token, for eg WETH, then the 
+          # binding value is the fee for WETH-USDC pool
+          twap-multiplier-fee: '[uniswap-v3-fee-lowest]'
+
+          # IO multiplier binding
+          # Binding used to calculate multiplier for distribution token to get its dollor equivalent.
+          #
+          # If distribution token is paired with a stable token, the binding value is the stable multiplier.
+          # io-multiplier: '''io-multiplier-stable'
+          #
+          # If distribution token is paired with a reserve token, the binding value is the reserve multiplier
+          # io-multiplier: '''io-multiplier-reserve'
+          io-multiplier: '''io-multiplier-reserve'
+          
+          #Jittery binomial bits
+          jittery-binomial-bits: 10
+
+          # Bounty amount offered for trade in dollar.
+          #
+          # Minimum amount of bounty offered for the trade, depending upon the network this value might change.
+          bounty-min: 0.01
+
+          # Maximum amount of bounty offered for the trade, this will also the amount offered for the first trade,
+          # as well as to calculate the twap deviation for the first trade which is visible in the metrics.
+          bounty-max: 1
+
+          # Bounty unit increase, amount by which to increase the bounty amount.
+          bounty-unit-increase: 0.001
+
+          # Bounty unit time in seconds, time in which bounty increased by `bounty-unit-increase`
+          # Eg: If `bounty-unit-increase` is 0.01 and `bounty-unit-time` is 60, then the bounty will increase linearly
+          # by `0.01` every 60 seconds.
+          bounty-unit-time: 30
+
+        scenarios:
+          buy:
+            bindings:
+              # Cooldown between two trades in seconds.
+              cooldown-time: 1200
+
+              # Mean amount of USDC offered per trade.
+              # For gas expensive networks mean amount needs to be higher to compensate
+              # for gas fee and bounty.
+              mean-usd-amount: 3 
+
+              # Grid minimum price
+              grid-min: 0.000001
+
+              # Grid maximum price
+              grid-max: 0.003
+
+              calculate-exact-quote: '''calculate-exact-buy-quote'
+              calculate-io-ratio: '''calculate-io-ratio-buy'
+            scenarios:
+              deviation:
+                bindings:
+                  # Percentage acceptable twap deviation
+                  # Acceptable deviation from the 30min average price.
+                  # Binding value is dependent upon the network, token pair and the mean amount of 
+                  # tokens traded per trade. If the mean amount of tokens traded is low, or if 
+                  # the network gas fee is high, then deviation needs to be a higher value.
+                  # - For 1% deviation, binding value is 0.01
+                  # - For 5% deviation, binding value is 0.05
+                  # - For 10% deviation, binding value is 0.1
+                  twap-deviation: 0.1
+                scenarios:
+                  prod:
+                    bindings:
+                      calculate-twap-ratio: '''calculate-twap-ratio-buy'
+                      enforce-twap-check: '''enforce-twap-check-prod'
+                      ensure-grid-band: '''ensure-grid-band-prod'
+                      ensure-cooldown: '''ensure-cooldown-prod'
+                      plottables: '''plottables-prod'
+                  chart:
+                    runs: 1000
+                    bindings:
+                      calculate-twap-ratio: '''calculate-twap-ratio-buy'
+                      enforce-twap-check: '''enforce-twap-check-chart'
+                      ensure-grid-band: '''ensure-grid-band-chart'
+                      ensure-cooldown: '''ensure-cooldown-chart'
+                      plottables: '''plottables-chart'
+                  metric:
+                    runs: 1
+                    bindings:
+                      calculate-twap-ratio: '''calculate-twap-ratio-buy'
+                      enforce-twap-check: '''enforce-twap-check-chart'
+                      ensure-grid-band: '''ensure-grid-band-chart'
+                      ensure-cooldown: '''ensure-cooldown-metric'
+                      plottables: '''plottables-chart'
+              test:
+                bindings:
+                  twap-deviation: 0.12
+                  calculate-twap-ratio: '''calculate-twap-ratio-buy'
+                  enforce-twap-check: '''enforce-twap-check-prod'
+                  ensure-grid-band: '''ensure-grid-band-chart'
+                  ensure-cooldown: '''ensure-cooldown-chart'
+                  plottables: '''plottables-prod'
+                
+charts:
+  a3a-buy-oracle-dca: 
+    scenario: polygon-h20liquidity-oracle-dca.buy.deviation.metric
+    metrics:
+      - label: Current FXA3A price.
+        value: 0.3.3
+        unit-prefix: $
+        description: Price of FXA3A at current block.
+      - label: Minimum FXA3A buy price.
+        value: 0.3.0
+        unit-prefix: $
+        description: Grid minimum USDC/PAID ratio.
+      - label: Maximum FXA3A buy price.
+        value: 0.3.1
+        unit-prefix: $
+        description: Grid maximum USDC/PAID ratio.
+      - label: Amount of USDC offered for first trade.
+        value: 0.4
+        description: Amount of USDC offered for the current block.
+      - label: Amount of FXA3A received for frist trade.
+        value: 0.5
+        description: Amount of FXA3A received for USDC offered.
+      - label: io-ratio PAID/USDC
+        value: 0.8
+        description: Ratio offered by the order for the current block accounting for bounty.
+      - label: Minimum Bounty amount
+        value: 0.8.5
+        unit-prefix: $        
+        description: Minimum bounty offered
+      - label: Maximum Bounty amount
+        value: 0.8.6
+        unit-prefix: $        
+        description: Maximum bounty offered
+      - label: Bounty increase per minute
+        value: 0.8.10
+        unit-prefix: $   
+        description: Amount by which bounty increases every minute after cooldown.
+      - label: Max Bounty ratio
+        value: 0.8.9
+        unit-suffix: '%'   
+        description: Ratio of max bounty amount to order amount
+      - label: Mean amount
+        value: 0.8.4
+        unit-prefix: $        
+        description: Mean amount of USDC sold 
+      - label: Cooldown in minutes
+        value: 0.8.11        
+        description: Number of minutes between strategy running
+      - label: Trades per hour
+        value: 0.8.12       
+        description: Number of trades per hour  
+      - label: Strategy twap buy deviation
+        value: 0.8.7
+        unit-suffix: '%'         
+        description: Twap deviation percentage acceptable     
+      - label: Current twap buy deviation
+        value: 0.8.8
+        unit-suffix: '%'       
+        description: Twap deviation occuring at current block with maximum bounty on the buy side to prevent higher than deviations buys.
+      - label: Cummulative amount traded daily
+        value: 0.8.13     
+        unit-prefix: $ 
+        description: Cummulative dollar equivalent amount of FXA3A tokens sold in a day.
+      - label: Cummulative amount traded weekly
+        value: 0.8.14     
+        unit-prefix: $ 
+        description: Cummulative dollar equivalent amount of FXA3A tokens sold in a week.
+      - label: Cummulative amount traded montly
+        value: 0.8.15     
+        unit-prefix: $ 
+        description: Cummulative dollar equivalent amount of FXA3A tokens sold in a month.
+      - label: Twap-ratio
+        value: 0.8.2     
+
+    plots:
+
+  buy-a3a-simulation:
+    scenario: polygon-h20liquidity-oracle-dca.buy.deviation.chart
+    plots:
+      Mean amount of USDC offered:
+        marks:
+          - type: recty
+            options:
+              transform:
+                type: binx
+                content:
+                  outputs:
+                    y: "count"
+                  options:
+                    x: "0.4"
+                    thresholds: 25
+                    
+      Mean amount of FXA3A received:
+        marks:
+          - type: recty
+            options:
+              transform:
+                type: binx
+                content:
+                  outputs:
+                    y: "count"
+                  options:
+                    x: "0.5"
+                    thresholds: 25
+  
+deployments:
+  polygon-h20liquidity-buy:
+    scenario: polygon-h20liquidity-oracle-dca.buy.deviation.prod
+    order: polygon-h20liquidity-buy
+                                    
+---
+#cooldown-time !The minimum amount of seconds that must elapse between trades.
+#bounty-min !Minimum bounty to offer for each trade in USD.
+#bounty-unit-increase !Amount to increase bounty per unit time.
+#bounty-unit-time !Unit of time to increase the bounty.
+#bounty-max !Maximum bounty that can be offered. 
+
+#distribution-token !The distribution token, the token that is bought and sold against the stable token.
+#stable-token !The stable token that is used as a reference for the TWAP to offer dollar equivalent conversions.
+#reserve-token !The token that will be used to compare against the stable token to calculate the TWAP for dollar equivalent conversions.
+
+#grid-min !Minimum dollar denominated price to trade distribution token for and against stable token.
+#grid-max !Maximum dollar denominated price to trade distribution token for and against stable token.
+#mean-usd-amount !Mean dollar denominated amount of stable tokens traded.
+#jittery-binomial-bits !Number of bits for jittery binomial to calculate random amount of stable token traded per trade.
+
+#twap-io-fee !Twap fee for the distribution token pool, paired with either stable or reserve token.
+#twap-multiplier-fee !Twap fee for reserve token paired with stable token.
+#twap-deviation !Acceptable percentage twap deviation to guard against the 30min price change.
+
+#test-current-time !Test current time for plotting.
+#test-last-time !Test last time for plotting.
+
+#ensure-cooldown !Binding to enforce cooldown check.
+#ensure-grid-band !Binding to enforce price remains between minimum and maximum price set.
+#calculate-exact-quote !Binding to calculate exact amount of distribution tokens required for buys and sells.
+#calculate-io-ratio !Binding to calculate io-ratio for the order.
+#calculate-twap-ratio !Binding to calculate order to 30min twap ratio.
+#enforce-twap-check !Binding to enforce oracle manipulation protection guard.
+#io-multiplier !Binding to get the ratio multiplier for distribution token.
+#plottables !The binding for additional things we want to plot during testing.
+
+#uniswap-words !The subparser for the Uniswap words
+#orderbook-subparser !The subparser for the Orderbook words
+#cooldown-key "cooldown-key"
+
+#enforce-twap-check-chart
+  _: ;
+
+#enforce-twap-check-prod
+  twap-ratio: ,
+  :ensure(
+      less-than(
+        twap-ratio
+        add(1 twap-deviation)
+        )
+    "twap check"
+  );
+
+#calculate-twap-ratio-buy
+  io-ratio ratio-multiplier: ,
+  twap-30: mul(
+    uniswap-v3-twap-output-ratio(reserve-token distribution-token 1800 0 [pancake-v3-factory] [pancake-v3-init-code] twap-io-fee)
+    ratio-multiplier
+  ),
+  twap-ratio: div(twap-30 io-ratio),
+  :call<'enforce-twap-check>(twap-ratio);
+
+#calculate-twap-ratio-sell
+  io-ratio ratio-multiplier: ,
+  twap-30: mul(
+    uniswap-v3-twap-output-ratio(distribution-token reserve-token 1800 0 [pancake-v3-factory] [pancake-v3-init-code] twap-io-fee)
+    ratio-multiplier
+  ),
+  twap-ratio: div(twap-30 io-ratio),
+  :call<'enforce-twap-check>(twap-ratio);
+
+#jittery-binomial
+  seed:,
+  binomial18-10:
+    bitwise-count-ones(bitwise-decode<0 jittery-binomial-bits>(hash(seed))),
+  noise18-1:
+    mod(hash(seed 0) 1),
+  jittery-combined:
+    add(binomial18-10 noise18-1),
+  jittery-combined-normalized:
+    div(jittery-combined add(1 jittery-binomial-bits));
+
+#bounty-auction
+  time-since-cooldown: ,
+  bounty: min(
+    linear-growth(
+      bounty-min
+      div(bounty-unit-increase bounty-unit-time)
+      time-since-cooldown
+    )
+    bounty-max
+  );
+
+#ensure-cooldown-metric
+ _ _: block-timestamp() 0;
+
+#ensure-cooldown-chart
+ _ _: test-current-time test-last-time;
+ 
+#ensure-cooldown-prod
+ current-time: block-timestamp(),
+ last-time: get(hash(order-hash() cooldown-key)),
+ :ensure(
+   greater-than-or-equal-to(
+     current-time
+     add(last-time cooldown-time)
+   )
+   "cooldown"
+ ),
+ :set(hash(order-hash() cooldown-key) current-time);
+
+#ensure-grid-band-chart
+  _ _ ratio-multiplier: ,
+  current-price: mul(
+      uniswap-v3-twap-output-ratio(
+        distribution-token
+        reserve-token
+        0 0
+        [pancake-v3-factory] [pancake-v3-init-code]
+        twap-io-fee
+      ) 
+      ratio-multiplier
+  );
+  
+
+#ensure-grid-band-prod
+  grid-min-price grid-max-price ratio-multiplier: ,
+  current-price: mul(
+      uniswap-v3-twap-output-ratio(
+        distribution-token
+        reserve-token
+        0 0
+        [pancake-v3-factory] [pancake-v3-init-code]
+        twap-io-fee
+      ) 
+      ratio-multiplier
+  ),
+  :ensure(
+    every(
+      greater-than-or-equal-to(current-price grid-min-price)
+      less-than-or-equal-to(current-price grid-max-price)
+    )
+    "grid band"
+  );
+
+#calculate-io-ratio-buy
+  usd-amount18
+  token-amount18
+  ratio-multiplier
+  time-since-cooldown: ,
+  io-ratio: div(token-amount18 add(usd-amount18 call<'bounty-auction>(time-since-cooldown))),
+  _ :call<'calculate-twap-ratio>(io-ratio ratio-multiplier),
+  /* Add io-ratio and max-op on stack*/
+  _: usd-amount18,
+  _: io-ratio;
+
+#calculate-io-ratio-sell
+  usd-amount18
+  token-amount18
+  ratio-multiplier
+  time-since-cooldown: ,
+  io-ratio: div(saturating-sub(usd-amount18 call<'bounty-auction>(time-since-cooldown)) token-amount18),
+  _ :call<'calculate-twap-ratio>(io-ratio inv(ratio-multiplier)),
+  /* Add io-ratio and max-op on stack*/
+  _: token-amount18,
+  _: io-ratio;
+
+#calculate-exact-buy-quote
+  amount-usd18 ratio-multiplier: ,
+  _: uniswap-v3-quote-exact-input(reserve-token distribution-token mul(amount-usd18 ratio-multiplier) [pancake-v3-factory] [pancake-v3-init-code] twap-io-fee);
+
+#calculate-exact-sell-quote
+  amount-usd18 ratio-multiplier: ,
+  _: uniswap-v3-quote-exact-output(distribution-token reserve-token mul(amount-usd18 ratio-multiplier) [pancake-v3-factory] [pancake-v3-init-code] twap-io-fee);
+
+#io-multiplier-reserve
+  _: uniswap-v3-twap-output-ratio(
+    stable-token
+    reserve-token
+    0 0
+    [pancake-v3-factory] [pancake-v3-init-code]
+    twap-multiplier-fee
+  );
+
+#io-multiplier-stable
+  _: 1;
+
+#plottables-chart
+  max-output-amount io-ratio twap-ratio: ,
+  _: cooldown-time,
+  _: mean-usd-amount,
+  _: bounty-min,
+  _: bounty-max,
+  _: mul(twap-deviation 100),
+  current-twap-deviation: if(
+    greater-than(1 twap-ratio)
+    mul(saturating-sub(1 twap-ratio) 100)
+    mul(saturating-sub(twap-ratio 1) 100)
+  ),
+  max-bounty-ratio: mul(div(bounty-max mean-usd-amount) 100),
+  bounty-increase-per-minute: mul(div(bounty-unit-increase bounty-unit-time) 60),
+  cooldown-in-minutes: div(cooldown-time 60),
+  cooldown-in-hours: div(60 cooldown-in-minutes),
+  total-amount-daily: mul(cooldown-in-hours mean-usd-amount 24),
+  total-amount-weekly: mul(total-amount-daily 7),
+  total-amount-montly: mul(total-amount-daily 30);
+
+
+#plottables-prod
+  _ _ _: ;
+
+#calculate-io
+  using-words-from uniswap-words orderbook-subparser
+
+  io-ratio-multiplier: call<'io-multiplier>(),
+  :call<'ensure-grid-band>(grid-min grid-max inv(io-ratio-multiplier)),
+  current-time last-time: call<'ensure-cooldown>(),
+  random-multiplier18: call<'jittery-binomial>(last-time), 
+  jittered-amount-usd18: mul(
+    mul(mean-usd-amount 2)
+    random-multiplier18
+  ), 
+  token-amount-output18: call<'calculate-exact-quote>(jittered-amount-usd18 io-ratio-multiplier),
+  twap-ratio max-output final-io-ratio: call<'calculate-io-ratio>(
+    jittered-amount-usd18
+    token-amount-output18
+    io-ratio-multiplier
+    saturating-sub(current-time add(last-time cooldown-time))
+  ),
+  :call<'plottables>(max-output final-io-ratio twap-ratio); 
+
+#handle-io
+ :ensure(
+    greater-than-or-equal-to(
+      uint256-output-vault-decrease()
+      scale-n-dynamic(output-token-decimals() calculated-max-output())
+    )
+    "Partial trade"
+  );

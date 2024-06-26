@@ -201,7 +201,7 @@ charts:
         unit-suffix: '%'   
         description: Ratio of max bounty amount to order amount
       - label: Mean amount
-        value: 0.8.4
+        value: 0.8.3
         unit-prefix: $        
         description: Mean amount of USDC sold 
       - label: Cooldown in minutes

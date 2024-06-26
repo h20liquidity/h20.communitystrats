@@ -352,23 +352,82 @@ contract PolygonFixedGridDecimal is StrategyTests {
         vm.stopPrank();
         
     }
+
+    function testfxA3ABountyAuction() public {
+
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = polygonfxA3AIo();
+
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = polygonUsdcIo();
+
+        uint256 expectedRatio = 277.719904911824664183e18;
+        uint256 expectedAmountOutputMax = 10853037074011243840; 
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            getEncodedSellfxA3ARoute(address(ARB_INSTANCE)),
+            getEncodedBuyfxA3ARoute(address(ARB_INSTANCE)),
+            0,
+            0,
+            1e18,
+            100000e6,
+            expectedRatio,
+            expectedAmountOutputMax,
+            fxA3A_POLYGON_ORACLE_DCA,
+            "polygon-h20liquidity-oracle-dca.buy.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+        OrderV2 memory order = addOrderDepositOutputTokens(strategy); 
+
+        {
+            vm.recordLogs();
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 inputTokenBounty,) = getBounty(entries);
+
+            // Assert greater than max bounty, minus the error amount
+            assertGe(inputTokenBounty, 70e18);
+        }
+
+        // Cooldown
+        vm.warp(block.timestamp + 3600); 
+        {
+            vm.recordLogs();
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 inputTokenBounty,) = getBounty(entries);
+
+            // Assert greater than min bounty, minus the error amount
+            assertGe(inputTokenBounty, 3e18);
+        }
+    }
     
     function getBounty(Vm.Log[] memory entries)
         public
         view
-        returns (uint256 bounty)
-    {
+        returns (uint256 inputTokenBounty, uint256 outputTokenBounty)
+    {   
+        // Array of length 2 to store the input and ouput token bounties.
+        uint256[] memory bounties = new uint256[](2);
+
+        // Count the number of bounties found.
+        uint256 bountyCount = 0;
         for (uint256 j = 0; j < entries.length; j++) { 
             if (
                 entries[j].topics[0] == keccak256("Transfer(address,address,uint256)") && 
                 address(ARB_INSTANCE) == abi.decode(abi.encodePacked(entries[j].topics[1]), (address)) &&
                 address(APPROVED_EOA) == abi.decode(abi.encodePacked(entries[j].topics[2]), (address))
-                ) {
-
-                bounty = abi.decode(entries[j].data, (uint256));
+            ) {
+                bounties[bountyCount] = abi.decode(entries[j].data, (uint256));
+                bountyCount++;
             }   
         }
-    }
+        return (bounties[0], bounties[1]);
+    } 
 
     function getEncodedBuyfxA3ARoute(address toAddress) internal pure returns (bytes memory) {
         bytes memory ROUTE_PRELUDE =

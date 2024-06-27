@@ -1,4 +1,4 @@
-# Strategy: Fixed Grid
+# Strategy: Oracle based DCA, uniswap v3
 #
 # High level, this strategy trades mean amount of USDC denominated LINK tokens at the end of every cooldown period
 # provided that current calculated USDC denominated price of LINK falls within the price gird.
@@ -10,46 +10,46 @@
 #   by the order to the 30 min average price is within the threshold, which can be provided as a binding in the strategy.
 
 networks:
-  polygon-link: 
+  h20-community-polygon: 
     rpc: https://polygon-mainnet.g.alchemy.com/v2/y3BXawVv5uuP_g8BaDlKbKoTBGHo9zD9
     chain-id: 137 
     network-id: 137 
     currency: MATIC
 
 subgraphs:
-  polygon-link: https://api.thegraph.com/subgraphs/name/h20liquidity/polygon-0xc95a5f8e
+  h20-community-polygon: https://api.thegraph.com/subgraphs/name/h20liquidity/polygon-0xc95a5f8e
   
 orderbooks:
-  polygon-link:
+  h20-community-polygon:
     address: 0xc95A5f8eFe14d7a20BD2E5BAFEC4E71f8Ce0B9A6
-    network: polygon-link
-    subgraph: polygon-link
+    network: h20-community-polygon
+    subgraph: h20-community-polygon
 
 deployers:
-  polygon-link:
+  h20-community-polygon:
     address: 0xB3aC858bEAf7814892d3946A8C109A7D701DF8E7
-    network: polygon-link
+    network: h20-community-polygon
 
 tokens:
-  polygon-link:
-    network: polygon-link
+  token-link:
+    network: h20-community-polygon
     address: 0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39
-  polygon-usdt:
-    network: polygon-link
+  token-usdt:
+    network: h20-community-polygon
     address: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
-  polygon-usdc:
-    network: polygon-link
+  token-usdc:
+    network: h20-community-polygon
     address: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
-  polygon-wmatic:
-    network: polygon-link
+  token-wmatic:
+    network: h20-community-polygon
     address: 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
 
 
 scenarios:
-    polygon-link-fixed-grid:
-        network: polygon-link
-        deployer: polygon-link
-        orderbook: polygon-link
+    polygon-link-dca-univ3:
+        network: h20-community-polygon
+        deployer: h20-community-polygon
+        orderbook: h20-community-polygon
         bindings:
           # Ask for now, registry in future.
           uniswap-words: 0x2382e861cF4F47578aC29B50944b3b445577aF74
@@ -75,24 +75,21 @@ scenarios:
           # `twap-io-fee`: Uniswap-v3 pool fee for token pair.
           # If distribution token is paired with a stable token, the binding value is the fee
           # for the LINK-USDC pool.
-          #
           # If distribution token is paired with native wrapped token, for eg WETH, then the 
           # binding value is the fee for LINK-WETH pool.
           twap-io-fee: '[uniswap-v3-fee-medium]'
 
           # `twap-multiplier-feee`: Uniswap-v3 pool fee for stable-reserve pair.
           # If distribution token is paired with a stable token then binding value is irrelevant.
-          #
           # If distribution token is paired with native wrapped token, for eg WETH, then the 
           # binding value is the fee for WETH-USDC pool
           twap-multiplier-fee: '[uniswap-v3-fee-low]'
 
           # IO multiplier binding
           # Binding used to calculate multiplier for distribution token to get its dollor equivalent.
-          #
           # If distribution token is paired with a stable token, the binding value is the stable multiplier.
           # io-multiplier: '''io-multiplier-stable'
-          #
+
           # If distribution token is paired with a reserve token, the binding value is the reserve multiplier
           # io-multiplier: '''io-multiplier-reserve'
           io-multiplier: '''io-multiplier-stable'
@@ -101,7 +98,6 @@ scenarios:
           jittery-binomial-bits: 10
 
           # Bounty amount offered for trade in dollar.
-          #
           # Minimum amount of bounty offered for the trade, depending upon the network this value might change.
           bounty-min: 0.015
 
@@ -122,14 +118,17 @@ scenarios:
             bindings:
               # Cooldown between two trades in seconds.
               cooldown-time: 14400
-              # Mean amount of USDC offered per trade.
-              # For gas expensive networks mean amount needs to be higher to compensate
+
+              # Mean amount of USDC offered per trade. For gas expensive networks mean amount needs to be higher to compensate
               # for gas fee and bounty.
               mean-usd-amount: 15 
+
               # Grid minimum price
               grid-min: 0.001
+
               # Grid maximum price
               grid-max: 100
+
               calculate-exact-quote: '''calculate-exact-buy-quote'
               calculate-io-ratio: '''calculate-io-ratio-buy'
             scenarios:
@@ -140,10 +139,9 @@ scenarios:
                   # Binding value is dependent upon the network, token pair and the mean amount of 
                   # tokens traded per trade. If the mean amount of tokens traded is low, or if 
                   # the network gas fee is high, then deviation needs to be a higher value.
-                  # - For 1% deviation, binding value is 0.01
-                  # - For 5% deviation, binding value is 0.05
-                  # - For 10% deviation, binding value is 0.1
+                  # - For 1% deviation, binding value is 0.01, 5% deviation, binding value is 0.05
                   twap-deviation: 0.03
+
                 scenarios:
                   prod:
                     bindings:
@@ -181,14 +179,18 @@ scenarios:
             bindings:
               # Cooldown between two trades in seconds.
               cooldown-time: 14400
+
               # Mean amount of USDC offered per trade.
               # For gas expensive networks mean amount needs to be higher to compensate
               # for gas fee and bounty.
               mean-usd-amount: 15 
+
               # Grid minimum price
               grid-min: 0.001
+
               # Grid maximum price
               grid-max: 100
+
               calculate-exact-quote: '''calculate-exact-sell-quote'
               calculate-io-ratio: '''calculate-io-ratio-sell'
             scenarios:
@@ -199,9 +201,7 @@ scenarios:
                   # Binding value is dependent upon the network, token pair and the mean amount of 
                   # tokens traded per trade. If the mean amount of tokens traded is low, or if 
                   # the network gas fee is high, then deviation needs to be a higher value.
-                  # - For 1% deviation, binding value is 0.01
-                  # - For 5% deviation, binding value is 0.05
-                  # - For 10% deviation, binding value is 0.1
+                  # - For 1% deviation, binding value is 0.01; 5% deviation, binding value is 0.05
                   twap-deviation: 0.03
                 scenarios:
                   prod:
@@ -237,8 +237,8 @@ scenarios:
                   plottables: '''plottables-prod'
                 
 charts:
-  red-buy-fixed-grid: 
-    scenario: polygon-link-fixed-grid.buy.deviation.metric
+  link-buy-dca-univ3: 
+    scenario: polygon-link-dca-univ3.buy.deviation.metric
     metrics:
       - label: Current LINK price.
         value: 0.3.3
@@ -313,7 +313,7 @@ charts:
     plots:
 
   buy-link-simulation:
-    scenario: polygon-link-fixed-grid.buy.deviation.chart
+    scenario: polygon-link-dca-univ3.buy.deviation.chart
     plots:
       Mean amount of USDC offered:
         marks:
@@ -341,8 +341,8 @@ charts:
                     x: "0.5"
                     thresholds: 25
   
-  red-sell-fixed-grid: 
-    scenario: polygon-link-fixed-grid.sell.deviation.metric
+  link-sell-dca-univ3: 
+    scenario: polygon-link-dca-univ3.sell.deviation.metric
     metrics:
       - label: Current LINK price.
         value: 0.3.3
@@ -415,7 +415,7 @@ charts:
         value: 0.8.2     
         
   sell-link-simulation:
-    scenario: polygon-link-fixed-grid.sell.deviation.chart
+    scenario: polygon-link-dca-univ3.sell.deviation.chart
     plots:
       Mean amount of LINK offered:
         marks:

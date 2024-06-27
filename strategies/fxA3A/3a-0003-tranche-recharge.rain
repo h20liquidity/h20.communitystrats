@@ -49,10 +49,10 @@ orders:
     orderbook: polygon-h20liquidity
     inputs:
       - token: tkn-usdc
-        vault-id: 
+        vault-id: 0x01ba2d3e0206a4fb13bd63c8120c08dd992a54af1099f4daffd9a5450918eceb
     outputs:
       - token: tkn-fxa3a
-        vault-id: 
+        vault-id: 0x01ba2d3e0206a4fb13bd63c8120c08dd992a54af1099f4daffd9a5450918eceb
 
 scenarios:
     polygon-a3a-tranches:

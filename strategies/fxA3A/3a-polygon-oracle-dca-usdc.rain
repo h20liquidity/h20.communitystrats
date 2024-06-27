@@ -130,9 +130,9 @@ scenarios:
               # for gas fee and bounty.
               mean-usd-amount: 10 
               # Grid minimum price
-              grid-min: 0.001
+              grid-min: 0.0001
               # Grid maximum price
-              grid-max: 100
+              grid-max: 0.003
               calculate-exact-quote: '''calculate-exact-buy-quote'
               calculate-io-ratio: '''calculate-io-ratio-buy'
             scenarios:

@@ -97,8 +97,8 @@ contract PolygonFixedGridDecimal is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = polygonUsdcIo();
 
-        uint256 expectedRatio = 69352715075810792;
-        uint256 expectedAmountOutputMax = 17098814843865977310;
+        uint256 expectedRatio = 69323311538160288;
+        uint256 expectedAmountOutputMax = 16279555611016865760;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
             getEncodedSellLinkRoute(address(ARB_INSTANCE)),
@@ -131,8 +131,8 @@ contract PolygonFixedGridDecimal is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = polygonLinkIo();
 
-        uint256 expectedRatio = 13949412411209658325; 
-        uint256 expectedAmountOutputMax = 1139920989591065154;
+        uint256 expectedRatio = 13936173715114621738; 
+        uint256 expectedAmountOutputMax = 1085303707401124384;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
             getEncodedBuyLinkRoute(address(ARB_INSTANCE)),

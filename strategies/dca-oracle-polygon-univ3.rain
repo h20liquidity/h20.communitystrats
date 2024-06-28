@@ -76,7 +76,7 @@ scenarios:
           twap-multiplier-fee: '[uniswap-v3-fee-low]'
           
           #Jittery binomial bits for randomness, more the number of bits, higher is the randomness.
-          jittery-binomial-bits: 20
+          jittery-binomial-bits: 10
 
         scenarios:
           buy:

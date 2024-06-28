@@ -31,16 +31,16 @@ deployers:
     network: h20-community-polygon
 
 tokens:
-  token-link:
+  h20-community-polygon:
     network: h20-community-polygon
     address: 0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39
-  token-usdt:
+  polygon-usdt:
     network: h20-community-polygon
     address: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
-  token-usdc:
+  polygon-usdc:
     network: h20-community-polygon
     address: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
-  token-wmatic:
+  polygon-wmatic:
     network: h20-community-polygon
     address: 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
 
@@ -52,85 +52,67 @@ scenarios:
         orderbook: h20-community-polygon
         bindings:
           # Ask for now, registry in future.
-          uniswap-words: 0x2382e861cF4F47578aC29B50944b3b445577aF74
+          uniswap-words: 0xbc609623F5020f6Fc7481024862cD5EE3FFf52D7
           orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1 
 
-          # Distribution token, i.e token that is bought or sold, for and against the stable token.
-          distribution-token: 0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39
-          # Stable token, token with price pegged to one dollar.
-          stable-token: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
-
-          # If the distribution token is paired with a stable token in a univ3 pool,
-          # then address for this binding is same as the stable token address.
-          # Eg: If the uniswap-v3 pair is LINK-USDC, then reserve token address is same as USDC address.
-          #
-          # If the distribution token is paired with native wrapped token in a univ3 pool,
-          # then address for this binding is the address of the native wrapped token.
-          # Eg: If the uniswap-v3 pair is LINK-WETH, then reserve token address is same as WETH address.
-          # This reserve token will be compared against stable token to calculate the dollar
-          # equivalent twap.
-          reserve-token: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
+          # Uniswap V3 factory addresses and init code
+          uniswap-v3-factory: '[uniswap-v3-factory]'
+          uniswap-v3-init-code: '[uniswap-v3-init-code]'
           
           # Twap fee for tokens
           # `twap-io-fee`: Uniswap-v3 pool fee for token pair.
           # If distribution token is paired with a stable token, the binding value is the fee
           # for the LINK-USDC pool.
+          #
           # If distribution token is paired with native wrapped token, for eg WETH, then the 
           # binding value is the fee for LINK-WETH pool.
           twap-io-fee: '[uniswap-v3-fee-medium]'
 
-          # `twap-multiplier-feee`: Uniswap-v3 pool fee for stable-reserve pair.
+          # `twap-multiplier-fee`: Uniswap-v3 pool fee for stable-reserve pair.
           # If distribution token is paired with a stable token then binding value is irrelevant.
+          #
           # If distribution token is paired with native wrapped token, for eg WETH, then the 
           # binding value is the fee for WETH-USDC pool
           twap-multiplier-fee: '[uniswap-v3-fee-low]'
-
-          # IO multiplier binding
-          # Binding used to calculate multiplier for distribution token to get its dollor equivalent.
-          # If distribution token is paired with a stable token, the binding value is the stable multiplier.
-          # io-multiplier: '''io-multiplier-stable'
-
-          # If distribution token is paired with a reserve token, the binding value is the reserve multiplier
-          # io-multiplier: '''io-multiplier-reserve'
-          io-multiplier: '''io-multiplier-stable'
           
-          #Jittery binomial bits
-          jittery-binomial-bits: 10
-
-          # Bounty amount offered for trade in dollar.
-          # Minimum amount of bounty offered for the trade, depending upon the network this value might change.
-          bounty-min: 0.015
-
-          # Maximum amount of bounty offered for the trade, this will also the amount offered for the first trade,
-          # as well as to calculate the twap deviation for the first trade which is visible in the metrics.
-          bounty-max: 0.3
-
-          # Bounty unit increase, amount by which to increase the bounty amount.
-          bounty-unit-increase: 0.01
-
-          # Bounty unit time in seconds, time in which bounty increased by `bounty-unit-increase`
-          # Eg: If `bounty-unit-increase` is 0.01 and `bounty-unit-time` is 60, then the bounty will increase linearly
-          # by `0.01` every 60 seconds.
-          bounty-unit-time: 60
+          #Jittery binomial bits for randomness, more the number of bits, higher is the randomness.
+          jittery-binomial-bits: 20
 
         scenarios:
           buy:
             bindings:
+              # Input and Output tokens are from the perspective of the order.
+              input-token: 0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39
+              output-token: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
+
+              # If the output token is paired with the input token on a uniswap v3,
+              # then the reserve to address is same as input token address
+              # If the output token is NOT paired with the input token on a uniswap v3 pool,
+              # then the reserve to address is the address of token which the ouput token is paired with.
+              reserve-token: 0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39
+
+              # Quote and Twap multiplier to get quote and 30min twap for input-output token pair.
+              # If the output token is paired with the input token on a uniswap v3,
+              # then set it to identity
+              # If the output token is NOT paired with the input token on a uniswap v3 pool,
+              # then set it to reserve
+              io-quote: '''io-quote-identity'
+              twap-multiplier: '''twap-multiplier-identity'
+
+              # Params for bounty auction which is input token denominated.
+              bounty-min: 0.0015
+              bounty-max: 0.01
+              bounty-unit-increase: 0.001
+              bounty-unit-time: 60
+              
               # Cooldown between two trades in seconds.
               cooldown-time: 14400
 
-              # Mean amount of USDC offered per trade. For gas expensive networks mean amount needs to be higher to compensate
+              # Mean amount of input tokens offered per trade.
+              # For gas expensive networks mean amount needs to be higher to compensate
               # for gas fee and bounty.
-              mean-usd-amount: 15 
-
-              # Grid minimum price
-              grid-min: 0.001
-
-              # Grid maximum price
-              grid-max: 100
-
-              calculate-exact-quote: '''calculate-exact-buy-quote'
-              calculate-io-ratio: '''calculate-io-ratio-buy'
+              mean-input-amount : 15 
+              
             scenarios:
               deviation:
                 bindings:
@@ -139,60 +121,76 @@ scenarios:
                   # Binding value is dependent upon the network, token pair and the mean amount of 
                   # tokens traded per trade. If the mean amount of tokens traded is low, or if 
                   # the network gas fee is high, then deviation needs to be a higher value.
-                  # - For 1% deviation, binding value is 0.01, 5% deviation, binding value is 0.05
+                  # - For 1% deviation, binding value is 0.01
+                  # - For 5% deviation, binding value is 0.05
+                  # - For 10% deviation, binding value is 0.1
                   twap-deviation: 0.03
 
+                  # Minimum io-ratio for the order
+                  min-ratio: 0.05
                 scenarios:
                   prod:
                     bindings:
-                      calculate-twap-ratio: '''calculate-twap-ratio-buy'
                       enforce-twap-check: '''enforce-twap-check-prod'
-                      ensure-grid-band: '''ensure-grid-band-prod'
+                      ensure-min-ratio: '''ensure-min-ratio-prod'
                       ensure-cooldown: '''ensure-cooldown-prod'
                       plottables: '''plottables-prod'
                   chart:
                     runs: 1000
                     bindings:
-                      calculate-twap-ratio: '''calculate-twap-ratio-buy'
                       enforce-twap-check: '''enforce-twap-check-chart'
-                      ensure-grid-band: '''ensure-grid-band-chart'
+                      ensure-min-ratio: '''ensure-min-ratio-chart'
                       ensure-cooldown: '''ensure-cooldown-chart'
                       plottables: '''plottables-chart'
                   metric:
                     runs: 1
                     bindings:
-                      calculate-twap-ratio: '''calculate-twap-ratio-buy'
                       enforce-twap-check: '''enforce-twap-check-chart'
-                      ensure-grid-band: '''ensure-grid-band-chart'
+                      ensure-min-ratio: '''ensure-min-ratio-chart'
                       ensure-cooldown: '''ensure-cooldown-metric'
                       plottables: '''plottables-chart'
               test:
                 bindings:
                   twap-deviation: 0.12
-                  calculate-twap-ratio: '''calculate-twap-ratio-buy'
                   enforce-twap-check: '''enforce-twap-check-prod'
-                  ensure-grid-band: '''ensure-grid-band-chart'
+                  ensure-min-ratio: '''ensure-min-ratio-chart'
                   ensure-cooldown: '''ensure-cooldown-chart'
                   plottables: '''plottables-prod'
 
           sell:
             bindings:
+
+              # Input and Output tokens are from the perspective of the order.
+              input-token: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
+              output-token: 0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39
+
+              # If the output token is paired with the input token on a uniswap v3,
+              # then the reserve to address is same as input token address
+              # If the output token is NOT paired with the input token on a uniswap v3 pool,
+              # then the reserve to address is the address of token which the ouput token is paired with.
+              reserve-token: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
+
+              # Quote and Twap multiplier to get quote and 30min twap for input-output token pair.
+              # If the output token is paired with the input token on a uniswap v3,
+              # then set it to identity
+              # If the output token is NOT paired with the input token on a uniswap v3 pool,
+              # then set it to reserve
+              io-quote: '''io-quote-identity'
+              twap-multiplier: '''twap-multiplier-identity'
+
+              # Params for bounty auction which is input token denominated.
+              bounty-min: 0.012
+              bounty-max: 0.3
+              bounty-unit-increase: 0.01
+              bounty-unit-time: 60
+
               # Cooldown between two trades in seconds.
               cooldown-time: 14400
-
               # Mean amount of USDC offered per trade.
               # For gas expensive networks mean amount needs to be higher to compensate
               # for gas fee and bounty.
-              mean-usd-amount: 15 
-
-              # Grid minimum price
-              grid-min: 0.001
-
-              # Grid maximum price
-              grid-max: 100
-
-              calculate-exact-quote: '''calculate-exact-sell-quote'
-              calculate-io-ratio: '''calculate-io-ratio-sell'
+              mean-input-amount : 1
+      
             scenarios:
               deviation:
                 bindings:
@@ -201,38 +199,39 @@ scenarios:
                   # Binding value is dependent upon the network, token pair and the mean amount of 
                   # tokens traded per trade. If the mean amount of tokens traded is low, or if 
                   # the network gas fee is high, then deviation needs to be a higher value.
-                  # - For 1% deviation, binding value is 0.01; 5% deviation, binding value is 0.05
+                  # - For 1% deviation, binding value is 0.01
+                  # - For 5% deviation, binding value is 0.05
+                  # - For 10% deviation, binding value is 0.1
                   twap-deviation: 0.03
+
+                  # Minimum io-ratio for the order
+                  min-ratio: 0
                 scenarios:
                   prod:
                     bindings:
-                      calculate-twap-ratio: '''calculate-twap-ratio-sell'
                       enforce-twap-check: '''enforce-twap-check-prod'
-                      ensure-grid-band: '''ensure-grid-band-prod'
+                      ensure-min-ratio: '''ensure-min-ratio-prod'
                       ensure-cooldown: '''ensure-cooldown-prod'
                       plottables: '''plottables-prod'
                   chart:
                     runs: 1000
                     bindings:
-                      calculate-twap-ratio: '''calculate-twap-ratio-sell'
                       enforce-twap-check: '''enforce-twap-check-chart'
-                      ensure-grid-band: '''ensure-grid-band-chart'
+                      ensure-min-ratio: '''ensure-min-ratio-chart'
                       ensure-cooldown: '''ensure-cooldown-chart'
                       plottables: '''plottables-chart'
                   metric:
                     runs: 1
                     bindings:
-                      calculate-twap-ratio: '''calculate-twap-ratio-sell'
                       enforce-twap-check: '''enforce-twap-check-chart'
-                      ensure-grid-band: '''ensure-grid-band-chart'
+                      ensure-min-ratio: '''ensure-min-ratio-chart'
                       ensure-cooldown: '''ensure-cooldown-metric'
                       plottables: '''plottables-chart'
               test:
                 bindings:
                   twap-deviation: 0.12
-                  calculate-twap-ratio: '''calculate-twap-ratio-sell'
                   enforce-twap-check: '''enforce-twap-check-prod'
-                  ensure-grid-band: '''ensure-grid-band-chart'
+                  ensure-min-ratio: '''ensure-min-ratio-chart'
                   ensure-cooldown: '''ensure-cooldown-chart'
                   plottables: '''plottables-prod'
                 
@@ -240,75 +239,63 @@ charts:
   link-buy-dca-univ3: 
     scenario: polygon-link-dca-univ3.buy.deviation.metric
     metrics:
-      - label: Current LINK price.
-        value: 0.3.3
-        unit-prefix: $
-        description: Price of LINK at current block.
-      - label: Minimum LINK buy price.
-        value: 0.3.0
-        unit-prefix: $
-        description: Grid minimum USDC/LINK ratio.
-      - label: Maximum LINK buy price.
-        value: 0.3.1
-        unit-prefix: $
-        description: Grid maximum USDC/LINK ratio.
       - label: Amount of USDC offered for first trade.
-        value: 0.4
+        value: 0.3
         description: Amount of USDC offered for the current block.
       - label: Amount of LINK received for frist trade.
-        value: 0.5
+        value: 0.4
         description: Amount of LINK received for USDC offered.
       - label: io-ratio LINK/USDC
-        value: 0.8
+        value: 0.7
         description: Ratio offered by the order for the current block accounting for bounty.
       - label: Minimum Bounty amount
-        value: 0.8.5
+        value: 0.7.5
         unit-prefix: $        
         description: Minimum bounty offered
       - label: Maximum Bounty amount
-        value: 0.8.6
+        value: 0.7.6
         unit-prefix: $        
         description: Maximum bounty offered
       - label: Bounty increase per minute
-        value: 0.8.10
+        value: 0.7.10
         unit-prefix: $   
         description: Amount by which bounty increases every minute after cooldown.
       - label: Max Bounty ratio
-        value: 0.8.9
+        value: 0.7.9
         unit-suffix: '%'   
         description: Ratio of max bounty amount to order amount
       - label: Mean amount
-        value: 0.8.4
+        value: 0.7.4
         unit-prefix: $        
         description: Mean amount of USDC sold 
       - label: Cooldown in minutes
-        value: 0.8.11        
+        value: 0.7.11        
         description: Number of minutes between strategy running
       - label: Trades per hour
-        value: 0.8.12       
+        value: 0.7.12       
         description: Number of trades per hour  
       - label: Strategy twap buy deviation
-        value: 0.8.7
+        value: 0.7.7
         unit-suffix: '%'         
         description: Twap deviation percentage acceptable     
       - label: Current twap buy deviation
-        value: 0.8.8
+        value: 0.7.8
         unit-suffix: '%'       
         description: Twap deviation occuring at current block with maximum bounty on the buy side to prevent higher than deviations buys.
       - label: Cummulative amount traded daily
-        value: 0.8.13     
+        value: 0.7.13     
         unit-prefix: $ 
-        description: Cummulative dollar equivalent amount of LINK tokens sold in a day.
+        description: Cummulative amount of USDC tokens offered in a day.
       - label: Cummulative amount traded weekly
-        value: 0.8.14     
+        value: 0.7.14     
         unit-prefix: $ 
-        description: Cummulative dollar equivalent amount of LINK tokens sold in a week.
+        description: Cummulative amount of USDC tokens offered in a week.
       - label: Cummulative amount traded montly
-        value: 0.8.15     
+        value: 0.7.15     
         unit-prefix: $ 
-        description: Cummulative dollar equivalent amount of LINK tokens sold in a month.
+        description: Cummulative amount of USDC tokens offered in a month.
       - label: Twap-ratio
-        value: 0.8.2     
+        value: 0.7.2     
 
     plots:
 
@@ -325,7 +312,7 @@ charts:
                   outputs:
                     y: "count"
                   options:
-                    x: "0.4"
+                    x: "0.3"
                     thresholds: 25
                     
       Mean amount of LINK received:
@@ -338,81 +325,69 @@ charts:
                   outputs:
                     y: "count"
                   options:
-                    x: "0.5"
+                    x: "0.4"
                     thresholds: 25
   
   link-sell-dca-univ3: 
     scenario: polygon-link-dca-univ3.sell.deviation.metric
     metrics:
-      - label: Current LINK price.
-        value: 0.3.3
-        unit-prefix: $
-        description: Price of LINK at current block.
-      - label: Minimum LINK buy price.
-        value: 0.3.0
-        unit-prefix: $
-        description: Grid minimum USDC/LINK ratio.
-      - label: Maximum LINK buy price.
-        value: 0.3.1
-        unit-prefix: $
-        description: Grid maximum USDC/LINK ratio.
       - label: Amount of LINK offered for first trade.
-        value: 0.5
+        value: 0.3
         description: Amount of LINK offered for the current block.
       - label: Amount of USDC received for frist trade.
         value: 0.4
         description: Amount of USDC received for LINK offered.
       - label: io-ratio USDC/LINK
-        value: 0.8
+        value: 0.7
         description: Ratio offered by the order for the current block accounting for bounty.
       - label: Minimum Bounty amount
-        value: 0.8.5
+        value: 0.7.5
         unit-prefix: $        
         description: Minimum bounty offered
       - label: Maximum Bounty amount
-        value: 0.8.6
+        value: 0.7.6
         unit-prefix: $        
         description: Maximum bounty offered
       - label: Bounty increase per minute
-        value: 0.8.10
+        value: 0.7.10
         unit-prefix: $   
         description: Amount by which bounty increases every minute after cooldown.
       - label: Max Bounty ratio
-        value: 0.8.9
+        value: 0.7.9
         unit-suffix: '%'   
         description: Ratio of max bounty amount to order amount
       - label: Mean amount
-        value: 0.8.4
+        value: 0.7.4
         unit-prefix: $        
-        description: Mean amount of USDC received 
+        description: Mean amount of LINK offered 
       - label: Cooldown in minutes
-        value: 0.8.11        
+        value: 0.7.11        
         description: Number of minutes between strategy running
       - label: Trades per hour
-        value: 0.8.12       
+        value: 0.7.12       
         description: Number of trades per hour  
       - label: Strategy twap sell deviation
-        value: 0.8.7
+        value: 0.7.7
         unit-suffix: '%'         
         description: Twap deviation percentage acceptable     
       - label: Current sell twap deviation
-        value: 0.8.8
+        value: 0.7.8
         unit-suffix: '%'       
         description: Twap deviation occuring at current block with maximum bounty on the sell side to prevent lower than deviation sells.
       - label: Cummulative amount traded daily
-        value: 0.8.13     
+        value: 0.7.13     
         unit-prefix: $ 
-        description: Cummulative dollar equivalent amount of LINK tokens sold in a day.
+        description: Cummulative amount of LINK tokens offered in a day.
       - label: Cummulative amount traded weekly
-        value: 0.8.14     
+        value: 0.7.14     
         unit-prefix: $ 
-        description: Cummulative dollar equivalent amount of LINK tokens sold in a week.
+        description: Cummulative amount of LINK tokens offered in a week.
       - label: Cummulative amount traded montly
-        value: 0.8.15     
+        value: 0.7.15     
         unit-prefix: $ 
-        description: Cummulative dollar equivalent amount of LINK tokens sold in a month.
+        description: Cummulative amount of LINK tokens offered in a month.
       - label: Twap-ratio
-        value: 0.8.2     
+        value: 0.7.2     
         
   sell-link-simulation:
     scenario: polygon-link-dca-univ3.sell.deviation.chart
@@ -427,7 +402,7 @@ charts:
                   outputs:
                     y: "count"
                   options:
-                    x: "0.5"
+                    x: "0.3"
                     thresholds: 25
                     
       Mean amount of USDC received:
@@ -450,16 +425,18 @@ charts:
 #bounty-unit-time !Unit of time to increase the bounty.
 #bounty-max !Maximum bounty that can be offered. 
 
-#distribution-token !The distribution token, the token that is bought and sold against the stable token.
-#stable-token !The stable token that is used as a reference for the TWAP to offer dollar equivalent conversions.
-#reserve-token !The token that will be used to compare against the stable token to calculate the TWAP for dollar equivalent conversions.
+#input-token !Input token from the perspective of the order.
+#output-token !Ouput token from the perspective of the order.
+#reserve-token !Token which is paired with the ouput token on uniswap-v3 pool.
 
-#grid-min !Minimum dollar denominated price to trade distribution token for and against stable token.
-#grid-max !Maximum dollar denominated price to trade distribution token for and against stable token.
-#mean-usd-amount !Mean dollar denominated amount of stable tokens traded.
+#min-ratio !Minimum io-ratio for the order.
+#mean-input-amount  !Mean dollar denominated amount of stable tokens traded.
 #jittery-binomial-bits !Number of bits for jittery binomial to calculate random amount of stable token traded per trade.
 
+#uniswap-v3-factory !Uniswap v3 factory address.
+#uniswap-v3-init-code !Uniswap v3 init code hash.
 #twap-io-fee !Twap fee for the distribution token pool, paired with either stable or reserve token.
+#twap-multiplier !Binding to get the twap for input output token pair.
 #twap-multiplier-fee !Twap fee for reserve token paired with stable token.
 #twap-deviation !Acceptable percentage twap deviation to guard against the 30min price change.
 
@@ -467,48 +444,14 @@ charts:
 #test-last-time !Test last time for plotting.
 
 #ensure-cooldown !Binding to enforce cooldown check.
-#ensure-grid-band !Binding to enforce price remains between minimum and maximum price set.
-#calculate-exact-quote !Binding to calculate exact amount of distribution tokens required for buys and sells.
-#calculate-io-ratio !Binding to calculate io-ratio for the order.
-#calculate-twap-ratio !Binding to calculate order to 30min twap ratio.
+#ensure-min-ratio !Binding to enforce price remains between minimum and maximum price set.
 #enforce-twap-check !Binding to enforce oracle manipulation protection guard.
-#io-multiplier !Binding to get the ratio multiplier for distribution token.
+#io-quote !Binding to get the quote for input output token pair.
 #plottables !The binding for additional things we want to plot during testing.
 
 #uniswap-words !The subparser for the Uniswap words
 #orderbook-subparser !The subparser for the Orderbook words
 #cooldown-key "cooldown-key"
-
-#enforce-twap-check-chart
-  _: ;
-
-#enforce-twap-check-prod
-  twap-ratio: ,
-  :ensure(
-      less-than(
-        twap-ratio
-        add(1 twap-deviation)
-        )
-    "twap check"
-  );
-
-#calculate-twap-ratio-buy
-  io-ratio ratio-multiplier: ,
-  twap-30: mul(
-    uniswap-v3-twap-output-ratio(reserve-token distribution-token 1800 0 twap-io-fee)
-    ratio-multiplier
-  ),
-  twap-ratio: div(twap-30 io-ratio),
-  :call<'enforce-twap-check>(twap-ratio);
-
-#calculate-twap-ratio-sell
-  io-ratio ratio-multiplier: ,
-  twap-30: mul(
-    uniswap-v3-twap-output-ratio(distribution-token reserve-token 1800 0 twap-io-fee)
-    ratio-multiplier
-  ),
-  twap-ratio: div(twap-30 io-ratio),
-  :call<'enforce-twap-check>(twap-ratio);
 
 #jittery-binomial
   seed:,
@@ -532,6 +475,34 @@ charts:
     bounty-max
   );
 
+#twap-multiplier-identity
+  _: 1;
+
+#twap-multiplier-reserve
+  _: uniswap-v3-twap-output-ratio(reserve-token input-token 1800 0 uniswap-v3-factory uniswap-v3-init-code twap-multiplier-fee);
+
+#enforce-twap-check-chart
+  _: ;
+
+#enforce-twap-check-prod
+  twap-ratio: ,
+  :ensure(
+      less-than(
+        twap-ratio
+        add(1 twap-deviation)
+        )
+    "twap check"
+  );
+
+#calculate-twap-ratio
+  io-ratio: ,
+  twap-30: mul(
+    uniswap-v3-twap-output-ratio(output-token reserve-token 1800 0 uniswap-v3-factory uniswap-v3-init-code twap-io-fee)
+    call<'twap-multiplier>()
+  ),
+  twap-ratio: div(twap-30 io-ratio),
+  :call<'enforce-twap-check>(twap-ratio);
+
 #ensure-cooldown-metric
  _ _: block-timestamp() 0;
 
@@ -550,83 +521,52 @@ charts:
  ),
  :set(hash(order-hash() cooldown-key) current-time);
 
-#ensure-grid-band-chart
-  _ _ ratio-multiplier: ,
-  current-price: mul(
-      uniswap-v3-twap-output-ratio(
-        distribution-token
-        reserve-token
-        0 0
-        twap-io-fee
-      ) 
-      ratio-multiplier
-  );
+#ensure-min-ratio-chart
+  _: ;
   
-
-#ensure-grid-band-prod
-  grid-min-price grid-max-price ratio-multiplier: ,
-  current-price: mul(
-      uniswap-v3-twap-output-ratio(
-        distribution-token
-        reserve-token
-        0 0
-        twap-io-fee
-      ) 
-      ratio-multiplier
-  ),
+#ensure-min-ratio-prod
+  order-io-ratio: ,
   :ensure(
-    every(
-      greater-than-or-equal-to(current-price grid-min-price)
-      less-than-or-equal-to(current-price grid-max-price)
-    )
-    "grid band"
+    greater-than(order-io-ratio min-ratio)
+    "min ratio"
   );
 
-#calculate-io-ratio-buy
-  usd-amount18
-  token-amount18
-  ratio-multiplier
+#calculate-io-ratio
+  output-amount
+  input-amount
   time-since-cooldown: ,
-  io-ratio: div(token-amount18 add(usd-amount18 call<'bounty-auction>(time-since-cooldown))),
-  _ :call<'calculate-twap-ratio>(io-ratio ratio-multiplier),
+  io-ratio: div(saturating-sub(input-amount call<'bounty-auction>(time-since-cooldown)) output-amount),
+  _ :call<'calculate-twap-ratio>(io-ratio),
   /* Add io-ratio and max-op on stack*/
-  _: usd-amount18,
+  _: output-amount,
   _: io-ratio;
 
-#calculate-io-ratio-sell
-  usd-amount18
-  token-amount18
-  ratio-multiplier
-  time-since-cooldown: ,
-  io-ratio: div(saturating-sub(usd-amount18 call<'bounty-auction>(time-since-cooldown)) token-amount18),
-  _ :call<'calculate-twap-ratio>(io-ratio inv(ratio-multiplier)),
-  /* Add io-ratio and max-op on stack*/
-  _: token-amount18,
-  _: io-ratio;
-
-#calculate-exact-buy-quote
-  amount-usd18 ratio-multiplier: ,
-  _: uniswap-v3-quote-exact-input(reserve-token distribution-token mul(amount-usd18 ratio-multiplier) twap-io-fee);
-
-#calculate-exact-sell-quote
-  amount-usd18 ratio-multiplier: ,
-  _: uniswap-v3-quote-exact-output(distribution-token reserve-token mul(amount-usd18 ratio-multiplier) twap-io-fee);
-
-#io-multiplier-reserve
-  _: uniswap-v3-twap-output-ratio(
-    stable-token
-    reserve-token
-    0 0
+#io-quote-reserve
+  reserve-amount: ,
+  _: uniswap-v3-quote-exact-input(
+    reserve-token input-token
+    reserve-amount
+    uniswap-v3-factory uniswap-v3-init-code
     twap-multiplier-fee
   );
 
-#io-multiplier-stable
-  _: 1;
+#io-quote-identity
+  _: ;
+
+#calculate-exact-quote
+  output-amount: ,
+  output-to-reserve: uniswap-v3-quote-exact-input(
+    output-token reserve-token
+    output-amount
+    uniswap-v3-factory uniswap-v3-init-code
+    twap-io-fee
+  ),
+  reserve-to-input: call<'io-quote>(output-to-reserve);
 
 #plottables-chart
   max-output-amount io-ratio twap-ratio: ,
   _: cooldown-time,
-  _: mean-usd-amount,
+  _: mean-input-amount ,
   _: bounty-min,
   _: bounty-max,
   _: mul(twap-deviation 100),
@@ -635,11 +575,11 @@ charts:
     mul(saturating-sub(1 twap-ratio) 100)
     mul(saturating-sub(twap-ratio 1) 100)
   ),
-  max-bounty-ratio: mul(div(bounty-max mean-usd-amount) 100),
+  max-bounty-ratio: mul(div(bounty-max mean-input-amount ) 100),
   bounty-increase-per-minute: mul(div(bounty-unit-increase bounty-unit-time) 60),
   cooldown-in-minutes: div(cooldown-time 60),
   cooldown-in-hours: div(60 cooldown-in-minutes),
-  total-amount-daily: mul(cooldown-in-hours mean-usd-amount 24),
+  total-amount-daily: mul(cooldown-in-hours mean-input-amount 24),
   total-amount-weekly: mul(total-amount-daily 7),
   total-amount-montly: mul(total-amount-daily 30);
 
@@ -650,22 +590,26 @@ charts:
 #calculate-io
   using-words-from uniswap-words orderbook-subparser
 
-  io-ratio-multiplier: call<'io-multiplier>(),
-  :call<'ensure-grid-band>(grid-min grid-max inv(io-ratio-multiplier)),
   current-time last-time: call<'ensure-cooldown>(),
   random-multiplier18: call<'jittery-binomial>(last-time), 
-  jittered-amount-usd18: mul(
-    mul(mean-usd-amount 2)
+  jittered-output-amount: mul(
+    mul(mean-input-amount 2)
     random-multiplier18
   ), 
-  token-amount-output18: call<'calculate-exact-quote>(jittered-amount-usd18 io-ratio-multiplier),
+  quote-input-amount: call<'calculate-exact-quote>(jittered-output-amount),
   twap-ratio max-output final-io-ratio: call<'calculate-io-ratio>(
-    jittered-amount-usd18
-    token-amount-output18
-    io-ratio-multiplier
+    jittered-output-amount
+    quote-input-amount
     saturating-sub(current-time add(last-time cooldown-time))
   ),
+  :call<'ensure-min-ratio>(final-io-ratio),
   :call<'plottables>(max-output final-io-ratio twap-ratio); 
 
 #handle-io
-:;
+:ensure(
+    greater-than-or-equal-to(
+      uint256-output-vault-decrease()
+      scale-n-dynamic(output-token-decimals() calculated-max-output())
+    )
+    "Partial trade"
+  );

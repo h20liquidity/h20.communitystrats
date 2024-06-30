@@ -39,7 +39,6 @@ function polygonDolzIo() pure returns (IO memory) {
 function polygonUsdtIo() pure returns (IO memory) {
     return IO(address(POLYGON_USDT), 6, VAULT_ID);
 }
-
 contract DcaOracleUniv3Test is StrategyTests {
 
     using SafeERC20 for IERC20;
@@ -81,7 +80,7 @@ contract DcaOracleUniv3Test is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = polygonUsdtIo();
 
-        uint256 expectedRatio = 90847764971111605463;
+        uint256 expectedRatio = 88360903476403323577;
         uint256 expectedAmountOutputMax = 10853037074011243840;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
@@ -169,13 +168,14 @@ contract DcaOracleUniv3Test is StrategyTests {
 
         takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
 
+        uint256 cooldown = 3600;
         // Check cooldown
         {
             vm.expectRevert("cooldown");
             takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
         }
         {
-            vm.warp(block.timestamp + 14399);
+            vm.warp(block.timestamp + cooldown - 1);
             vm.expectRevert("cooldown");
             takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
         }

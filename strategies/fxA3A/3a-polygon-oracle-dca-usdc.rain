@@ -132,7 +132,7 @@ scenarios:
               # Grid minimum price
               grid-min: 0.0001
               # Grid maximum price
-              grid-max: 0.003
+              grid-max: 0.1
               calculate-exact-quote: '''calculate-exact-buy-quote'
               calculate-io-ratio: '''calculate-io-ratio-buy'
             scenarios:

@@ -38,6 +38,26 @@ tokens:
     network: h20-community-polygon
     address: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
 
+orders:
+  # vault-id generated with `openssl rand -hex 32`
+  polygon-dolz-sell:
+    orderbooks: h20-community-polygon
+    inputs:
+      - token: polygon-usdt
+        vault-id: 0xce6765342b3ada1ee9f3ef752e16b1feb23a65be85446988ca84749c3da416b8
+    outputs:
+      - token: polygon-dolz
+        vault-id: 0xce6765342b3ada1ee9f3ef752e16b1feb23a65be85446988ca84749c3da416b8
+
+  polygon-dolz-buy:
+    orderbook: h20-community-polygon
+    inputs:
+      - token: polygon-dolz
+        vault-id: 0xce6765342b3ada1ee9f3ef752e16b1feb23a65be85446988ca84749c3da416b8
+    outputs:
+      - token: polygon-usdt
+        vault-id: 0xce6765342b3ada1ee9f3ef752e16b1feb23a65be85446988ca84749c3da416b8
+
 
 scenarios:
     polygon-dolz-dca-univ3:
@@ -69,21 +89,24 @@ scenarios:
           # binding value is the fee for WETH-USDC pool
           twap-multiplier-fee: '[uniswap-v3-fee-low]'
           
-          #Jittery binomial bits for randomness, more the number of bits, higher is the randomness.
+          # Jittery binomial bits for randomness.
+          # If the number of bits are more, the randomess is centered towards mean.
+          # If the number of bits are less, the randomess is more spread out.
           jittery-binomial-bits: 10
 
         scenarios:
           buy:
             bindings:
-              # Input token, this is the token being sold
+              # Input token, this is the token being received.
               input-token: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
-
-              # Input token, mean amount 
-              # Amount of input tokens offered per trade.
+              
+              # Output token, this is the token that is being offered.
+              # Output token, mean amount 
+              # Amount of output tokens offered per trade.
               # For gas expensive networks mean amount needs to be higher to compensate for gas fee and bounty.
-              mean-input-amount : 10
+              mean-output-amount : 10
 
-              # Output token, this is the token being bought
+              # Output token, this is the token being sold
               output-token: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
 
               # Reserve token, If the output token is paired with the input token on a uniswap v3,
@@ -101,8 +124,8 @@ scenarios:
               twap-multiplier: '''twap-multiplier-identity'
 
               # Params for bounty auction which is input token denominated. Min price, max price, time in seconds and unit increase
-              bounty-min: 0.0015
-              bounty-max: 0.01
+              bounty-min: 1.1
+              bounty-max: 27
               bounty-unit-increase: 0.001
               bounty-unit-time: 60
               
@@ -119,11 +142,10 @@ scenarios:
                   # the network gas fee is high, then deviation needs to be a higher value.
                   # - For 1% deviation, binding value is 0.01
                   # - For 10% deviation, binding value is 0.1
-                  twap-deviation: 0.03
+                  twap-deviation: 0.1
 
                   # Minimum io-ratio for the order. 
                   # Strategy will not buy output token with input token for a lower ratio.
-                  # Can also be labelled max buy price. 
                   min-ratio: 80
                 scenarios:
                   prod:
@@ -157,13 +179,13 @@ scenarios:
 
           sell:
             bindings:
-              # Input token, this is the token being sold
+              # Input token, this is the token being received.
               input-token: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
 
-              # Output token, mean amount 
-              # Amount of input tokens offered per trade.
+              # Output token, this is the token that is being offered.
+              # Amount of output tokens offered per trade.
               # For gas expensive networks mean amount needs to be higher to compensate for gas fee and bounty.
-              mean-input-amount : 900
+              mean-output-amount : 900
 
               # Output token, this is the token being bought
               output-token: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
@@ -253,15 +275,12 @@ charts:
         description: Ratio offered by the order for the current block accounting for bounty.
       - label: Minimum Bounty amount
         value: 0.7.5
-        unit-prefix: $        
-        description: Minimum bounty offered
+        description: Minimum amount of DOLZ offered as bounty.
       - label: Maximum Bounty amount
-        value: 0.7.6
-        unit-prefix: $        
-        description: Maximum bounty offered
+        value: 0.7.6    
+        description: Maximum amount of DOLZ offered as bounty.
       - label: Bounty increase per minute
-        value: 0.7.10
-        unit-prefix: $   
+        value: 0.7.10   
         description: Amount by which bounty increases every minute after cooldown.
       - label: Max Bounty ratio
         value: 0.7.9
@@ -269,7 +288,6 @@ charts:
         description: Ratio of max bounty amount to order amount
       - label: Mean amount
         value: 0.7.4
-        unit-prefix: $        
         description: Mean amount of USDC sold 
       - label: Cooldown in minutes
         value: 0.7.11        
@@ -287,15 +305,12 @@ charts:
         description: Twap deviation occuring at current block with maximum bounty on the buy side to prevent higher than deviations buys.
       - label: Cummulative amount traded daily
         value: 0.7.13     
-        unit-prefix: $ 
         description: Cummulative amount of USDC tokens offered in a day.
       - label: Cummulative amount traded weekly
         value: 0.7.14     
-        unit-prefix: $ 
         description: Cummulative amount of USDC tokens offered in a week.
       - label: Cummulative amount traded montly
         value: 0.7.15     
-        unit-prefix: $ 
         description: Cummulative amount of USDC tokens offered in a month.
       - label: Twap-ratio
         value: 0.7.2     
@@ -344,24 +359,20 @@ charts:
         value: 0.7
         description: Ratio offered by the order for the current block accounting for bounty.
       - label: Minimum Bounty amount
-        value: 0.7.5
-        unit-prefix: $        
-        description: Minimum bounty offered
+        value: 0.7.5        
+        description: Minimum amount of USDC offered as bounty.
       - label: Maximum Bounty amount
         value: 0.7.6
-        unit-prefix: $        
-        description: Maximum bounty offered
+        description: Maximum amount of USDC offered as bounty.
       - label: Bounty increase per minute
-        value: 0.7.10
-        unit-prefix: $   
+        value: 0.7.10   
         description: Amount by which bounty increases every minute after cooldown.
       - label: Max Bounty ratio
         value: 0.7.9
         unit-suffix: '%'   
         description: Ratio of max bounty amount to order amount
       - label: Mean amount
-        value: 0.7.4
-        unit-prefix: $        
+        value: 0.7.4        
         description: Mean amount of DOLZ offered 
       - label: Cooldown in minutes
         value: 0.7.11        
@@ -379,15 +390,12 @@ charts:
         description: Twap deviation occuring at current block with maximum bounty on the sell side to prevent lower than deviation sells.
       - label: Cummulative amount traded daily
         value: 0.7.13     
-        unit-prefix: $ 
         description: Cummulative amount of DOLZ tokens offered in a day.
       - label: Cummulative amount traded weekly
         value: 0.7.14     
-        unit-prefix: $ 
         description: Cummulative amount of DOLZ tokens offered in a week.
       - label: Cummulative amount traded montly
-        value: 0.7.15     
-        unit-prefix: $ 
+        value: 0.7.15    
         description: Cummulative amount of DOLZ tokens offered in a month.
       - label: Twap-ratio
         value: 0.7.2     
@@ -420,20 +428,27 @@ charts:
                   options:
                     x: "0.4"
                     thresholds: 25
-                                    
+
+deployments:
+  h20-dolz-sell:
+    scenario: polygon-dolz-dca-univ3.sell.deviation.prod
+    order: polygon-dolz-sell    
+  h20-dolz-buy:
+    scenario: polygon-dolz-dca-univ3.buy.deviation.prod
+    order: polygon-dolz-buy                                        
 ---
 #cooldown-time !The minimum amount of seconds that must elapse between trades.
-#bounty-min !Minimum bounty to offer for each trade in USD.
+#bounty-min !Minimum bounty to offer for each trade denominated in input tokens.
 #bounty-unit-increase !Amount to increase bounty per unit time.
 #bounty-unit-time !Unit of time to increase the bounty.
-#bounty-max !Maximum bounty that can be offered. 
+#bounty-max !Maximum bounty that can be offered denominated in input tokens. 
 
 #input-token !Input token from the perspective of the order.
 #output-token !Ouput token from the perspective of the order.
 #reserve-token !Token which is paired with the ouput token on uniswap-v3 pool.
 
 #min-ratio !Minimum io-ratio for the order.
-#mean-input-amount  !Mean dollar denominated amount of stable tokens traded.
+#mean-output-amount  !Mean amount of output tokens offered per trade.
 #jittery-binomial-bits !Number of bits for jittery binomial to calculate random amount of stable token traded per trade.
 
 #uniswap-v3-factory !Uniswap v3 factory address.
@@ -569,7 +584,7 @@ charts:
 #plottables-chart
   max-output-amount io-ratio twap-ratio: ,
   _: cooldown-time,
-  _: mean-input-amount ,
+  _: mean-output-amount ,
   _: bounty-min,
   _: bounty-max,
   _: mul(twap-deviation 100),
@@ -578,11 +593,11 @@ charts:
     mul(saturating-sub(1 twap-ratio) 100)
     mul(saturating-sub(twap-ratio 1) 100)
   ),
-  max-bounty-ratio: mul(div(bounty-max mean-input-amount ) 100),
+  max-bounty-ratio: mul(div(bounty-max mean-output-amount ) 100),
   bounty-increase-per-minute: mul(div(bounty-unit-increase bounty-unit-time) 60),
   cooldown-in-minutes: div(cooldown-time 60),
   cooldown-in-hours: div(60 cooldown-in-minutes),
-  total-amount-daily: mul(cooldown-in-hours mean-input-amount 24),
+  total-amount-daily: mul(cooldown-in-hours mean-output-amount 24),
   total-amount-weekly: mul(total-amount-daily 7),
   total-amount-montly: mul(total-amount-daily 30);
 
@@ -596,7 +611,7 @@ charts:
   current-time last-time: call<'ensure-cooldown>(),
   random-multiplier18: call<'jittery-binomial>(last-time), 
   jittered-output-amount: mul(
-    mul(mean-input-amount 2)
+    mul(mean-output-amount 2)
     random-multiplier18
   ), 
   quote-input-amount: call<'calculate-exact-quote>(jittered-output-amount),

@@ -380,7 +380,7 @@ contract DcaOracleUniv3Test is StrategyTests {
 
 
         OrderV2 memory order = addOrderDepositOutputTokens(strategy); 
-
+        uint256 cooldown = 3600;
         {
             vm.recordLogs();
             takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
@@ -392,7 +392,7 @@ contract DcaOracleUniv3Test is StrategyTests {
         }
 
         // cooldown
-        vm.warp(block.timestamp + 14400); 
+        vm.warp(block.timestamp + cooldown); 
         {
             vm.recordLogs();
             takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
@@ -404,7 +404,7 @@ contract DcaOracleUniv3Test is StrategyTests {
         }
 
         // cooldown + 60 seconds
-        vm.warp(block.timestamp + 14400 + 60); 
+        vm.warp(block.timestamp + cooldown + 60); 
         {
             vm.recordLogs();
             takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);

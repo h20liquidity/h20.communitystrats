@@ -75,14 +75,21 @@ scenarios:
         scenarios:
           buy:
             bindings:
-              # Input and Output tokens are from the perspective of the order.
+              # Input token, this is the token being sold
               input-token: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
+
+              # Input token, mean amount 
+              # Amount of input tokens offered per trade.
+              # For gas expensive networks mean amount needs to be higher to compensate for gas fee and bounty.
+              mean-input-amount : 10
+
+              # Output token, this is the token being bought
               output-token: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
 
-              # If the output token is paired with the input token on a uniswap v3,
-              # then the reserve to address is same as input token address
+              # Reserve token, If the output token is paired with the input token on a uniswap v3,
+              # then the reserve is the input token. 
               # If the output token is NOT paired with the input token on a uniswap v3 pool,
-              # then the reserve to address is the address of token which the ouput token is paired with.
+              # then the reserve address is the token which the ouput token is paired with.
               reserve-token: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
 
               # Quote and Twap multiplier to get quote and 30min twap for input-output token pair.
@@ -93,19 +100,14 @@ scenarios:
               io-quote: '''io-quote-identity'
               twap-multiplier: '''twap-multiplier-identity'
 
-              # Params for bounty auction which is input token denominated.
+              # Params for bounty auction which is input token denominated. Min price, max price, time in seconds and unit increase
               bounty-min: 0.0015
               bounty-max: 0.01
               bounty-unit-increase: 0.001
               bounty-unit-time: 60
               
-              # Cooldown between two trades in seconds.
-              cooldown-time: 14400
-
-              # Mean amount of input tokens offered per trade.
-              # For gas expensive networks mean amount needs to be higher to compensate
-              # for gas fee and bounty.
-              mean-input-amount : 10
+              # Cooldown between two trades in seconds. 3600, default, is 1 hour.
+              cooldown-time: 3600
               
             scenarios:
               deviation:
@@ -116,11 +118,12 @@ scenarios:
                   # tokens traded per trade. If the mean amount of tokens traded is low, or if 
                   # the network gas fee is high, then deviation needs to be a higher value.
                   # - For 1% deviation, binding value is 0.01
-                  # - For 5% deviation, binding value is 0.05
                   # - For 10% deviation, binding value is 0.1
                   twap-deviation: 0.03
 
-                  # Minimum io-ratio for the order
+                  # Minimum io-ratio for the order. 
+                  # Strategy will not buy output token with input token for a lower ratio.
+                  # Can also be labelled max buy price. 
                   min-ratio: 80
                 scenarios:
                   prod:
@@ -154,15 +157,21 @@ scenarios:
 
           sell:
             bindings:
-
-              # Input and Output tokens are from the perspective of the order.
+              # Input token, this is the token being sold
               input-token: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+
+              # Output token, mean amount 
+              # Amount of input tokens offered per trade.
+              # For gas expensive networks mean amount needs to be higher to compensate for gas fee and bounty.
+              mean-input-amount : 900
+
+              # Output token, this is the token being bought
               output-token: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
 
-              # If the output token is paired with the input token on a uniswap v3,
-              # then the reserve to address is same as input token address
+              # Reserve token, If the output token is paired with the input token on a uniswap v3,
+              # then the reserve is the input token. 
               # If the output token is NOT paired with the input token on a uniswap v3 pool,
-              # then the reserve to address is the address of token which the ouput token is paired with.
+              # then the reserve address is the token which the ouput token is paired with.
               reserve-token: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
 
               # Quote and Twap multiplier to get quote and 30min twap for input-output token pair.
@@ -180,11 +189,7 @@ scenarios:
               bounty-unit-time: 60
 
               # Cooldown between two trades in seconds.
-              cooldown-time: 14400
-              # Mean amount of USDC offered per trade.
-              # For gas expensive networks mean amount needs to be higher to compensate
-              # for gas fee and bounty.
-              mean-input-amount : 900
+              cooldown-time: 3600
       
             scenarios:
               deviation:
@@ -199,7 +204,9 @@ scenarios:
                   # - For 10% deviation, binding value is 0.1
                   twap-deviation: 0.1
 
-                  # Minimum io-ratio for the order
+                  # Minimum io-ratio for the order. 
+                  # Strategy will not buy input token with output token for a higher ratio.
+                  # Can also be laelled min sell price. 
                   min-ratio: 0.01
                 scenarios:
                   prod:

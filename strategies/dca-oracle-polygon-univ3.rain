@@ -31,16 +31,16 @@ deployers:
     network: h20-community-polygon
 
 tokens:
-  h20-community-polygon:
+  tkn-link:
     network: h20-community-polygon
     address: 0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39
-  polygon-usdt:
+  tkn-usdt:
     network: h20-community-polygon
     address: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
-  polygon-usdc:
+  tkn-usdc:
     network: h20-community-polygon
     address: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
-  polygon-wmatic:
+  tkn-wmatic:
     network: h20-community-polygon
     address: 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
 

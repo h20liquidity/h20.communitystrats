@@ -1,9 +1,9 @@
 # Strategy: Oracle based DCA, uniswap v3
 #
-# High level, this strategy trades mean amount of USDC denominated LINK tokens at the end of every cooldown period
-# provided that current calculated USDC denominated price of LINK falls within the price gird.
+# High level, this strategy trades mean amount of USDC denominated DOLZ tokens at the end of every cooldown period
+# provided that current calculated USDC denominated price of DOLZ falls within the price gird.
 #
-# - Amount of LINK bought/sold per trade within the price band is randomized and centered around a mean,
+# - Amount of DOLZ bought/sold per trade within the price band is randomized and centered around a mean,
 #   value for which can be set within the bindings.
 # - Range for the grid can also be provided within the bindings.
 # - Strategy provides a guard against orcale manipulation by enforcing that the ratio of the current price offered
@@ -31,22 +31,16 @@ deployers:
     network: h20-community-polygon
 
 tokens:
-  tkn-link:
+  polygon-dolz:
     network: h20-community-polygon
-    address: 0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39
-  tkn-usdt:
+    address: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
+  polygon-usdt:
     network: h20-community-polygon
     address: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
-  tkn-usdc:
-    network: h20-community-polygon
-    address: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
-  tkn-wmatic:
-    network: h20-community-polygon
-    address: 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
 
 
 scenarios:
-    polygon-link-dca-univ3:
+    polygon-dolz-dca-univ3:
         network: h20-community-polygon
         deployer: h20-community-polygon
         orderbook: h20-community-polygon
@@ -62,10 +56,10 @@ scenarios:
           # Twap fee for tokens
           # `twap-io-fee`: Uniswap-v3 pool fee for token pair.
           # If distribution token is paired with a stable token, the binding value is the fee
-          # for the LINK-USDC pool.
+          # for the DOLZ-USDC pool.
           #
           # If distribution token is paired with native wrapped token, for eg WETH, then the 
-          # binding value is the fee for LINK-WETH pool.
+          # binding value is the fee for DOLZ-WETH pool.
           twap-io-fee: '[uniswap-v3-fee-medium]'
 
           # `twap-multiplier-fee`: Uniswap-v3 pool fee for stable-reserve pair.
@@ -82,14 +76,14 @@ scenarios:
           buy:
             bindings:
               # Input and Output tokens are from the perspective of the order.
-              input-token: 0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39
-              output-token: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
+              input-token: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
+              output-token: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
 
               # If the output token is paired with the input token on a uniswap v3,
               # then the reserve to address is same as input token address
               # If the output token is NOT paired with the input token on a uniswap v3 pool,
               # then the reserve to address is the address of token which the ouput token is paired with.
-              reserve-token: 0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39
+              reserve-token: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
 
               # Quote and Twap multiplier to get quote and 30min twap for input-output token pair.
               # If the output token is paired with the input token on a uniswap v3,
@@ -111,7 +105,7 @@ scenarios:
               # Mean amount of input tokens offered per trade.
               # For gas expensive networks mean amount needs to be higher to compensate
               # for gas fee and bounty.
-              mean-input-amount : 15 
+              mean-input-amount : 10
               
             scenarios:
               deviation:
@@ -127,7 +121,7 @@ scenarios:
                   twap-deviation: 0.03
 
                   # Minimum io-ratio for the order
-                  min-ratio: 0.05
+                  min-ratio: 80
                 scenarios:
                   prod:
                     bindings:
@@ -151,7 +145,8 @@ scenarios:
                       plottables: '''plottables-chart'
               test:
                 bindings:
-                  twap-deviation: 0.12
+                  min-ratio: 80
+                  twap-deviation: 0.01
                   enforce-twap-check: '''enforce-twap-check-prod'
                   ensure-min-ratio: '''ensure-min-ratio-chart'
                   ensure-cooldown: '''ensure-cooldown-chart'
@@ -161,14 +156,14 @@ scenarios:
             bindings:
 
               # Input and Output tokens are from the perspective of the order.
-              input-token: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
-              output-token: 0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39
+              input-token: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+              output-token: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
 
               # If the output token is paired with the input token on a uniswap v3,
               # then the reserve to address is same as input token address
               # If the output token is NOT paired with the input token on a uniswap v3 pool,
               # then the reserve to address is the address of token which the ouput token is paired with.
-              reserve-token: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
+              reserve-token: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
 
               # Quote and Twap multiplier to get quote and 30min twap for input-output token pair.
               # If the output token is paired with the input token on a uniswap v3,
@@ -189,7 +184,7 @@ scenarios:
               # Mean amount of USDC offered per trade.
               # For gas expensive networks mean amount needs to be higher to compensate
               # for gas fee and bounty.
-              mean-input-amount : 1
+              mean-input-amount : 900
       
             scenarios:
               deviation:
@@ -202,10 +197,10 @@ scenarios:
                   # - For 1% deviation, binding value is 0.01
                   # - For 5% deviation, binding value is 0.05
                   # - For 10% deviation, binding value is 0.1
-                  twap-deviation: 0.03
+                  twap-deviation: 0.1
 
                   # Minimum io-ratio for the order
-                  min-ratio: 0
+                  min-ratio: 0.01
                 scenarios:
                   prod:
                     bindings:
@@ -229,23 +224,24 @@ scenarios:
                       plottables: '''plottables-chart'
               test:
                 bindings:
+                  min-ratio: 0.02
                   twap-deviation: 0.12
                   enforce-twap-check: '''enforce-twap-check-prod'
-                  ensure-min-ratio: '''ensure-min-ratio-chart'
+                  ensure-min-ratio: '''ensure-min-ratio-prod'
                   ensure-cooldown: '''ensure-cooldown-chart'
                   plottables: '''plottables-prod'
                 
 charts:
-  link-buy-dca-univ3: 
-    scenario: polygon-link-dca-univ3.buy.deviation.metric
+  dolz-buy-dca-univ3: 
+    scenario: polygon-dolz-dca-univ3.buy.deviation.metric
     metrics:
       - label: Amount of USDC offered for first trade.
         value: 0.3
         description: Amount of USDC offered for the current block.
-      - label: Amount of LINK received for frist trade.
+      - label: Amount of DOLZ received for frist trade.
         value: 0.4
-        description: Amount of LINK received for USDC offered.
-      - label: io-ratio LINK/USDC
+        description: Amount of DOLZ received for USDC offered.
+      - label: io-ratio DOLZ/USDC
         value: 0.7
         description: Ratio offered by the order for the current block accounting for bounty.
       - label: Minimum Bounty amount
@@ -299,8 +295,8 @@ charts:
 
     plots:
 
-  buy-link-simulation:
-    scenario: polygon-link-dca-univ3.buy.deviation.chart
+  buy-dolz-simulation:
+    scenario: polygon-dolz-dca-univ3.buy.deviation.chart
     plots:
       Mean amount of USDC offered:
         marks:
@@ -315,7 +311,7 @@ charts:
                     x: "0.3"
                     thresholds: 25
                     
-      Mean amount of LINK received:
+      Mean amount of DOLZ received:
         marks:
           - type: recty
             options:
@@ -328,16 +324,16 @@ charts:
                     x: "0.4"
                     thresholds: 25
   
-  link-sell-dca-univ3: 
-    scenario: polygon-link-dca-univ3.sell.deviation.metric
+  dolz-sell-dca-univ3: 
+    scenario: polygon-dolz-dca-univ3.sell.deviation.metric
     metrics:
-      - label: Amount of LINK offered for first trade.
+      - label: Amount of DOLZ offered for first trade.
         value: 0.3
-        description: Amount of LINK offered for the current block.
+        description: Amount of DOLZ offered for the current block.
       - label: Amount of USDC received for frist trade.
         value: 0.4
-        description: Amount of USDC received for LINK offered.
-      - label: io-ratio USDC/LINK
+        description: Amount of USDC received for DOLZ offered.
+      - label: io-ratio USDC/DOLZ
         value: 0.7
         description: Ratio offered by the order for the current block accounting for bounty.
       - label: Minimum Bounty amount
@@ -359,7 +355,7 @@ charts:
       - label: Mean amount
         value: 0.7.4
         unit-prefix: $        
-        description: Mean amount of LINK offered 
+        description: Mean amount of DOLZ offered 
       - label: Cooldown in minutes
         value: 0.7.11        
         description: Number of minutes between strategy running
@@ -377,22 +373,22 @@ charts:
       - label: Cummulative amount traded daily
         value: 0.7.13     
         unit-prefix: $ 
-        description: Cummulative amount of LINK tokens offered in a day.
+        description: Cummulative amount of DOLZ tokens offered in a day.
       - label: Cummulative amount traded weekly
         value: 0.7.14     
         unit-prefix: $ 
-        description: Cummulative amount of LINK tokens offered in a week.
+        description: Cummulative amount of DOLZ tokens offered in a week.
       - label: Cummulative amount traded montly
         value: 0.7.15     
         unit-prefix: $ 
-        description: Cummulative amount of LINK tokens offered in a month.
+        description: Cummulative amount of DOLZ tokens offered in a month.
       - label: Twap-ratio
         value: 0.7.2     
         
-  sell-link-simulation:
-    scenario: polygon-link-dca-univ3.sell.deviation.chart
+  sell-dolz-simulation:
+    scenario: polygon-dolz-dca-univ3.sell.deviation.chart
     plots:
-      Mean amount of LINK offered:
+      Mean amount of DOLZ offered:
         marks:
           - type: recty
             options:

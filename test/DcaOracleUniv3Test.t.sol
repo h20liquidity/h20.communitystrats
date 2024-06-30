@@ -26,42 +26,26 @@ import "h20.test-std/lib/LibProcessStream.sol";
 uint256 constant VAULT_ID = uint256(keccak256("vault"));
 
 
-/// @dev https://polygonscan.com/address/0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39
-IERC20 constant POLYGON_LINK = IERC20(0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39); 
+/// @dev https://polygonscan.com/address/0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
+IERC20 constant POLYGON_DOLZ = IERC20(0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be); 
 
 /// @dev https://polygonscan.com/address/0xc2132D05D31c914a87C6611C10748AEb04B58e8F
 IERC20 constant POLYGON_USDT = IERC20(0xc2132D05D31c914a87C6611C10748AEb04B58e8F);
 
-/// @dev https://polygonscan.com/address/0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
-IERC20 constant POLYGON_USDC = IERC20(0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174);
-
-/// @dev https://polygonscan.com/address/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
-IERC20 constant POLYGON_WMATIC = IERC20(0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270);
-
-
-function polygonLinkIo() pure returns (IO memory) {
-    return IO(address(POLYGON_LINK), 18, VAULT_ID);
+function polygonDolzIo() pure returns (IO memory) {
+    return IO(address(POLYGON_DOLZ), 18, VAULT_ID);
 }
 
 function polygonUsdtIo() pure returns (IO memory) {
     return IO(address(POLYGON_USDT), 6, VAULT_ID);
 }
 
-function polygonUsdcIo() pure returns (IO memory) {
-    return IO(address(POLYGON_USDC), 6, VAULT_ID);
-}
-
-function polygonWmaticIo() pure returns (IO memory) {
-    return IO(address(POLYGON_WMATIC), 18, VAULT_ID);
-}
-
-
-contract PolygonFixedGridDecimal is StrategyTests {
+contract DcaOracleUniv3Test is StrategyTests {
 
     using SafeERC20 for IERC20;
     using Strings for address;
 
-    uint256 constant FORK_BLOCK_NUMBER = 58715054;
+    uint256 constant FORK_BLOCK_NUMBER = 58785637;
    
     
     function selectFork() internal {
@@ -89,20 +73,20 @@ contract PolygonFixedGridDecimal is StrategyTests {
         ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
     }
 
-    function testLinkBuyLinkHappyPath() public {
+    function testBuyDolzHappyPath() public {
 
         IO[] memory inputVaults = new IO[](1);
-        inputVaults[0] = polygonLinkIo();
+        inputVaults[0] = polygonDolzIo();
 
         IO[] memory outputVaults = new IO[](1);
-        outputVaults[0] = polygonUsdcIo();
+        outputVaults[0] = polygonUsdtIo();
 
-        uint256 expectedRatio = 69323311538160288;
-        uint256 expectedAmountOutputMax = 16279555611016865760;
+        uint256 expectedRatio = 90847764971111605463;
+        uint256 expectedAmountOutputMax = 10853037074011243840;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
-            getEncodedSellLinkRoute(address(ARB_INSTANCE)),
-            getEncodedBuyLinkRoute(address(ARB_INSTANCE)),
+            getEncodedSellDolzRoute(address(ARB_INSTANCE)),
+            getEncodedBuyDolzRoute(address(ARB_INSTANCE)),
             0,
             0,
             1e18,
@@ -110,7 +94,7 @@ contract PolygonFixedGridDecimal is StrategyTests {
             expectedRatio,
             expectedAmountOutputMax,
             "strategies/dca-oracle-polygon-univ3.rain",
-            "polygon-link-dca-univ3.buy.deviation.prod",
+            "polygon-dolz-dca-univ3.buy.deviation.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
@@ -123,20 +107,20 @@ contract PolygonFixedGridDecimal is StrategyTests {
 
     }
 
-    function testLinkSellLinkHappyPath() public {
+    function testSellDolzHappyPath() public {
 
         IO[] memory inputVaults = new IO[](1);
-        inputVaults[0] = polygonUsdcIo();
+        inputVaults[0] = polygonUsdtIo();
 
         IO[] memory outputVaults = new IO[](1);
-        outputVaults[0] = polygonLinkIo();
+        outputVaults[0] = polygonDolzIo();
 
-        uint256 expectedRatio = 13936173715114621738; 
-        uint256 expectedAmountOutputMax = 1085303707401124384;
+        uint256 expectedRatio = 0.010632142187153260e18; 
+        uint256 expectedAmountOutputMax = 976773336661011945600;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
-            getEncodedBuyLinkRoute(address(ARB_INSTANCE)),
-            getEncodedSellLinkRoute(address(ARB_INSTANCE)),
+            getEncodedBuyDolzRoute(address(ARB_INSTANCE)),
+            getEncodedSellDolzRoute(address(ARB_INSTANCE)),
             0,
             0,
             1e6,
@@ -144,7 +128,7 @@ contract PolygonFixedGridDecimal is StrategyTests {
             expectedRatio,
             expectedAmountOutputMax,
             "strategies/dca-oracle-polygon-univ3.rain",
-            "polygon-link-dca-univ3.sell.deviation.prod",
+            "polygon-dolz-dca-univ3.sell.deviation.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
@@ -159,14 +143,14 @@ contract PolygonFixedGridDecimal is StrategyTests {
     function testGridCooldown() public {
 
         IO[] memory inputVaults = new IO[](1);
-        inputVaults[0] = polygonLinkIo();
+        inputVaults[0] = polygonDolzIo();
 
         IO[] memory outputVaults = new IO[](1);
-        outputVaults[0] = polygonUsdcIo();
+        outputVaults[0] = polygonUsdtIo();
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
             "",
-            getEncodedBuyLinkRoute(address(ARB_INSTANCE)),
+            getEncodedBuyDolzRoute(address(ARB_INSTANCE)),
             0,
             0,
             0,
@@ -174,7 +158,7 @@ contract PolygonFixedGridDecimal is StrategyTests {
             0,
             0,
             "strategies/dca-oracle-polygon-univ3.rain",
-            "polygon-link-dca-univ3.buy.deviation.prod",
+            "polygon-dolz-dca-univ3.buy.deviation.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
@@ -207,25 +191,22 @@ contract PolygonFixedGridDecimal is StrategyTests {
     function testPartialTrade() public {
 
         IO[] memory inputVaults = new IO[](1);
-        inputVaults[0] = polygonUsdcIo();
+        inputVaults[0] = polygonUsdtIo();
 
         IO[] memory outputVaults = new IO[](1);
-        outputVaults[0] = polygonLinkIo();
-
-        uint256 expectedRatio = 14018452504312447172;
-        uint256 expectedAmountOutputMax = 1085303707401124384;
+        outputVaults[0] = polygonDolzIo();
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
-            getEncodedBuyLinkRoute(address(ARB_INSTANCE)),
-            getEncodedSellLinkRoute(address(ARB_INSTANCE)),
+            getEncodedBuyDolzRoute(address(ARB_INSTANCE)),
+            getEncodedSellDolzRoute(address(ARB_INSTANCE)),
             0,
             0,
             1e6,
             10000e18,
-            expectedRatio,
-            expectedAmountOutputMax,
+            0,
+            0,
             "strategies/dca-oracle-polygon-univ3.rain",
-            "polygon-link-dca-univ3.sell.deviation.prod",
+            "polygon-dolz-dca-univ3.sell.deviation.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
@@ -283,6 +264,155 @@ contract PolygonFixedGridDecimal is StrategyTests {
         }
         vm.stopPrank();
 
+    } 
+
+    function testTwapCheck() public {
+
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = polygonDolzIo();
+
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = polygonUsdtIo();
+
+        uint256 expectedRatio = 72403579528745632;
+        uint256 expectedAmountOutputMax = 16279555611016865760;
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            getEncodedSellDolzRoute(address(ARB_INSTANCE)),
+            getEncodedBuyDolzRoute(address(ARB_INSTANCE)),
+            0,
+            0,
+            100000e18,
+            100000e6,
+            expectedRatio,
+            expectedAmountOutputMax,
+            "strategies/dca-oracle-polygon-univ3.rain",
+            "polygon-dolz-dca-univ3.buy.test",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+        OrderV2 memory order = addOrderDepositOutputTokens(strategy);
+        // Twap check if the price increases for buy order.
+        {
+            moveExternalPrice(
+                strategy.outputVaults[strategy.outputTokenIndex].token,
+                strategy.inputVaults[strategy.inputTokenIndex].token,
+                1000e6,
+                strategy.takerRoute
+            );
+            vm.expectRevert("twap check");
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+        }
+        {
+            moveExternalPrice(
+                strategy.inputVaults[strategy.inputTokenIndex].token,
+                strategy.outputVaults[strategy.outputTokenIndex].token,
+                strategy.makerAmount,
+                strategy.makerRoute
+            );
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+        }
+
+    }
+
+    function testMinRatio() public {
+
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = polygonUsdtIo();
+
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = polygonDolzIo();
+
+        uint256 expectedRatio = 0.010632142187153260e18; 
+        uint256 expectedAmountOutputMax = 976773336661011945600;
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            getEncodedBuyDolzRoute(address(ARB_INSTANCE)),
+            getEncodedSellDolzRoute(address(ARB_INSTANCE)),
+            0,
+            0,
+            1e6,
+            10000e18,
+            expectedRatio,
+            expectedAmountOutputMax,
+            "strategies/dca-oracle-polygon-univ3.rain",
+            "polygon-dolz-dca-univ3.sell.test",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+        OrderV2 memory order = addOrderDepositOutputTokens(strategy);
+        vm.expectRevert("min ratio");
+        takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+
+
+    }
+
+    function testDolzBountyAuction() public {
+
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = polygonUsdtIo();
+
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = polygonDolzIo();
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            getEncodedBuyDolzRoute(address(ARB_INSTANCE)),
+            getEncodedSellDolzRoute(address(ARB_INSTANCE)),
+            0,
+            0,
+            1e6,
+            10000e18,
+            0,
+            0,
+            "strategies/dca-oracle-polygon-univ3.rain",
+            "polygon-dolz-dca-univ3.sell.deviation.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+
+        OrderV2 memory order = addOrderDepositOutputTokens(strategy); 
+
+        {
+            vm.recordLogs();
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 inputTokenBounty,) = getBounty(entries);
+
+            // Assert greater than max bounty, minus the error amount
+            assertGe(inputTokenBounty, 0.3e6);
+        }
+
+        // cooldown
+        vm.warp(block.timestamp + 14400); 
+        {
+            vm.recordLogs();
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 inputTokenBounty,) = getBounty(entries);
+
+            // Assert greater than min bounty, minus the error amount
+            assertGe(inputTokenBounty, 0.012e6);
+        }
+
+        // cooldown + 60 seconds
+        vm.warp(block.timestamp + 14400 + 60); 
+        {
+            vm.recordLogs();
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 inputTokenBounty,) = getBounty(entries);
+            // Assert greater than min bounty, minus the error amount
+            assertGe(inputTokenBounty, 0.022e6);
+        }
     }
 
     function getBounty(Vm.Log[] memory entries)
@@ -309,16 +439,16 @@ contract PolygonFixedGridDecimal is StrategyTests {
     } 
 
 
-    function getEncodedBuyLinkRoute(address toAddress) internal pure returns (bytes memory) {
+    function getEncodedBuyDolzRoute(address toAddress) internal pure returns (bytes memory) {
         bytes memory ROUTE_PRELUDE =
-            hex"022791Bca1f2de4661ED88A30C99A7a9449Aa8417401ffff0122177148e681A6ca5242c9888Ace170EE7eC47BD01";
+            hex"02c2132D05D31c914a87C6611C10748AEb04B58e8F01ffff01C56DDB5C93B8E92B9409DCE43a9169aa643495b800";
             
         return abi.encode(bytes.concat(ROUTE_PRELUDE, abi.encodePacked(address(toAddress))));
     }
 
-    function getEncodedSellLinkRoute(address toAddress) internal pure returns (bytes memory) {
+    function getEncodedSellDolzRoute(address toAddress) internal pure returns (bytes memory) {
         bytes memory ROUTE_PRELUDE =
-            hex"0253E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad3901ffff013c92bd9596E6aca8cfa29ec733ebe0c189bec1F301E7eb31f23A5BefEEFf76dbD2ED6AdC822568a5d201c2132D05D31c914a87C6611C10748AEb04B58e8F01ffff018CFaab34f5159abf9C35587AC40d09a05dC9476500";
+            hex"026ab4E20f36ca48B61ECd66c0450fDf665Fa130be01ffff01C56DDB5C93B8E92B9409DCE43a9169aa643495b801";
             
         return abi.encode(bytes.concat(ROUTE_PRELUDE, abi.encodePacked(address(toAddress))));
     }

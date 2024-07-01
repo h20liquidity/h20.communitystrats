@@ -72,7 +72,6 @@ contract DcaOracleUniv3Test is StrategyTests {
         ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
     }
 
-    //nix develop ./lib/h20.test-std/lib/rain.orderbook --command cargo run --manifest-path ./lib/h20.test-std/lib/rain.orderbook/Cargo.toml --package rain_orderbook_cli order compose -f strategies/shitcoin-ineffiecny-milker.rain -s polygon-mean.geod
     function testPolygonMeanReversal() public {
 
         IO[] memory inputVaults = new IO[](1);
@@ -90,7 +89,7 @@ contract DcaOracleUniv3Test is StrategyTests {
             1000e6,
             0,
             0,
-            "strategies/shitcoin-ineffiecny-milker.rain",
+            "strategies/polygon-mean-reversal.rain",
             "polygon-mean.geod.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
@@ -100,26 +99,6 @@ contract DcaOracleUniv3Test is StrategyTests {
 
         OrderV2 memory order = addOrderDepositOutputTokens(strategy); 
 
-        // Move external pool price in opposite direction that of the order
-        // {
-        //     moveExternalPrice(
-        //         strategy.outputVaults[strategy.outputTokenIndex].token,
-        //         strategy.inputVaults[strategy.inputTokenIndex].token,
-        //         1000e6,
-        //         strategy.takerRoute
-        //     );
-        // }
-
-        {
-            moveExternalPrice(
-                strategy.inputVaults[strategy.inputTokenIndex].token,
-                strategy.outputVaults[strategy.outputTokenIndex].token,
-                strategy.makerAmount,
-                strategy.makerRoute
-            );
-        }
-        vm.warp(block.timestamp + 3000);
-
         {
             (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
                 LibComposeOrders.getComposedOrder(
@@ -128,6 +107,9 @@ contract DcaOracleUniv3Test is StrategyTests {
             );
             (,,address expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants); 
             uint256[][] memory context = getOrderContext(uint256(keccak256("order-hash")));
+            context[3][0] = uint256(uint160(address(POLYGON_GEOD)));
+            context[4][0] = uint256(uint160(address(POLYGON_USDC)));
+
 
             // Eval Order
             (uint256[] memory stack,) = INTERPRETER.eval2(
@@ -143,10 +125,6 @@ contract DcaOracleUniv3Test is StrategyTests {
             }
 
         }
-
-
-
-
     }
 
     function getBounty(Vm.Log[] memory entries)

@@ -153,11 +153,11 @@ solver-output:  output-token(),
 
 /* quote token = WETH, USDT. Base token = shitcoin */
 buycontexts:every(
-  equal-to(solver-input quote-token)
-  equal-to(solver-output base-token)),
-sellcontexts:every(
   equal-to(solver-input base-token)
   equal-to(solver-output quote-token)),
+sellcontexts:every(
+  equal-to(solver-input quote-token)
+  equal-to(solver-output base-token)),
 
 /*memory*/ 
 sl-value: mul(get("entry-price-20062024") 0.96),

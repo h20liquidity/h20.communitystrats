@@ -38,8 +38,8 @@ scenarios:
     scenarios:
       geod:
         bindings:
-          base-token: 0x88a269df8fe7f53e590c561954c52fccc8ec0cfb
-          quote-token: 0x82af49447d8a07e3bd95bd0d56f35241523fbab1
+          base-token: 0xac0f66379a6d7801d7726d5a943356a172549adb
+          quote-token: 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359
           poolfee: "[uniswap-v3-fee-medium]"
           boundary-value: 0.03
           buy-volume: 0.01
@@ -79,7 +79,7 @@ deployments:
 
 /* core logic */
 #calculate-io 
-using-words-from 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1 0x2382e861cF4F47578aC29B50944b3b445577aF74
+using-words-from polygon-parser polygon-uni-parser
 
 /* obtain prices */
 current-price: uniswap-v3-twap-output-ratio(quote-token base-token 0 0 poolfee),
@@ -407,12 +407,12 @@ price:if(long-condition
 #handle-io
 /* avoid partial vault clears as it would break our ratio logic */
 :ensure(
-  equal-to(
-    output-vault-balance-before()
-    output-vault-balance-decrease()
-  )
-  "Partial clear."
-);
+    greater-than-or-equal-to(
+      uint256-output-vault-decrease()
+      scale-n-dynamic(output-token-decimals() calculated-max-output())
+    )
+    "Partial trade"
+  );
 
 /* Entry Condition for opening position */
 #longcondition

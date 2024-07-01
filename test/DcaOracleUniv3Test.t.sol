@@ -44,7 +44,7 @@ contract DcaOracleUniv3Test is StrategyTests {
     using SafeERC20 for IERC20;
     using Strings for address;
 
-    uint256 constant FORK_BLOCK_NUMBER = 58785637;
+    uint256 constant FORK_BLOCK_NUMBER = 58817844;
    
     
     function selectFork() internal {

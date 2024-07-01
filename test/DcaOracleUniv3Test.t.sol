@@ -32,26 +32,12 @@ IERC20 constant POLYGON_DOLZ = IERC20(0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
 /// @dev https://polygonscan.com/address/0xc2132D05D31c914a87C6611C10748AEb04B58e8F
 IERC20 constant POLYGON_USDT = IERC20(0xc2132D05D31c914a87C6611C10748AEb04B58e8F);
 
-/// @dev https://polygonscan.com/address/0xAC0F66379A6d7801D7726d5a943356A172549Adb
-IERC20 constant POLYGON_GEOD = IERC20(0xAC0F66379A6d7801D7726d5a943356A172549Adb); 
-
-/// @dev https://polygonscan.com/address/0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359
-IERC20 constant POLYGON_USDC = IERC20(0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359);
-
 function polygonDolzIo() pure returns (IO memory) {
     return IO(address(POLYGON_DOLZ), 18, VAULT_ID);
 }
 
 function polygonUsdtIo() pure returns (IO memory) {
     return IO(address(POLYGON_USDT), 6, VAULT_ID);
-}
-
-function polygonGeodIo() pure returns (IO memory) {
-    return IO(address(POLYGON_GEOD), 18, VAULT_ID);
-}
-
-function polygonUsdcIo() pure returns (IO memory) {
-    return IO(address(POLYGON_USDC), 6, VAULT_ID);
 }
 contract DcaOracleUniv3Test is StrategyTests {
 
@@ -84,37 +70,6 @@ contract DcaOracleUniv3Test is StrategyTests {
         EXTERNAL_EOA = address(0x654FEf5Fb8A1C91ad47Ba192F7AA81dd3C821427);
         APPROVED_EOA = address(0x669845c29D9B1A64FFF66a55aA13EB4adB889a88);
         ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
-    }
-
-    function testShitCoingMilker() public {
-
-        IO[] memory inputVaults = new IO[](1);
-        inputVaults[0] = polygonGeodIo();
-
-        IO[] memory outputVaults = new IO[](1);
-        outputVaults[0] = polygonUsdcIo();
-
-        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
-            "",
-            "",
-            0,
-            0,
-            1e18,
-            10000e6,
-            0,
-            0,
-            "strategies/shitcoin-ineffiecny-milker.rain",
-            "polygon-mean.geod",
-            "./lib/h20.test-std/lib/rain.orderbook",
-            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
-            inputVaults,
-            outputVaults
-        );
-
-        OrderV2 memory order = addOrderDepositOutputTokens(strategy); 
-
-
-
     }
 
     function testBuyDolzHappyPath() public {

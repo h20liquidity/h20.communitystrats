@@ -114,23 +114,23 @@ deployments:
  using-words-from polygon-parser polygon-uni-parser
 
  /* obtain prices */
-current-price: uniswap-v3-twap-output-ratio(base-token quote-token 0 0 poolfee),
-two-x-average: uniswap-v3-twap-output-ratio(base-token quote-token mul(2 second-interval) 0 poolfee),
+current-price: uniswap-v3-twap-output-ratio(quote-token base-token 0 0 poolfee),
+two-x-average: uniswap-v3-twap-output-ratio(quote-token base-token mul(2 second-interval) 0 poolfee),
 
 /*0*/
-long-twap-0: uniswap-v3-twap-output-ratio(base-token quote-token mul(10 second-interval) mul(0 second-interval) poolfee),
-medium-twap-0: uniswap-v3-twap-output-ratio(base-token quote-token mul(5 second-interval) mul(0 second-interval) poolfee),
-short-twap-0: uniswap-v3-twap-output-ratio(base-token quote-token mul(1 second-interval) mul(0 second-interval) poolfee),
+long-twap-0: uniswap-v3-twap-output-ratio(quote-token base-token mul(10 second-interval) mul(0 second-interval) poolfee),
+medium-twap-0: uniswap-v3-twap-output-ratio(quote-token base-token mul(5 second-interval) mul(0 second-interval) poolfee),
+short-twap-0: uniswap-v3-twap-output-ratio(quote-token base-token mul(1 second-interval) mul(0 second-interval) poolfee),
 
 /* 1 */
-long-twap-1: uniswap-v3-twap-output-ratio(base-token quote-token mul(11 second-interval) mul(1 second-interval) poolfee),
-medium-twap-1: uniswap-v3-twap-output-ratio(base-token quote-token mul(6 second-interval) mul(1 second-interval) poolfee),
-short-twap-1: uniswap-v3-twap-output-ratio(base-token quote-token mul(2 second-interval) mul(1 second-interval) poolfee),
+long-twap-1: uniswap-v3-twap-output-ratio(quote-token base-token mul(11 second-interval) mul(1 second-interval) poolfee),
+medium-twap-1: uniswap-v3-twap-output-ratio(quote-token base-token mul(6 second-interval) mul(1 second-interval) poolfee),
+short-twap-1: uniswap-v3-twap-output-ratio(quote-token base-token mul(2 second-interval) mul(1 second-interval) poolfee),
 
 /* 3 */
-long-twap-3: uniswap-v3-twap-output-ratio(base-token quote-token mul(13 second-interval) mul(3 second-interval) poolfee),
-medium-twap-3: uniswap-v3-twap-output-ratio(base-token quote-token mul(8 second-interval) mul(3 second-interval) poolfee),
-short-twap-3: uniswap-v3-twap-output-ratio(base-token quote-token mul(4 second-interval) mul(3 second-interval) poolfee),
+long-twap-3: uniswap-v3-twap-output-ratio(quote-token base-token mul(13 second-interval) mul(3 second-interval) poolfee),
+medium-twap-3: uniswap-v3-twap-output-ratio(quote-token base-token mul(8 second-interval) mul(3 second-interval) poolfee),
+short-twap-3: uniswap-v3-twap-output-ratio(quote-token base-token mul(4 second-interval) mul(3 second-interval) poolfee),
 
 
  /* obtain boundaries */
@@ -199,8 +199,8 @@ short-twap-3: uniswap-v3-twap-output-ratio(base-token quote-token mul(4 second-i
  /*calculate amount*/
  amount:if(
    long-condition 
-   buy-volume 
-   uint256-input-vault-before()
+   buy-volume
+   scale-18-dynamic(output-token-decimals() uint256-output-vault-before()) 
    ),
 
  /*calculate price */
@@ -246,20 +246,23 @@ short-twap-3: uniswap-v3-twap-output-ratio(base-token quote-token mul(4 second-i
    both-neg: equal-to(add(tneg-bool pneg-bool) 2),
    first-neg: every(tneg-bool is-zero(pneg-bool)),
    first-pos: every(is-zero(tneg-bool) pneg-bool),
-   which-greater: greater-than(price-distance trend-distance),
+   differs: any(first-neg first-pos),
+   which-greater: greater-than(price-distance trend-distance), 
 
    svalue: if(
-     which-greater
-     saturating-sub(price-distance trend-distance)
-     saturating-sub(trend-distance price-distance)
-   ),
+      is-zero(differs)
+      if(which-greater
+        saturating-sub(price-distance trend-distance)
+        saturating-sub(trend-distance price-distance))
+      add(price-distance trend-distance)
+    ),
 
-   sneg:
-     any(
-       every(both-pos is-zero(which-greater))
-       every(both-neg which-greater)
-       every(first-neg which-greater)
-     );
+  sneg:
+    any(
+      every(both-pos is-zero(which-greater))
+      every(both-neg which-greater)
+      first-neg
+    );
 
  #calculate-price-plot
   _ _ _ _ _: ;
@@ -268,7 +271,7 @@ short-twap-3: uniswap-v3-twap-output-ratio(base-token quote-token mul(4 second-i
   long-condition tp-condition sl-condition sl-value current-price: ,
   price: conditions(
    long-condition mul(current-price 0.99)
-   tp-condition inv(mul(current-price 0.99))
+   tp-condition mul(inv(current-price) 0.99)
    sl-condition inv(sl-value)
    "Price condition"  
   );

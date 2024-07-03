@@ -152,7 +152,7 @@ short-twap-3: uniswap-v3-twap-output-ratio(base-token quote-token mul(4 second-i
  lccall-1: call<'longcondition>(svalue-1 sneg-1 boundary-1 current-price two-x-average),
  lccall-3: call<'longcondition>(svalue-3 sneg-3 boundary-3 current-price two-x-average),
 
- enterlong : any(lccall-0 lccall-1 lccall-3 1),
+ enterlong : any(lccall-0 lccall-1 lccall-3),
 
  /*context*/
  solver-input: input-token(),

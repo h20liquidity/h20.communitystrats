@@ -44,7 +44,7 @@ contract DcaOracleUniv3Test is StrategyTests {
     using SafeERC20 for IERC20;
     using Strings for address;
 
-    uint256 constant FORK_BLOCK_NUMBER = 58830935;
+    uint256 constant FORK_BLOCK_NUMBER = 58903129;
    
     
     function selectFork() internal {
@@ -72,21 +72,23 @@ contract DcaOracleUniv3Test is StrategyTests {
         ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
     }
 
+
     function testPolygonMeanReversal() public {
 
         IO[] memory inputVaults = new IO[](1);
-        inputVaults[0] = polygonGeodIo();
+        inputVaults[0] = polygonUsdcIo();
 
         IO[] memory outputVaults = new IO[](1);
-        outputVaults[0] = polygonUsdcIo();
+        outputVaults[0] = polygonGeodIo();
 
-        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
-            getEncodedSellGeodRoute(address(ARB_INSTANCE)),
+       {
+          LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
             getEncodedBuyGeodRoute(address(ARB_INSTANCE)),
+            getEncodedSellGeodRoute(address(ARB_INSTANCE)),
             0,
             0,
-            100000e18,
             1000e6,
+            100000e18,
             0,
             0,
             "strategies/polygon-mean-reversal.rain",
@@ -97,34 +99,85 @@ contract DcaOracleUniv3Test is StrategyTests {
             outputVaults
         );
 
-        OrderV2 memory order = addOrderDepositOutputTokens(strategy); 
+            OrderV2 memory order = addOrderDepositOutputTokens(strategy);
 
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+       }
+
+        vm.warp(block.timestamp + 3600);
         {
-            (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
-                LibComposeOrders.getComposedOrder(
-                    vm, strategy.strategyFile, strategy.strategyScenario, strategy.buildPath, strategy.manifestPath
-                )
-            );
-            (,,address expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants); 
-            uint256[][] memory context = getOrderContext(uint256(keccak256("order-hash")));
-            context[3][0] = uint256(uint160(address(POLYGON_GEOD)));
-            context[4][0] = uint256(uint160(address(POLYGON_USDC)));
+            LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+                getEncodedSellGeodRoute(address(ARB_INSTANCE)),
+                getEncodedBuyGeodRoute(address(ARB_INSTANCE)),
+                0,
+                0,
+                100000e18,
+                10000e6,
+                0,
+                0,
+                "strategies/polygon-mean-reversal.rain",
+                "polygon-mean.geod.prod",
+                "./lib/h20.test-std/lib/rain.orderbook",
+                "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+                outputVaults,
+                inputVaults
+        );
 
+            OrderV2 memory order = addOrderDepositOutputTokens(strategy);
 
-            // Eval Order
-            (uint256[] memory stack,) = INTERPRETER.eval2(
-                STORE,
-                getNamespace(),
-                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(0), type(uint16).max),
-                context,
-                new uint256[](0)
-            );
-
-            for(uint256  i = 0 ; i < stack.length; i++){
-                console2.log("stack[%s] : %s",i, stack[i]);
-            }
-
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            
         }
+        // {
+        //     {
+        //         moveExternalPrice(
+        //             strategy.inputVaults[strategy.inputTokenIndex].token,
+        //             strategy.outputVaults[strategy.outputTokenIndex].token,
+        //             strategy.makerAmount,
+        //             strategy.makerRoute
+        //         );
+        //     }
+
+        //     vm.warp(block.timestamp + 300 * 4); //0.000205946754237946
+        //                                         //0.005152016104224044
+        //     // {
+        //     //     moveExternalPrice(
+        //     //         strategy.inputVaults[strategy.inputTokenIndex].token,
+        //     //         strategy.outputVaults[strategy.outputTokenIndex].token,
+        //     //         strategy.makerAmount,
+        //     //         strategy.makerRoute
+        //     //     );
+        //     // }
+
+        //     // vm.warp(block.timestamp + 300 * 10);
+        // }
+        
+        // {
+        //     (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
+        //         LibComposeOrders.getComposedOrder(
+        //             vm, strategy.strategyFile, strategy.strategyScenario, strategy.buildPath, strategy.manifestPath
+        //         )
+        //     );
+        //     (,,address expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants); 
+        //     uint256[][] memory context = getOrderContext(uint256(keccak256("order-hash")));
+        //     context[3][0] = uint256(uint160(address(POLYGON_GEOD)));
+        //     context[4][0] = uint256(uint160(address(POLYGON_USDC)));
+
+
+        //     // Eval Order
+        //     (uint256[] memory stack,) = INTERPRETER.eval2(
+        //         STORE,
+        //         getNamespace(),
+        //         LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(0), type(uint16).max),
+        //         context,
+        //         new uint256[](0)
+        //     );
+
+        //     for(uint256  i = 0 ; i < stack.length; i++){
+        //         console2.log("stack[%s] : %s",i, stack[i]);
+        //     }
+
+        // }
     }
 
     function getBounty(Vm.Log[] memory entries)

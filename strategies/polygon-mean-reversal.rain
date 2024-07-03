@@ -1,272 +1,282 @@
 networks:
-  polygon-mean: 
-    rpc: https://polygon-mainnet.g.alchemy.com/v2/y3BXawVv5uuP_g8BaDlKbKoTBGHo9zD9
-    chain-id: 137 
-    network-id: 137 
-    currency: MATIC
+   polygon-mean: 
+     rpc: https://polygon-mainnet.g.alchemy.com/v2/y3BXawVv5uuP_g8BaDlKbKoTBGHo9zD9
+     chain-id: 137 
+     network-id: 137 
+     currency: MATIC
 
 subgraphs:
-  polygon-mean: https://api.thegraph.com/subgraphs/name/h20liquidity/polygon-0xc95a5f8e
-  
+   polygon-mean: https://api.thegraph.com/subgraphs/name/h20liquidity/polygon-0xc95a5f8e
+
 orderbooks:
-  polygon-mean:
-    address: 0xc95A5f8eFe14d7a20BD2E5BAFEC4E71f8Ce0B9A6
-    network: polygon-mean
-    subgraph: polygon-mean
+   polygon-mean:
+     address: 0xc95A5f8eFe14d7a20BD2E5BAFEC4E71f8Ce0B9A6
+     network: polygon-mean
+     subgraph: polygon-mean
 
 deployers:
-  polygon-mean:
-    address: 0xB3aC858bEAf7814892d3946A8C109A7D701DF8E7
-    network: polygon-mean
+   polygon-mean:
+     address: 0xB3aC858bEAf7814892d3946A8C109A7D701DF8E7
+     network: polygon-mean
 
 tokens:
-  geod:
-    address: 0xAC0F66379A6d7801D7726d5a943356A172549Adb
-    decimals: 18
-    network: polygon-mean
-  usdc:
-    address: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
-    decimals: 6
-    network: polygon-mean
+   geod:
+     address: 0xAC0F66379A6d7801D7726d5a943356A172549Adb
+     decimals: 18
+     network: polygon-mean
+   usdc:
+     address: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
+     decimals: 6
+     network: polygon-mean
 
 scenarios:
-  polygon-mean:
-    orderbook: polygon-mean
-    bindings:
-      polygon-parser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1
-      polygon-uni-parser: 0x2382e861cF4F47578aC29B50944b3b445577aF74
-    scenarios:
-      geod:
-        bindings:
-          base-token: 0xAC0F66379A6d7801D7726d5a943356A172549Adb
-          quote-token: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
-          poolfee: "[uniswap-v3-fee-medium]"
-          boundary-value: 0.03
-          buy-volume: 2
-          second-interval: 300
-        scenarios:
-          plot:
-            runs: 1
-            bindings:
-              calculate-price: '''calculate-price-plot'
-              plottables: '''plottables-plot'
-          prod:
-            bindings:
-              calculate-price: '''calculate-price-prod'
-              plottables: '''plottables-prod'
+   polygon-mean:
+     orderbook: polygon-mean
+     bindings:
+       polygon-parser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1
+       polygon-uni-parser: 0x2382e861cF4F47578aC29B50944b3b445577aF74
+     scenarios:
+       geod:
+         bindings:
+           base-token: 0xAC0F66379A6d7801D7726d5a943356A172549Adb
+           quote-token: 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174
+           poolfee: "[uniswap-v3-fee-medium]"
+           boundary-value: 0.03
+           buy-volume: 50
+           second-interval: 300
+           initial-stop-loss: 0.16
+         scenarios:
+           plot:
+             runs: 1
+             bindings:
+               calculate-price: '''calculate-price-plot'
+               plottables: '''plottables-plot'
+           prod:
+             bindings:
+               calculate-price: '''calculate-price-prod'
+               plottables: '''plottables-prod'
 
 charts:
-  buy-geod-mean:
-    scenario: polygon-mean.geod.plot
-    metrics:
-      - label: Current price.
-        value: 0.0
-        description: Current price of geod.
-      - label: Buy volume
-        value: 0.5.0
-        description: Amount of geod to buy.
-      - label: Boundary value
-        value: 0.5.1
-        description: Boundary threshold.
-      - label: Seconds interval.
-        value: 0.5.2
-        description: Multiplier for calculating twap.
+   geod-mean:
+     scenario: polygon-mean.geod.plot
+     metrics:
+       - label: Current price.
+         value: 0.0
+         description: Current price of geod.
+       - label: Buy volume
+         value: 0.5.0
+         description: Amount of USDC used to buy Geod.
+       - label: Boundary value
+         value: 0.5.1
+         description: Boundary threshold.
+       - label: Seconds interval.
+         value: 0.5.2
+         description: Multiplier for calculating twap.
 
 orders:
-  # vault-id generated with `openssl rand -hex 32`
-  geod-buy:
-    orderbook: polygon-mean
-    inputs:
-      - token: geod
-        vault-id: 0x0ff175d201d67dde1f3318f379c2e6eae4c9d198cef345fc0459d6067c68da9b
-    outputs:
-      - token: geod
-        vault-id: 0x0ff175d201d67dde1f3318f379c2e6eae4c9d198cef345fc0459d6067c68da9b
+   # vault-id generated with `openssl rand -hex 32`
+   geod:
+     orderbook: polygon-mean
+     inputs:
+       - token: geod
+         vault-id: 0x0ff175d201d67dde1f3318f379c2e6eae4c9d198cef345fc0459d6067c68da9b
+       - token: usdc
+         vault-id: 0x0ff175d201d67dde1f3318f379c2e6eae4c9d198cef345fc0459d6067c68da9b
+     outputs:
+       - token: geod
+         vault-id: 0x0ff175d201d67dde1f3318f379c2e6eae4c9d198cef345fc0459d6067c68da9b
+       - token: usdc
+         vault-id: 0x0ff175d201d67dde1f3318f379c2e6eae4c9d198cef345fc0459d6067c68da9b
 
 deployments:
-  buy-geod:
-   scenario: polygon-mean.geod.prod
-   order: geod-buy
-
-    
----
-/* Shitcoin Inefficiency Milker - Long only */
-#polygon-parser !The parsers for arb.
-#polygon-uni-parser !Uniswap words for arb.
-#base-token !The shitcoin that is being traded.
-#quote-token !What the shitcoin is priced in USD/WETH.
-#poolfee !The fee on the uniswap pool.
-#boundary-value !The threshold for differences of the moving average that trigger the trade.
-#buy-volume !The amount of WETH/USD that is being traded.
-#second-interval !The amount of seconds which are used for the candel length.
-#calculate-price !Binding to calculate io-ratio for the order.
-#plottables !Binding for plotting variables.
+   geod:
+    scenario: polygon-mean.geod.prod
+    order: geod
 
 
-/* core logic */
-#calculate-io 
-using-words-from polygon-parser polygon-uni-parser
+ ---
+ /* Shitcoin Inefficiency Milker - Long only */
+ #polygon-parser !The parsers for arb.
+ #polygon-uni-parser !Uniswap words for arb.
+ #base-token !The shitcoin that is being traded.
+ #quote-token !What the shitcoin is priced in USD/WETH.
+ #poolfee !The fee on the uniswap pool.
+ #boundary-value !The threshold for differences of the moving average that trigger the trade.
+ #buy-volume !The amount of WETH/USD that is being traded.
+ #initial-stop-loss !Intial stop loss
+ #second-interval !The amount of seconds which are used for the candel length.
+ #calculate-price !Binding to calculate io-ratio for the order.
+ #plottables !Binding for plotting variables.
 
-/* obtain prices */
-current-price: uniswap-v3-twap-output-ratio(quote-token base-token 0 0 poolfee),
-two-x-average: uniswap-v3-twap-output-ratio(quote-token base-token mul(2 second-interval) 0 poolfee),
+
+ /* core logic */
+ #calculate-io 
+ using-words-from polygon-parser polygon-uni-parser
+
+ /* obtain prices */
+current-price: uniswap-v3-twap-output-ratio(base-token quote-token 0 0 poolfee),
+two-x-average: uniswap-v3-twap-output-ratio(base-token quote-token mul(2 second-interval) 0 poolfee),
 
 /*0*/
-long-twap-0: uniswap-v3-twap-output-ratio(quote-token base-token mul(10 second-interval) mul(0 second-interval) poolfee),
-medium-twap-0: uniswap-v3-twap-output-ratio(quote-token base-token mul(5 second-interval) mul(0 second-interval) poolfee),
-short-twap-0: uniswap-v3-twap-output-ratio(quote-token base-token mul(1 second-interval) mul(0 second-interval) poolfee),
+long-twap-0: uniswap-v3-twap-output-ratio(base-token quote-token mul(10 second-interval) mul(0 second-interval) poolfee),
+medium-twap-0: uniswap-v3-twap-output-ratio(base-token quote-token mul(5 second-interval) mul(0 second-interval) poolfee),
+short-twap-0: uniswap-v3-twap-output-ratio(base-token quote-token mul(1 second-interval) mul(0 second-interval) poolfee),
 
 /* 1 */
-long-twap-1: uniswap-v3-twap-output-ratio(quote-token base-token mul(11 second-interval) mul(1 second-interval) poolfee),
-medium-twap-1: uniswap-v3-twap-output-ratio(quote-token base-token mul(6 second-interval) mul(1 second-interval) poolfee),
-short-twap-1: uniswap-v3-twap-output-ratio(quote-token base-token mul(2 second-interval) mul(1 second-interval) poolfee),
+long-twap-1: uniswap-v3-twap-output-ratio(base-token quote-token mul(11 second-interval) mul(1 second-interval) poolfee),
+medium-twap-1: uniswap-v3-twap-output-ratio(base-token quote-token mul(6 second-interval) mul(1 second-interval) poolfee),
+short-twap-1: uniswap-v3-twap-output-ratio(base-token quote-token mul(2 second-interval) mul(1 second-interval) poolfee),
 
 /* 3 */
-long-twap-3: uniswap-v3-twap-output-ratio(quote-token base-token mul(13 second-interval) mul(3 second-interval) poolfee),
-medium-twap-3: uniswap-v3-twap-output-ratio(quote-token base-token mul(8 second-interval) mul(3 second-interval) poolfee),
-short-twap-3: uniswap-v3-twap-output-ratio(quote-token base-token mul(4 second-interval) mul(3 second-interval) poolfee),
+long-twap-3: uniswap-v3-twap-output-ratio(base-token quote-token mul(13 second-interval) mul(3 second-interval) poolfee),
+medium-twap-3: uniswap-v3-twap-output-ratio(base-token quote-token mul(8 second-interval) mul(3 second-interval) poolfee),
+short-twap-3: uniswap-v3-twap-output-ratio(base-token quote-token mul(4 second-interval) mul(3 second-interval) poolfee),
 
-/* obtain boundaries */
-boundary-0 : mul(short-twap-0 boundary-value),
-boundary-1 : mul(short-twap-1 boundary-value),
-boundary-3 : mul(short-twap-3 boundary-value),
 
-/* calculate distances 0 */
-svalue-0 sneg-0: call<'calculate-distance>(short-twap-0 medium-twap-0 long-twap-0),
+ /* obtain boundaries */
+ boundary-0 : mul(short-twap-0 boundary-value),
+ boundary-1 : mul(short-twap-1 boundary-value),
+ boundary-3 : mul(short-twap-3 boundary-value),
 
-/* calculate distances 1 */
-svalue-1 sneg-1: call<'calculate-distance>(short-twap-1 medium-twap-1 long-twap-1),
+ /* calculate distances 0 */
+ svalue-0 sneg-0: call<'calculate-distance>(short-twap-0 medium-twap-0 long-twap-0),
 
-/* calculate distances 3 */
-svalue-3 sneg-3: call<'calculate-distance>(short-twap-3 medium-twap-3 long-twap-3),
+ /* calculate distances 1 */
+ svalue-1 sneg-1: call<'calculate-distance>(short-twap-1 medium-twap-1 long-twap-1),
 
-/*long-condition-calls*/
-lccall-0: call<'longcondition>(svalue-0 sneg-0 boundary-0 current-price two-x-average),
-lccall-1: call<'longcondition>(svalue-1 sneg-1 boundary-1 current-price two-x-average),
-lccall-3: call<'longcondition>(svalue-3 sneg-3 boundary-3 current-price two-x-average),
+ /* calculate distances 3 */
+ svalue-3 sneg-3: call<'calculate-distance>(short-twap-3 medium-twap-3 long-twap-3),
 
-enterlong : any(lccall-0 lccall-1 lccall-3 1),
+ /*long-condition-calls*/
+ lccall-0: call<'longcondition>(svalue-0 sneg-0 boundary-0 current-price two-x-average),
+ lccall-1: call<'longcondition>(svalue-1 sneg-1 boundary-1 current-price two-x-average),
+ lccall-3: call<'longcondition>(svalue-3 sneg-3 boundary-3 current-price two-x-average),
 
-/*context*/
-solver-input: input-token(),
-solver-output:  output-token(),
+ enterlong : any(lccall-0 lccall-1 lccall-3 1),
 
-/* quote token = WETH, USDT. Base token = shitcoin */
-buycontexts:every(
-  equal-to(solver-input base-token)
-  equal-to(solver-output quote-token)),
-sellcontexts:every(
-  equal-to(solver-input quote-token)
-  equal-to(solver-output base-token)),
+ /*context*/
+ solver-input: input-token(),
+ solver-output:  output-token(),
 
-/*memory*/ 
-sl-value: mul(get("entry-price-20062024") 0.96),
+ /* quote token = WETH, USDT. Base token = shitcoin.  */
+ buycontexts:every(
+   equal-to(solver-input base-token)
+   equal-to(solver-output quote-token)), 
+ sellcontexts:every(
+   equal-to(solver-input quote-token)
+   equal-to(solver-output base-token)),
 
-/*trade conditions*/
-long-condition: every(
-  buycontexts
-  is-zero(get("is-long-20062024")) 
-  enterlong),
-tp-condition: every(     
-  sellcontexts
-  get("is-long-20062024") 
-  greater-than(block-timestamp() add(get("entry-time-20062024") mul(second-interval 10)))
-  less-than(medium-twap-0 long-twap-0)),
-sl-condition: every(
-  sellcontexts
-  get("is-long-20062024")
-  less-than(current-price sl-value)),
+ /*memory*/ 
+ sl-value: any(
+            mul(get("entry-price-20062024") 0.96)
+            initial-stop-loss
+          ),
 
-/*entry memory*/
-:set("entry-price-20062024" if(long-condition mul(current-price 1.02) get("entry-price-20062024"))),
-:set("entry-time-20062024" if(long-condition block-timestamp() get("entry-time-20062024"))),
-  
-/* is long sets */
-:set("is-long-20062024" if(long-condition 1 get("is-long-20062024"))),
-:set("is-long-20062024" if(tp-condition 0 get("is-long-20062024"))),
-:set("is-long-20062024" if(sl-condition 0 get("is-long-20062024"))),
+ /*trade conditions*/
+ long-condition: every(
+   buycontexts
+   is-zero(get("is-long-20062024")) 
+   enterlong),
+ tp-condition: every(     
+   sellcontexts
+   get("is-long-20062024") 
+   greater-than(block-timestamp() add(get("entry-time-20062024") mul(second-interval 10)))
+   less-than(medium-twap-0 long-twap-0)),
+ sl-condition: every(
+   sellcontexts
+   get("is-long-20062024")
+   less-than(current-price sl-value)),
 
-/*calculate amount*/
-amount:if(
-  long-condition 
-  buy-volume 
-  uint256-input-vault-before()
-  ),
+ /*entry memory*/
+ :set("entry-price-20062024" if(long-condition mul(current-price 0.99) get("entry-price-20062024"))),
+ :set("entry-time-20062024" if(long-condition block-timestamp() get("entry-time-20062024"))),
 
-/*calculate price */
-price: call<'calculate-price>(long-condition tp-condition sl-condition sl-value current-price),
-:call<'plottables>();
+ /* is long sets */
+ :set("is-long-20062024" if(long-condition 1 get("is-long-20062024"))),
+ :set("is-long-20062024" if(tp-condition 0 get("is-long-20062024"))),
+ :set("is-long-20062024" if(sl-condition 0 get("is-long-20062024"))),
 
-#handle-io
-/* avoid partial vault clears as it would break our ratio logic */
-:ensure(
-    greater-than-or-equal-to(
-      uint256-output-vault-decrease()
-      scale-n-dynamic(output-token-decimals() calculated-max-output())
-    )
-    "Partial trade"
+ /*calculate amount*/
+ amount:if(
+   long-condition 
+   buy-volume 
+   uint256-input-vault-before()
+   ),
+
+ /*calculate price */
+ price: call<'calculate-price>(long-condition tp-condition sl-condition sl-value current-price),
+ :call<'plottables>();
+
+ #handle-io
+ /* avoid partial vault clears as it would break our ratio logic */
+ :ensure(
+     greater-than-or-equal-to(
+       uint256-output-vault-decrease()
+       scale-n-dynamic(output-token-decimals() calculated-max-output())
+     )
+     "Partial trade"
+   );
+
+ /* Entry Condition for opening position */
+ #longcondition
+   svalue-n sneg-n boundary-n current-price two-x-average:,
+   result: every(greater-than(svalue-n boundary-n) greater-than(current-price two-x-average) sneg-n);
+
+ #calculate-distance
+   short-twap medium-twap long-twap: ,
+
+   tcheck: greater-than(medium-twap long-twap), 
+   trend-distance: if(
+     is-zero(tcheck)
+     saturating-sub(long-twap medium-twap)
+     saturating-sub(medium-twap long-twap)
+   ), 
+   tneg-bool: is-zero(tcheck),
+
+   pcheck: greater-than(short-twap long-twap), 
+   price-distance: if(
+     is-zero(pcheck)
+     saturating-sub(long-twap short-twap)
+     saturating-sub(short-twap long-twap)
+   ), 
+   pneg-bool: is-zero(pcheck),
+
+   /* checking how we need to handle the sub */
+   both-pos: is-zero(add(tneg-bool pneg-bool)),
+   both-neg: equal-to(add(tneg-bool pneg-bool) 2),
+   first-neg: every(tneg-bool is-zero(pneg-bool)),
+   first-pos: every(is-zero(tneg-bool) pneg-bool),
+   which-greater: greater-than(price-distance trend-distance),
+
+   svalue: if(
+     which-greater
+     saturating-sub(price-distance trend-distance)
+     saturating-sub(trend-distance price-distance)
+   ),
+
+   sneg:
+     any(
+       every(both-pos is-zero(which-greater))
+       every(both-neg which-greater)
+       every(first-neg which-greater)
+     );
+
+ #calculate-price-plot
+  _ _ _ _ _: ;
+
+ #calculate-price-prod
+  long-condition tp-condition sl-condition sl-value current-price: ,
+  price: conditions(
+   long-condition mul(current-price 0.99)
+   tp-condition inv(mul(current-price 0.99))
+   sl-condition inv(sl-value)
+   "Price condition"  
   );
 
-/* Entry Condition for opening position */
-#longcondition
-  svalue-n sneg-n boundary-n current-price two-x-average:,
-  result: every(greater-than(svalue-n boundary-n) greater-than(current-price two-x-average) sneg-n);
+ #plottables-plot
+  _: buy-volume,
+  _: boundary-value,
+  _: second-interval;
 
-#calculate-distance
-  short-twap medium-twap long-twap: ,
-
-  tcheck: greater-than(medium-twap long-twap), 
-  trend-distance: if(
-    is-zero(tcheck)
-    saturating-sub(long-twap medium-twap)
-    saturating-sub(medium-twap long-twap)
-  ), 
-  tneg-bool: is-zero(tcheck),
-
-  pcheck: greater-than(short-twap long-twap), 
-  price-distance: if(
-    is-zero(pcheck)
-    saturating-sub(long-twap short-twap)
-    saturating-sub(short-twap long-twap)
-  ), 
-  pneg-bool: is-zero(pcheck),
-
-  /* checking how we need to handle the sub */
-  both-pos: is-zero(add(tneg-bool pneg-bool)),
-  both-neg: equal-to(add(tneg-bool pneg-bool) 2),
-  first-neg: every(tneg-bool is-zero(pneg-bool)),
-  first-pos: every(is-zero(tneg-bool) pneg-bool),
-  which-greater: greater-than(price-distance trend-distance),
-
-  svalue: if(
-    which-greater
-    saturating-sub(price-distance trend-distance)
-    saturating-sub(trend-distance price-distance)
-  ),
-
-  sneg:
-    any(
-      every(both-pos is-zero(which-greater))
-      every(both-neg which-greater)
-      every(first-neg which-greater)
-    );
-  
-#calculate-price-plot
- _ _ _ _ _: ;
-
-#calculate-price-prod
- long-condition tp-condition sl-condition sl-value current-price: ,
- price: conditions(
-  long-condition mul(current-price 1.02)
-  tp-condition mul(current-price 0.98)
-  sl-condition sl-value
-  "Price condition"  
-);
-
-#plottables-plot
- _: buy-volume,
- _: boundary-value,
- _: second-interval;
-
-#plottables-prod
+ #plottables-prod
 :;

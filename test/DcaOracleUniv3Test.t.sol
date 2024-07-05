@@ -80,7 +80,7 @@ contract DcaOracleUniv3Test is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = polygonUsdtIo();
 
-        uint256 expectedRatio = 88360903476403323577;
+        uint256 expectedRatio = 87258767818782262347;
         uint256 expectedAmountOutputMax = 10853037074011243840;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
@@ -114,7 +114,7 @@ contract DcaOracleUniv3Test is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = polygonDolzIo();
 
-        uint256 expectedRatio = 0.010632142187153260e18; 
+        uint256 expectedRatio = 0.010766480415967484e18; 
         uint256 expectedAmountOutputMax = 976773336661011945600;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(

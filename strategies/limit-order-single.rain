@@ -1,1 +1,137 @@
+# A single limit order trade 
+# Place an order to buy or sell a specific quantity of an asset at a predetermined price or better
+# Decide the maximum price you are willing to pay to buy an asset (buy limit order)
+# Or the minimum price you are willing to accept to sell an asset (sell limit order).
+# Specify the asset, quantity, and limit price 
+# Polygon
+# DOLZ
 
+networks:
+  polygon-dolz: 
+    rpc: https://polygon-mainnet.g.alchemy.com/v2/y3BXawVv5uuP_g8BaDlKbKoTBGHo9zD9
+    chain-id: 137 
+    network-id: 137 
+    currency: MATIC
+
+subgraphs:
+  polygon-dolz: https://api.thegraph.com/subgraphs/name/h20liquidity/polygon-0xc95a5f8e
+  
+orderbooks:
+  polygon-dolz:
+    address: 0xc95A5f8eFe14d7a20BD2E5BAFEC4E71f8Ce0B9A6
+    network: polygon-dolz
+    subgraph: polygon-dolz
+
+deployers:
+  polygon-dolz:
+    address: 0xB3aC858bEAf7814892d3946A8C109A7D701DF8E7
+    network: polygon-dolz
+
+tokens:
+  polygon-dolz:
+    network: polygon-dolz
+    address: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
+  polygon-usdt:
+    network: polygon-dolz
+    address: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+
+orders:
+  # vault-id generated with `openssl rand -hex 32`
+  polygon-dolz-sell:
+    orderbook: polygon-dolz
+    inputs:
+      - token: polygon-usdt
+        vault-id: 0x6049f8ee79b82dd5bc82b368114bb0a69f34d539b04b43208241e1f68da134a8
+    outputs:
+      - token: polygon-dolz
+        vault-id: 0x6049f8ee79b82dd5bc82b368114bb0a69f34d539b04b43208241e1f68da134a8
+
+scenarios:
+    limit-orders:
+      network: polygon-dolz
+      deployer: polygon-dolz
+      orderbook: polygon-dolz
+      bindings:
+        # Ask for now, registry in future.
+        uniswap-words: 0xbc609623F5020f6Fc7481024862cD5EE3FFf52D7
+        orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1
+        # io-ratio and amount for first order. 
+        io-ratio-1: 0.0080
+        ouptut-amount-1: 100
+          
+      scenarios:
+        prod:
+          bindings:
+            plottables: '''plottables-prod'
+        chart:
+          runs: 1
+          bindings:
+            plottables: '''plottables-plot'
+
+
+charts:
+  limit-orders:
+    scenario: limit-orders.chart
+    metrics:
+      - label: io-ratio-1
+        value: 0.3.0
+      - label: amount-1
+        value: 0.3.1
+
+deployments:
+  dolz-sell:
+    scenario: limit-orders.prod
+    order: polygon-dolz-sell
+---
+#uniswap-words !The subparser for the Uniswap words
+#orderbook-subparser !The subparser for the Orderbook words
+
+#io-ratio-1 !IO ratio for first order.
+#ouptut-amount-1 !Output amount for first order.
+
+#count-key "count-key"
+#plottables !Binding to plot values.
+
+#plottables-prod
+  :;
+
+#plottables-plot
+  _: io-ratio-1,
+  _: ouptut-amount-1,
+
+#calculate-io
+  using-words-from uniswap-words orderbook-subparser
+  
+  trade-count-key: hash(order-hash() count-key), 
+  trade-count: get(trade-count-key), 
+  _ _:call<'get-ratio-amount>(trade-count),
+  :call<'plottables>(); 
+
+#handle-io
+  trade-count-key: hash(order-hash() count-key), 
+  trade-count: get(trade-count-key), 
+  :set(trade-count-key add(trade-count 1));
+
+#get-ratio-amount
+  trade-count: ,
+  output-amount: if(equal-to(trade-count 0)
+    ouptut-amount-1
+    if(equal-to(trade-count 1)
+      ouptut-amount-2
+      if(equal-to(trade-count 2)
+        ouptut-amount-3
+        1
+      )
+    )
+  ),
+  io-ratio: if(equal-to(trade-count 0)
+    io-ratio-1
+    if(equal-to(trade-count 1)
+      io-ratio-2
+      if(equal-to(trade-count 2)
+        io-ratio-3
+        max-value()
+      )
+    )
+  );
+ 

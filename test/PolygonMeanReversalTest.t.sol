@@ -111,6 +111,91 @@ contract DcaOracleUniv3Test is StrategyTests {
         
     }
 
+    function testPartialTrade() public {
+
+        IO[] memory inputVaults = new IO[](2);
+        inputVaults[0] = polygonUsdcIo();
+        inputVaults[1] = polygonGeodIo();
+
+        IO[] memory outputVaults = new IO[](2);
+        outputVaults[0] = polygonUsdcIo();
+        outputVaults[1] = polygonGeodIo();
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            getEncodedSellGeodRoute(address(ARB_INSTANCE)),
+            getEncodedBuyGeodRoute(address(ARB_INSTANCE)),
+            1,
+            0,
+            1000e18,
+            1000e6,
+            0,
+            0,
+            "strategies/polygon-mean-reversal.rain",
+            "polygon-mean.geod.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+        OrderV2 memory order = addOrderDepositOutputTokens(strategy);
+
+        // Get the order output max for the order
+        uint256 orderOuputMax;
+        {
+            (bytes memory bytecode, uint256[] memory constants) = PARSER.parse(
+                LibComposeOrders.getComposedOrder(
+                    vm, strategy.strategyFile, strategy.strategyScenario, strategy.buildPath, strategy.manifestPath
+                )
+            );
+            (,,address expression,) = EXPRESSION_DEPLOYER.deployExpression2(bytecode, constants); 
+            uint256[][] memory context = getOrderContext(uint256(keccak256("order-hash")));
+            context[3][0] = uint256(uint160(address(POLYGON_GEOD)));
+            context[4][0] = uint256(uint160(address(POLYGON_USDC)));
+
+            // Eval Order
+            (uint256[] memory stack,) = INTERPRETER.eval2(
+                STORE,
+                getNamespace(),
+                LibEncodedDispatch.encode2(expression, SourceIndexV2.wrap(0), type(uint16).max),
+                context,
+                new uint256[](0)
+            );
+            orderOuputMax = stack[1];
+        }
+
+        // Division to scale from 18 decimal fp to 6 decimal fp
+        orderOuputMax = orderOuputMax / 1e12; 
+
+        vm.startPrank(APPROVED_EOA);
+        address inputTokenAddress = order.validInputs[strategy.inputTokenIndex].token;
+        IERC20(inputTokenAddress).safeApprove(address(ORDERBOOK), type(uint256).max);
+        TakeOrderConfigV2[] memory innerConfigs = new TakeOrderConfigV2[](1);
+        innerConfigs[0] = TakeOrderConfigV2(order, strategy.inputTokenIndex, strategy.outputTokenIndex, new SignedContextV1[](0));
+
+        // If taker order amount is less than order output max, the trade fails
+        {   
+            TakeOrdersConfigV2 memory takeOrdersConfig =
+            TakeOrdersConfigV2(0, 1, type(uint256).max, innerConfigs, "");
+            vm.expectRevert("Partial trade");
+            ORDERBOOK.takeOrders(takeOrdersConfig);
+        }
+        {   
+            TakeOrdersConfigV2 memory takeOrdersConfig =
+            TakeOrdersConfigV2(0, orderOuputMax - 1, type(uint256).max, innerConfigs, "");
+            vm.expectRevert("Partial trade");
+            ORDERBOOK.takeOrders(takeOrdersConfig);
+        }
+        // Else trade succeeds
+        {   
+            TakeOrdersConfigV2 memory takeOrdersConfig =
+            TakeOrdersConfigV2(0, orderOuputMax, type(uint256).max, innerConfigs, "");
+            ORDERBOOK.takeOrders(takeOrdersConfig);
+        }
+        vm.stopPrank();
+
+    }
+
     function getBounty(Vm.Log[] memory entries)
         public
         view

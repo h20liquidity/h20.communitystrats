@@ -115,7 +115,7 @@ charts:
          description: Seconds multiplier for calculating twap.
 
 deployments:
-   h20-community-polygon:
+   polygon-mean.geod:
     scenario: polygon-mean.geod.prod
     order: polygon-geod-mean
  ---

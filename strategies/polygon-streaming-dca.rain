@@ -66,8 +66,13 @@ scenarios:
         orderbook: polygon-dolz
         bindings:
           # Ask for now, registry in future.
-          uniswap-words: 0x2382e861cF4F47578aC29B50944b3b445577aF74
+          uniswap-words: 0xbc609623F5020f6Fc7481024862cD5EE3FFf52D7
           orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1
+
+          # Uniswap V3 factory addresses and init code
+          uniswap-v3-factory: '[uniswap-v3-factory]'
+          uniswap-v3-init-code: '[uniswap-v3-init-code]'
+
         scenarios:
           sell-dolz:
             bindings:
@@ -85,7 +90,7 @@ scenarios:
               # Ratio multiplier for calculating the io-ratio.
               # If the order's input-output token are paired on the uniswap v3 pool, then set to identity
               # If the order's input-output token are NOT paired on the uniswap v3 pool, then set to reserve.
-              io-multiplier: '''io-multiplier-identity'
+              quote-multiplier: '''quote-multiplier-identity'
     
               # Number of output tokens offered per second.
               # Total number of output tokens offered / Total time duration.
@@ -95,14 +100,14 @@ scenarios:
               # Unix timestamp for strating of the strategy.
               # Ideally set it 15 minutes ahead of the whatever the timestamp is while you're deploying the order.
               # https://www.epochconverter.com/
-              strat-start-time: 1718717107
+              strat-start-time: 1719907190
                                 
               # Bounty amount denominated in input tokens
               #
               # Minimum bounty offered in input token denominations. 
-              bounty-min: 0.02
+              bounty-min: 0.012
               # Maximum bounty offered in input token denominations.
-              bounty-max: 2
+              bounty-max: 0.3
               # Number of seconds after which the bounty auction starts once the order is evaling.
               auction-start-time: 300
               # Number of seconds for which bounty auction will last.
@@ -118,23 +123,29 @@ scenarios:
               # If the order's input-output tokens are NOT paired on the uniswap v3 pool, then fee is the pool fee for input-reserve token pool.
               # If the order's input-output tokens are paired on the uniswap v3 pool, then this binding is irrelevant.
               twap-multiplier-fee: '[uniswap-v3-fee-low]'
-
-              # Minimum input/output token ratio accepatble for the order.
-              # Eg: For sell DOLZ, min-ratio is the minimum USDT/DOLZ value to sell above.
-              min-ratio: 0.005
     
             scenarios:
               prod:
                 bindings:
+                  # Minimum input/output token ratio accepatble for the order.
+                  # Eg: For sell DOLZ, min-ratio is the minimum USDT/DOLZ value to sell above.
+                  min-ratio: 0.005
                   plottables: '''plottables-prod'
                   get-last-time: '''get-last-time-prod'
                   ensure-ratio: '''ensure-ratio-prod'
               chart:
                 runs: 1000
                 bindings:
+                  min-ratio: 0.009
                   plottables: '''plottables-plot'
                   get-last-time: '''get-last-time-plot'
                   ensure-ratio: '''ensure-ratio-plot'
+              test:
+                bindings:
+                  min-ratio: 0.01
+                  plottables: '''plottables-prod'
+                  get-last-time: '''get-last-time-prod'
+                  ensure-ratio: '''ensure-ratio-prod'
 
           buy-dolz:
             bindings:
@@ -152,24 +163,24 @@ scenarios:
               # Ratio multiplier for calculating the io-ratio.
               # If the order's input-output token are paired on the uniswap v3 pool, then set to identity
               # If the order's input-output token are NOT paired on the uniswap v3 pool, then set to reserve.
-              io-multiplier: '''io-multiplier-identity'
+              quote-multiplier: '''quote-multiplier-identity'
     
               # Number of output tokens offered per second.
               # Total number of output tokens offered / Total time duration.
               # Eg : 100 tokens cost averaged in 1 hours: 100/3600 = 0.027777777777777778  
-              per-second-rate: 0.027777777777777778
+              per-second-rate: 0.01
     
               # Unix timestamp for strating of the strategy.
               # Ideally set it 15 minutes ahead of the whatever the timestamp is while you're deploying the order.
               # https://www.epochconverter.com/
-              strat-start-time: 1718717107
+              strat-start-time: 1719907190
 
               # Bounty amount denominated in input tokens
               #
               # Minimum bounty offered in input token denominations. 
               bounty-min: 1.77
               # Maximum bounty offered in input token denominations.
-              bounty-max: 177
+              bounty-max: 88
               # Number of seconds after which the bounty auction starts once the order is evaling.
               auction-start-time: 300
               # Number of seconds for which bounty auction will last.
@@ -186,22 +197,28 @@ scenarios:
               # If the order's input-output tokens are paired on the uniswap v3 pool, then this binding is irrelevant.
               twap-multiplier-fee: '[uniswap-v3-fee-low]'
 
-              # Minimum input/output token ratio
-              # Eg: For buy DOLZ, min-ratio is the minimum DOLZ/USDT value to buy above.
-              min-ratio: 70
-    
             scenarios:
               prod:
                 bindings:
+                  # Minimum input/output token ratio
+                  # Eg: For buy DOLZ, min-ratio is the minimum DOLZ/USDT value to buy above.
+                  min-ratio: 70
                   plottables: '''plottables-prod'
                   get-last-time: '''get-last-time-prod'
                   ensure-ratio: '''ensure-ratio-prod'
               chart:
                 runs: 1000
                 bindings:
+                  min-ratio: 70
                   plottables: '''plottables-plot'
                   get-last-time: '''get-last-time-plot'
-                  ensure-ratio: '''ensure-ratio-plot'              
+                  ensure-ratio: '''ensure-ratio-plot'  
+              test:
+                bindings:
+                  min-ratio: 100
+                  plottables: '''plottables-prod'
+                  get-last-time: '''get-last-time-prod'
+                  ensure-ratio: '''ensure-ratio-prod'              
 
 charts:
   sell-streaming-dca:
@@ -236,7 +253,7 @@ charts:
   sell-dca-simulation:
         scenario: streaming-dca.sell-dolz.chart
         plots:
-          Number of RED tokens sold vs time difference:
+          Number of DOLZ tokens sold vs time difference:
             marks:
               - type: line
                 options:
@@ -281,7 +298,7 @@ charts:
   buy-dca-simulation:
         scenario: streaming-dca.buy-dolz.chart
         plots:
-          Number of BLUE tokens sold vs time difference:
+          Number of USDT tokens sold vs time difference:
             marks:
               - type: line
                 options:
@@ -321,11 +338,13 @@ deployments:
 #get-last-time !Binding to get last time and current time
 #plottables !Binding for charting metrics.
 #ensure-ratio !Binding to enfore minimum io-ratio check.
-#io-multiplier !Binding to calculate multiplier for io-ratio.
+#quote-multiplier !Binding to calculate multiplier for io-ratio.
 #test-current-time !Binding to have test current time.
 
 #uniswap-words !The subparser for the Uniswap words
 #orderbook-subparser !The subparser for the Orderbook words
+#uniswap-v3-factory !Uniswap v3 factory.
+#uniswap-v3-init-code !Uniswap v3 factory init code.
 #last-time-key "last-time-key"
 
 #bounty-auction
@@ -361,13 +380,13 @@ deployments:
 
 #calculate-budget-input
   current-budget: ,
-  _: mul(
-    uniswap-v3-quote-exact-input(
-      output-token-address reserve-token-address
-      current-budget twap-io-fee
-    )
-    call<'io-multiplier>()
-  );
+  output-to-reserve: uniswap-v3-quote-exact-input(
+    output-token-address reserve-token-address
+    current-budget
+    uniswap-v3-factory uniswap-v3-init-code
+    twap-io-fee
+  ),
+  output-to-input: call<'quote-multiplier>(output-to-reserve);
 
 #plottables-plot
   _: per-second-rate,
@@ -393,13 +412,15 @@ deployments:
 #ensure-ratio-plot
   io-ratio: ;
 
-#io-multiplier-identity
-  _: 1;
+#quote-multiplier-identity
+  _: ;
 
-#io-multiplier-reserve
-  _: uniswap-v3-twap-output-ratio(
+#quote-multiplier-reserve
+  reserve-amount: ,
+  reserve-to-input: uniswap-v3-quote-exact-input(
     reserve-token-address input-token-address 
-    0 0
+    reserve-amount
+    uniswap-v3-factory uniswap-v3-init-code
     twap-multiplier-fee
   );
 

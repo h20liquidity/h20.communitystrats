@@ -149,26 +149,28 @@ long-twap-0: uniswap-v3-twap-output-ratio(base-token quote-token mul(10 second-i
 medium-twap-0: uniswap-v3-twap-output-ratio(base-token quote-token mul(5 second-interval) mul(0 second-interval) uniswap-v3-factory uniswap-v3-init-code poolfee),
 short-twap-0: uniswap-v3-twap-output-ratio(base-token quote-token mul(1 second-interval) mul(0 second-interval) uniswap-v3-factory uniswap-v3-init-code poolfee),
 
-/* 3 */
-long-twap-3: uniswap-v3-twap-output-ratio(base-token quote-token mul(13 second-interval) mul(3 second-interval) uniswap-v3-factory uniswap-v3-init-code poolfee),
-medium-twap-3: uniswap-v3-twap-output-ratio(base-token quote-token mul(8 second-interval) mul(3 second-interval) uniswap-v3-factory uniswap-v3-init-code poolfee),
-short-twap-3: uniswap-v3-twap-output-ratio(base-token quote-token mul(4 second-interval) mul(3 second-interval) uniswap-v3-factory uniswap-v3-init-code poolfee),
+/* 1 */
+long-twap-1: uniswap-v3-twap-output-ratio(quote-token base-token mul(11 second-interval) mul(1 second-interval) uniswap-v3-factory uniswap-v3-init-code poolfee),
+medium-twap-1: uniswap-v3-twap-output-ratio(quote-token base-token mul(6 second-interval) mul(1 second-interval) uniswap-v3-factory uniswap-v3-init-code poolfee),
+short-twap-1: uniswap-v3-twap-output-ratio(quote-token base-token mul(2 second-interval) mul(1 second-interval) uniswap-v3-factory uniswap-v3-init-code poolfee),
 
 /* obtain boundaries */
 boundary-0 : mul(short-twap-0 boundary-value),
-boundary-3 : mul(short-twap-3 boundary-value),
+boundary-1 : mul(short-twap-1 boundary-value),
 
 /* calculate distances 0 */
 svalue-0 sneg-0: call<'calculate-distance>(short-twap-0 medium-twap-0 long-twap-0),
 
 /* calculate distances 3 */
-svalue-3 sneg-3: call<'calculate-distance>(short-twap-3 medium-twap-3 long-twap-3),
+svalue-1 sneg-1: call<'calculate-distance>(short-twap-1 medium-twap-1 long-twap-1),
+
 
 /*long-condition-calls*/
 lccall-0: call<'longcondition>(svalue-0 sneg-0 boundary-0 current-price two-x-average),
-lccall-3: call<'longcondition>(svalue-3 sneg-3 boundary-3 current-price two-x-average),
+lccall-1: call<'longcondition>(svalue-1 sneg-1 boundary-1 current-price two-x-average),
 
-enterlong : any(lccall-0 lccall-3),
+
+enterlong : any(lccall-0 lccall-1),
 
 /*context*/
 solver-input: input-token(),

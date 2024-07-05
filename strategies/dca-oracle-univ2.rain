@@ -1,0 +1,10 @@
+# Strategy: Oracle based DCA, uniswap v2
+#
+# High level, this strategy trades mean amount of USDC denominated DOLZ tokens at the end of every cooldown period
+# provided that current calculated USDC denominated price of DOLZ falls within the price gird.
+#
+# - Amount of DOLZ bought/sold per trade within the price band is randomized and centered around a mean,
+#   value for which can be set within the bindings.
+# - Range for the grid can also be provided within the bindings.
+# - Strategy provides a guard against orcale manipulation by enforcing that the ratio of the current price offered
+#   by the order to the 30 min average price is within the threshold, which can be provided as a binding in the strategy.

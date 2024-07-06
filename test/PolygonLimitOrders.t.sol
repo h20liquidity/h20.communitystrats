@@ -44,7 +44,7 @@ contract DcaOracleUniv3Test is StrategyTests {
     using SafeERC20 for IERC20;
     using Strings for address;
 
-    uint256 constant FORK_BLOCK_NUMBER = 58785637;
+    uint256 constant FORK_BLOCK_NUMBER = 59037467;
    
     
     function selectFork() internal {
@@ -72,7 +72,7 @@ contract DcaOracleUniv3Test is StrategyTests {
         ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
     }
 
-    function testPolygonLimitOrders() public {
+    function testPolygonLimitOrdersSell() public {
         IO[] memory inputVaults = new IO[](1);
         inputVaults[0] = polygonUsdtIo();
 
@@ -88,8 +88,8 @@ contract DcaOracleUniv3Test is StrategyTests {
             10000e18,
             0,
             0,
-            "strategies/polygon-limit-orders.rain",
-            "limit-orders.prod",
+            "strategies/limit-order-multiple.rain",
+            "limit-orders.sell.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
@@ -117,8 +117,30 @@ contract DcaOracleUniv3Test is StrategyTests {
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
 
-            assertEq(strategyRatio, 0.009e18);
+            assertEq(strategyRatio, 0.0085e18);
+            assertEq(strategyAmount, 150e18);
+        }
+        {
+            vm.recordLogs();
+            // `arb()` called
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            assertEq(strategyRatio, 0.0090e18);
             assertEq(strategyAmount, 200e18);
+        }
+        {
+            vm.recordLogs();
+            // `arb()` called
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            assertEq(strategyRatio, 0.0095e18);
+            assertEq(strategyAmount, 250e18); 
         }
         {
             vm.recordLogs();
@@ -132,7 +154,103 @@ contract DcaOracleUniv3Test is StrategyTests {
             assertEq(strategyAmount, 300e18);
         }
         {
-            vm.expectRevert("RouteProcessor: Minimal ouput balance violation");
+            vm.expectRevert("Max order count");
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+        }
+    }
+
+    function testPolygonLimitOrdersBuy() public {
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = polygonDolzIo();
+
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = polygonUsdtIo();
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            getEncodedSellDolzRoute(address(ARB_INSTANCE)),
+            getEncodedBuyDolzRoute(address(ARB_INSTANCE)),
+            0,
+            0,
+            2000000e18,
+            10000e6,
+            0,
+            0,
+            "strategies/limit-order-multiple.rain",
+            "limit-orders.buy.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+        OrderV2 memory order = addOrderDepositOutputTokens(strategy); 
+
+        {
+            moveExternalPrice(
+                strategy.inputVaults[strategy.inputTokenIndex].token,
+                strategy.outputVaults[strategy.outputTokenIndex].token,
+                strategy.makerAmount,
+                strategy.makerRoute
+            );
+        }
+
+        {
+            vm.recordLogs();
+            // `arb()` called
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            assertEq(strategyRatio, 100e18);
+            assertEq(strategyAmount, 1e18);
+        }
+        {
+            vm.recordLogs();
+            // `arb()` called
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            assertEq(strategyRatio, 105e18);
+            assertEq(strategyAmount, 1.5e18);
+        }
+        {
+            vm.recordLogs();
+            // `arb()` called
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            assertEq(strategyRatio, 110e18);
+            assertEq(strategyAmount, 2e18);
+        }
+        {
+            vm.recordLogs();
+            // `arb()` called
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            assertEq(strategyRatio, 115e18);
+            assertEq(strategyAmount, 2.5e18); 
+        }
+        {
+            vm.recordLogs();
+            // `arb()` called
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            assertEq(strategyRatio, 120e18);
+            assertEq(strategyAmount, 3e18);
+        }
+        {
+            vm.expectRevert("Max order count");
             takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
         }
     }

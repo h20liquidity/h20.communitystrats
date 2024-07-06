@@ -37,6 +37,14 @@ orders:
     outputs:
       - token: polygon-dolz
         vault-id: 0x6049f8ee79b82dd5bc82b368114bb0a69f34d539b04b43208241e1f68da134a8
+  polygon-dolz-buy:
+    orderbook: polygon-dolz
+    inputs:
+      - token: polygon-dolz
+        vault-id: 0x6049f8ee79b82dd5bc82b368114bb0a69f34d539b04b43208241e1f68da134a8
+    outputs:
+      - token: polygon-usdt
+        vault-id: 0x6049f8ee79b82dd5bc82b368114bb0a69f34d539b04b43208241e1f68da134a8
 
 scenarios:
     limit-orders:
@@ -47,46 +55,196 @@ scenarios:
         # Ask for now, registry in future.
         uniswap-words: 0xbc609623F5020f6Fc7481024862cD5EE3FFf52D7
         orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1
-        # io-ratio and amount for first order. 
-        io-ratio-1: 0.0080
-        ouptut-amount-1: 100
-        # io-ratio and amount for second order. 
-        io-ratio-2: 0.0090
-        ouptut-amount-2: 200
-        # io-ratio and amount for third order. 
-        io-ratio-3: 0.0100
-        ouptut-amount-3: 300
-          
       scenarios:
-        prod:
+        buy:
           bindings:
-            plottables: '''plottables-prod'
-        chart:
-          runs: 1
+            # io-ratio and amount for first order. 
+            io-ratio-1: 100
+            ouptut-amount-1: 1
+            # io-ratio and amount for second order. 
+            io-ratio-2: 105
+            ouptut-amount-2: 1.5
+            # io-ratio and amount for third order. 
+            io-ratio-3: 110
+            ouptut-amount-3: 2
+            # io-ratio and amount for third order. 
+            io-ratio-4: 115
+            ouptut-amount-4: 2.5
+            # io-ratio and amount for third order. 
+            io-ratio-5: 120
+            ouptut-amount-5: 3
+          scenarios:
+            prod:
+              bindings:
+                plottables: '''plottables-prod'
+                get-trade-count: '''get-trade-count-prod'
+            metric:
+              runs: 1
+              bindings:
+                plottables: '''plottables-metric'
+                get-trade-count: '''get-trade-count-prod'
+            chart:
+              runs: 1000
+              bindings:
+                plottables: '''plottables-chart'
+                get-trade-count: '''get-trade-count-chart'
+        sell:
           bindings:
-            plottables: '''plottables-plot'
-
+            # io-ratio and amount for first order. 
+            io-ratio-1: 0.0080
+            ouptut-amount-1: 100
+            # io-ratio and amount for second order. 
+            io-ratio-2: 0.0085
+            ouptut-amount-2: 150
+            # io-ratio and amount for third order. 
+            io-ratio-3: 0.0090
+            ouptut-amount-3: 200
+            # io-ratio and amount for third order. 
+            io-ratio-4: 0.0095
+            ouptut-amount-4: 250
+            # io-ratio and amount for third order. 
+            io-ratio-5: 0.0100
+            ouptut-amount-5: 300
+          scenarios:
+            prod:
+              bindings:
+                plottables: '''plottables-prod'
+                get-trade-count: '''get-trade-count-prod'
+            metric:
+              runs: 1
+              bindings:
+                plottables: '''plottables-metric'
+                get-trade-count: '''get-trade-count-prod'
+            chart:
+              runs: 1000
+              bindings:
+                plottables: '''plottables-chart'
+                get-trade-count: '''get-trade-count-chart'
+        
 
 charts:
-  limit-orders:
-    scenario: limit-orders.chart
+  buy-dolz-metrics:
+    scenario: limit-orders.buy.metric
     metrics:
       - label: io-ratio-1
-        value: 0.3.0
-      - label: amount-1
-        value: 0.3.1
-      - label: io-ratio-2
         value: 0.3.2
-      - label: amount-2
+      - label: amount-1
         value: 0.3.3
-      - label: io-ratio-3
+      - label: io-ratio-2
         value: 0.3.4
-      - label: amount-3
+      - label: amount-2
         value: 0.3.5
+      - label: io-ratio-3
+        value: 0.3.6
+      - label: amount-3
+        value: 0.3.7
+      - label: io-ratio-4
+        value: 0.3.8
+      - label: amount-4
+        value: 0.3.9
+      - label: io-ratio-5
+        value: 0.3.10
+      - label: amount-5
+        value: 0.3.11
+
+  sell-dolz-metrics:
+    scenario: limit-orders.sell.metric
+    metrics:
+      - label: io-ratio-1
+        value: 0.3.2
+      - label: amount-1
+        value: 0.3.3
+      - label: io-ratio-2
+        value: 0.3.4
+      - label: amount-2
+        value: 0.3.5
+      - label: io-ratio-3
+        value: 0.3.6
+      - label: amount-3
+        value: 0.3.7
+      - label: io-ratio-4
+        value: 0.3.8
+      - label: amount-4
+        value: 0.3.9
+      - label: io-ratio-5
+        value: 0.3.10
+      - label: amount-5
+        value: 0.3.11
+  
+  buy-limit-order-simulation:
+      scenario: limit-orders.buy.chart
+      plots:    
+        Limit order io-ratio:     
+          x:
+              label: 'Order Number'
+          y:
+              label: 'IO ratio'
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.3.1
+        Limit order effective io-ratio (as visible on dex tools):     
+          x:
+              label: 'Order Number'
+          y:
+              label: 'Effective io ratio'
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.3.2
+        Limit order amount:     
+          x:
+              label: 'Order Number'
+          y:
+              label: 'Order amount'
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.3.0
+
+  sell-limit-order-simulation:
+      scenario: limit-orders.sell.chart
+      plots:    
+        Limit order io-ratio:     
+          x:
+              label: 'Order Number'
+          y:
+              label: 'IO ratio'
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.3.1
+        Limit order effective io-ratio (as visible on dex tools):     
+          x:
+              label: 'Order Number'
+          y:
+              label: 'Effective io ratio'
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.3.1
+        Limit order amount:     
+          x:
+              label: 'Order Number'
+          y:
+              label: 'Order amount'
+          marks:
+            - type: line
+              options:
+                x: 0.0
+                y: 0.3.0
 
 deployments:
+  dolz-buy:
+    scenario: limit-orders.buy.prod
+    order: polygon-dolz-buy
   dolz-sell:
-    scenario: limit-orders.prod
+    scenario: limit-orders.sell.prod
     order: polygon-dolz-sell
 ---
 #uniswap-words !The subparser for the Uniswap words
@@ -95,59 +253,78 @@ deployments:
 #io-ratio-1 !IO ratio for first order.
 #ouptut-amount-1 !Output amount for first order.
 
-#io-ratio-2 !IO ratio for first order.
-#ouptut-amount-2 !Output amount for first order.
+#io-ratio-2 !IO ratio for second order.
+#ouptut-amount-2 !Output amount for second order.
 
-#io-ratio-3 !IO ratio for first order.
-#ouptut-amount-3 !Output amount for first order.
+#io-ratio-3 !IO ratio for third order.
+#ouptut-amount-3 !Output amount for third order.
+
+#io-ratio-4 !IO ratio for fourth order.
+#ouptut-amount-4 !Output amount for fourth order.
+
+#io-ratio-5 !IO ratio for fifth order.
+#ouptut-amount-5 !Output amount for fifth order.
 
 #count-key "count-key"
 #plottables !Binding to plot values.
+#get-trade-count !Binding to get trade count.
+#test-trade-count !Test trade count for plotting.
 
 #plottables-prod
-  :;
+  _ _: ;
 
-#plottables-plot
+#plottables-chart
+  amount io-ratio: ,
+  effective-io-ratio: inv(io-ratio);
+
+#plottables-metric
+  amount io-ratio: ,
   _: io-ratio-1,
   _: ouptut-amount-1,
   _: io-ratio-2,
   _: ouptut-amount-2,
   _: io-ratio-3,
-  _: ouptut-amount-3;
+  _: ouptut-amount-3,
+  _: io-ratio-4,
+  _: ouptut-amount-4,
+  _: io-ratio-5,
+  _: ouptut-amount-5;
+
+#get-trade-count-prod
+  trade-count-key: hash(order-hash() count-key), 
+  trade-count: get(trade-count-key);
+
+#get-trade-count-chart
+  trade-count: floor(mod(test-trade-count 5));
+
+#get-ratio-amount
+  trade-count: call<'get-trade-count>(),
+  ouput-amount: conditions(
+    equal-to(trade-count 0) ouptut-amount-1
+    equal-to(trade-count 1) ouptut-amount-2
+    equal-to(trade-count 2) ouptut-amount-3
+    equal-to(trade-count 3) ouptut-amount-4
+    equal-to(trade-count 4) ouptut-amount-5
+    "Max order count"    
+  ),
+  io-ratio: conditions(
+    equal-to(trade-count 0) io-ratio-1
+    equal-to(trade-count 1) io-ratio-2
+    equal-to(trade-count 2) io-ratio-3
+    equal-to(trade-count 3) io-ratio-4
+    equal-to(trade-count 4) io-ratio-5
+    "Max order count"    
+  );
 
 #calculate-io
   using-words-from uniswap-words orderbook-subparser
-  
-  trade-count-key: hash(order-hash() count-key), 
-  trade-count: get(trade-count-key), 
-  _ _:call<'get-ratio-amount>(trade-count),
-  :call<'plottables>(); 
+    
+  trade-count
+  final-amount
+  final-ratio: call<'get-ratio-amount>(),
+  :call<'plottables>(final-amount final-ratio); 
 
 #handle-io
   trade-count-key: hash(order-hash() count-key), 
   trade-count: get(trade-count-key), 
   :set(trade-count-key add(trade-count 1));
-
-#get-ratio-amount
-  trade-count: ,
-  output-amount: if(equal-to(trade-count 0)
-    ouptut-amount-1
-    if(equal-to(trade-count 1)
-      ouptut-amount-2
-      if(equal-to(trade-count 2)
-        ouptut-amount-3
-        1
-      )
-    )
-  ),
-  io-ratio: if(equal-to(trade-count 0)
-    io-ratio-1
-    if(equal-to(trade-count 1)
-      io-ratio-2
-      if(equal-to(trade-count 2)
-        io-ratio-3
-        max-value()
-      )
-    )
-  );
- 

@@ -57,10 +57,10 @@ contract GridTradingTest is StrategyTests {
     function setUp() public {
         selectFork();
         
-        PARSER = IParserV1(0x001B302095D66b777C04cd4d64b86CCe16de55A1);
+        PARSER = IParserV1(0xA073E75E39C402d2AFFb48E5e8EC18169daeC31D);
         ORDERBOOK = IOrderBookV3(0x07701e3BcE4248EFDFc7D31392a43c8b82a7A260);
         ARB_INSTANCE = IOrderBookV3ArbOrderTaker(0xF9323B7d23c655122Fb0272D989b83E105cBcf9d);
-        EXPRESSION_DEPLOYER = IExpressionDeployerV3(0x8ceC9e3Ec2F8838000b91CfB97403A6Bb0F4036A);
+        EXPRESSION_DEPLOYER = IExpressionDeployerV3(0xEBe394cff4980992B826Ec70ef0a9ec8b5D4C640);
         ROUTE_PROCESSOR = IRouteProcessor(address(0x0bB72B4C7c0d47b2CaED07c804D9243C1B8a0728)); 
         EXTERNAL_EOA = address(0x654FEf5Fb8A1C91ad47Ba192F7AA81dd3C821427);
         APPROVED_EOA = address(0x669845c29D9B1A64FFF66a55aA13EB4adB889a88);
@@ -97,9 +97,41 @@ contract GridTradingTest is StrategyTests {
             outputVaults
         );
 
-        OrderV2 memory order = addOrderDepositOutputTokens(strategy);
         // OrderBook 'takeOrder'
-        // checkStrategyCalculationsArbOrder(strategy);
+        checkStrategyCalculationsArbOrder(strategy);
+    }
+
+    function testGridTradingSell() public {
+        // Input vaults
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = flareBlueIo();
+
+        // Output vaults
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = flareRedIo();
+
+        uint256 expectedRatio = 1e18;
+        uint256 expectedAmountOutputMax = 1e18;
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            getEncodedBlueToRedRoute(address(ARB_INSTANCE)),
+            getEncodedRedToBlueRoute(address(ARB_INSTANCE)),
+            0,
+            0,
+            10000e18,
+            10000e18,
+            expectedRatio,
+            expectedAmountOutputMax,
+            "strategies/grid-trading.rain",
+            "flare-red-blue.sell.grid.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+        
+        // OrderBook 'takeOrder'
+        checkStrategyCalculationsArbOrder(strategy);
     }
 
     function getEncodedRedToBlueRoute(address toAddress) internal pure returns (bytes memory) {

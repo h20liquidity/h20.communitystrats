@@ -1,86 +1,80 @@
-# Strat: Recharging tranches
-#
-# High level idea is that the strategy offers a firm price for batches of tokens.
-# Each batch is called a "tranche".
-#
-# Every time a batch of tokens fully clears a new price further from the previous
-# trades is offered for the next tranche.
-#
-# For example, if 1000 BLUE was available in a tranche to buy RED at
-# 1 BLUE per RED and this fully cleared, the next tranche might be to buy up to
-# 1000 BLUE at 0.9 BLUE per RED, then 0.8, etc. etc.
-#
-# Tranches slowly recharge over time passively when no trades are happening against
-# the current price offer. For example, the strategy might recharge 1 tranche per
-# day, so if the last trade left 500 BLUE remaining in a 1000 BLUE tranche at
-# 0.9 BLUE per RED then after 24 hours the strategy will be offering 500 BLUE
-# at 1 BLUE per RED. I.e. 0.5 tranches were recharged at 0.9 ratio and then
-# another 0.5 tranches were recharged at 1 ratio. After another 12 hours
-# there will be 1000 BLUE on offer at 1 ratio, etc.
-#
-# Almost everything about the strat is bindable and chartable, e.g.
-# - The algorithms that determine the price and amount of each tranche
-# - The recharge rate and delay before the passive recharge starts to kick in
-# - Whether the amounts per tranche are denominated in the input or output token
-# - Whether the strategy is buying or selling TKN
-# - An optional conversion between the input/output token and some external
-#   price, e.g. converting WETH in a vault to USD equivalent.
+# Strat: Grid trading
+# Grid trading is a strategy that involves placing buy and sell 
+# orders at pWLTHetermined intervals above and below a set price
+# level to profit from market volatility. It creates a grid of orders,
+# aiming to capture profits from the regular price fluctuations without 
+# pWLTHicting market direction. This method is particularly effective in 
+# sideways or ranging markets, where prices oscillate within a defined 
+# range, allowing traders to systematically buy low and sell high.
+# 
+# Target Network: Base
+# Quote (Input / Incoming): USDC or WLTH
+# Base (Output / Outgoing): WLTH or USDC
+# Token contract: https://basescan.org/address/0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+# Token github: NA
+# Liquidity protocol: Uniswap V3
+# Liquidity pool address: https://www.dextools.io/app/en/base/pair-explorer/0x1536ee1506e24e5a36be99c73136cd82907a902e?t=1717921711270
+# Liquidity pool fee: 0.3%
 
 networks:
-  flare-pubstrats:
-    rpc: https://flare.rpc.thirdweb.com
-    chain-id: 14
-    network-id: 14
-    currency: FLR
+  base: 
+    rpc: https://mainnet.base.org 
+    chain-id: 8453 
+    network-id: 8453 
+    currency: ETH
 
 subgraphs:
-  flare-pubstrats: https://subgraphs.h20liquidity.tech/subgraphs/name/flare-0xb06202aA
-
+  base: https://api.thegraph.com/subgraphs/name/h20liquidity/base-0x2aee87
+  
 orderbooks:
-  flare-pubstrats:
-    address: 0x07701e3BcE4248EFDFc7D31392a43c8b82a7A260
-    network: flare-pubstrats
-    subgraph: flare-pubstrats
+  base:
+    address: 0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76
+    network: base
+    subgraph: base
 
 deployers:
-  flare-pubstrats:
-    address: 0xEBe394cff4980992B826Ec70ef0a9ec8b5D4C640
-    network: flare-pubstrats
+  base:
+    address: 0xfca89cD12Ba1346b1ac570ed988AB43b812733fe
+    network: base
 
 tokens:
-  flare-red:
-    network: flare-pubstrats
-    address: 0xE38D92733203E6f93C634304b777490e67Dc4Bdf
-  flare-blue:
-    network: flare-pubstrats
-    address: 0x40D44abeC30288BFcd400200BA65FBD05daA5321
+  base-wlth:
+    network: base
+    address: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+  base-usdc:
+    network: base
+    address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
 orders:
-  flare-buy:
-    orderbook: flare-pubstrats
+  # vault-id generated with `openssl rand -hex 32`
+  base-wlth-sell:
+    orderbook: base
     inputs:
-      - token: flare-red
+      - token: base-usdc
+        vault-id: 
     outputs:
-      - token: flare-blue
-
-  flare-sell:
-    orderbook: flare-pubstrats
+      - token: base-wlth
+        vault-id: 
+  base-wlth-buy:
+    orderbook: base
     inputs:
-      - token: flare-blue
+      - token: base-wlth
+        vault-id: 
     outputs:
-      - token: flare-red
+      - token: base-usdc
+        vault-id: 
 
 scenarios:
-    flare-red-blue:
-        network: flare-pubstrats
-        deployer: flare-pubstrats
-        orderbook: flare-pubstrats
+    grid-trading:
+        network: base
+        deployer: base
+        orderbook: base
         bindings:
-          # The uniswap words are only required if there is a conversion between
+          # The uniswap words are only requiWLTH if there is a conversion between
           # the input/output token and some external price. Typically this is
           # not the case as the io-ratio is defined in terms of the input/output
           # token and the io-ratio-multiplier is set to the identity function.
-          uniswap-words: 0xAFF83Dd453f9EE510d6F623d09322A68E8ee29A3
+          uniswap-words: 0xbc609623F5020f6Fc7481024862cD5EE3FFf52D7
           
           # Uniswap v3 factory contract address and corresponding init code hash.
           # If the factory address and the init code aren't available as a literals
@@ -89,16 +83,18 @@ scenarios:
           uniswap-v3-init-code: '[uniswap-v3-init-code]'
 
           # Orderbook subparser for orderbook words.
-          orderbook-subparser: 0x77991674ca8887D4ee1b583DB7324B41d5f894c4
+          orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1
         scenarios:
           buy:
             bindings:
-              # RED/BLUE base ratio and increment.
+              # WLTH/USDC base ratio and increment.
               io-ratio-base: 1
               io-ratio-growth: 0.05
-              # Base amount of BLUE tokens to offer and increment.
+
+              # Base amount of USDC tokens to offer and increment.
               tranche-size-base: 1
               tranche-size-growth: 0.01
+
             scenarios:
               grid:
                 bindings:
@@ -139,12 +135,14 @@ scenarios:
                       test-now: 0
           sell:
             bindings:
-              # BLUE/RED base ratio and increment.
+              # USDC/WLTH base ratio and increment.
               io-ratio-base: 1
               io-ratio-growth: 0.05
-              # Base amount of RED tokens to offer and increment.
+
+              # Base amount of WLTH tokens to offer and increment.
               tranche-size-base: 1
               tranche-size-growth: 0.01
+
             scenarios:
               grid:
                 bindings:
@@ -185,30 +183,30 @@ scenarios:
                       test-now: 0
           
 charts:
-    buy-initial-deployment:
-      scenario: flare-red-blue.buy.grid.init
+    base-wlth-buy-deployment:
+      scenario: grid-trading.buy.grid.init
       metrics:
-        - label: Initial BLUE sold
+        - label: Initial USDC sold
           value: 0.6
-          description: 'Amount of BLUE sold to buy RED in the first tranche (stack item 0.6)'             
-        - label: Initial RED bought
+          description: 'Amount of USDC sold to buy WLTH in the first tranche (stack item 0.6)'             
+        - label: Initial WLTH bought
           value: 0.5.2
-          description: 'Amount of RED purchased in the first tranche (stack item 0.5.2)'                             
+          description: 'Amount of WLTH purchased in the first tranche (stack item 0.5.2)'                             
         - label: Initial io-ratio
           value: 0.7
-          description: '# RED purchased per BLUE spent (stack item 0.7)'        
+          description: '# WLTH purchased per USDC spent (stack item 0.7)'        
         - label: Starting tranche
           value: 0.2.0
           description: 'This strategy starts executing buys at the initial tranche (stack item 0.2.0)'          
         - label: Initial buy price
           value: 0.5.3
           precision: 4
-          unit-suffix: " BLUE"             
-          description: 'Price you pay for 1 RED in BLUE, visible on dextools (stack item 0.5.3)'     
+          unit-suffix: " USDC"             
+          description: 'Price you pay for 1 WLTH in USDC, visible on dextools (stack item 0.5.3)'     
       plots:
 
     buy-simulation:
-      scenario: flare-red-blue.buy.grid.test
+      scenario: grid-trading.buy.grid.test
       plots:    
         USDT sold per tranche:     
           x:
@@ -220,101 +218,101 @@ charts:
               options:
                 x: 0.0
                 y: 0.6  
-        RED bought per tranche:    
+        WLTH bought per tranche:    
           x:
               label: 'Tranche space'
           y:
-              label: 'RED bought'          
+              label: 'WLTH bought'          
           marks:
             - type: line
               options:
                 x: 0.0
                 y: 0.5.2
         'io-ratio per tranche':
-          subtitle: 'Ratio of RED bought per 1 USDT sold per tranche'        
+          subtitle: 'Ratio of WLTH bought per 1 USDT sold per tranche'        
           x:
               label: 'Tranche space'
           y:
-              label: 'RED bought per 1 USDT'            
+              label: 'WLTH bought per 1 USDT'            
           marks:
             - type: line
               options:
                 x: 0.0
                 y: 0.7
         buy price by tranche:
-          subtitle: 'Price paid for 1 RED in USDT, visible on dextools as RED/USDT pair'        
+          subtitle: 'Price paid for 1 WLTH in USDT, visible on dextools as WLTH/USDT pair'        
           x:
               label: 'Tranche space'
           y:
-              label: '1 RED priced in USDT'          
+              label: '1 WLTH priced in USDT'          
           marks:
             - type: line
               options:
                 x: 0.0
                 y: 0.5.3      
 
-    sell-initial-deployment:
-      scenario: flare-red-blue.sell.grid.init
+    base-wlth-sell-deployment:
+      scenario: grid-trading.sell.grid.init
       metrics:
-        - label: Initial RED sold
+        - label: Initial WLTH sold
           value: 0.6
-          description: 'Amount of RED sold for BLUE in the first tranche (stack item 0.6)'             
-        - label: Initial BLUE bought
+          description: 'Amount of WLTH sold for USDC in the first tranche (stack item 0.6)'             
+        - label: Initial USDC bought
           value: 0.5.2
-          description: 'Amount of BLUE purchased by selling RED in the first tranche (stack item 0.5.2)'                             
+          description: 'Amount of USDC purchased by selling WLTH in the first tranche (stack item 0.5.2)'                             
         - label: Initial io-ratio
           value: 0.7
-          description: '# BLUE purchased per RED spent (stack item 0.7)'        
+          description: '# USDC purchased per WLTH spent (stack item 0.7)'        
         - label: Starting tranche
           value: 0.2.0
           description: 'This strategy starts executing sells at the initial tranche (stack item 0.2.0)'          
         - label: Initial sell price
           value: 0.7
           precision: 4
-          unit-suffix: "BLUE"        
-          description: 'Price you pay for 1 RED in BLUE, visible on dextools (stack item 0.7)'     
+          unit-suffix: "USDC"        
+          description: 'Price you pay for 1 WLTH in USDC, visible on dextools (stack item 0.7)'     
       plots:
 
     sell-simulation:
-      scenario: flare-red-blue.sell.grid.test
+      scenario: grid-trading.sell.grid.test
       plots:
-        RED sold per tranche:     
+        WLTH sold per tranche:     
           x:
               label: 'Tranche space'
           y:
-              label: 'RED spent'
+              label: 'WLTH spent'
           marks:
             - type: line
               options:
                 x: 0.0
                 y: 0.6  
-        BLUE bought per tranche:    
+        USDC bought per tranche:    
           x:
               label: 'Tranche space'
           y:
-              label: 'BLUE bought'          
+              label: 'USDC bought'          
           marks:
             - type: line
               options:
                 x: 0.0
                 y: 0.5.2
         'io-ratio per tranche':
-          subtitle: 'Ratio of BLUE bought per 1 RED sold per tranche'        
+          subtitle: 'Ratio of USDC bought per 1 WLTH sold per tranche'        
           x:
               label: 'Tranche space'
           y:
-              label: 'RED bought per 1 BLUE'            
+              label: 'WLTH bought per 1 USDC'            
           marks:
             - type: line
               options:
                 x: 0.0
                 y: 0.7
         sell price by tranche:
-          subtitle: 'Price paid for 1 RED in BLUE, visible on dextools as RED/BLUE pair'        
+          subtitle: 'Price paid for 1 WLTH in USDC, visible on dextools as WLTH/USDC pair'        
           x:
               label: 'Tranche space'
           y:
-              label: '1 RED priced in BLUE'          
+              label: '1 WLTH priced in USDC'          
           marks:
             - type: line
               options:
@@ -322,12 +320,12 @@ charts:
                 y: 0.7    
 
 deployments:
-  flare-buy:
-    scenario: flare-red-blue.buy.grid.prod
-    order: flare-buy
-  flare-sell:
-    scenario: flare-red-blue.sell.grid.prod
-    order: flare-sell
+  base-wlth-buy:
+    scenario: grid-trading.buy.prod
+    order: base-wlth-buy
+  base-wlth-sell:
+    scenario: grid-trading.sell.prod
+    order: base-wlth-sell
 ---
 #tranche-space-per-second !The amount of tranche space that is recharged per second.
 #tranche-space-recharge-delay !The duration in seconds that no recharging occurs after a trade occurs.

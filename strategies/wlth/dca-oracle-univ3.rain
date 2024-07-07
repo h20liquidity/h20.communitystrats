@@ -1,0 +1,631 @@
+# Strategy: Oracle based DCA, uniswap v3
+#
+# This strategy trades mean amount of USDC denominated WLTH tokens at the end of every cooldown period
+# provided that current calculated USDC denominated price of WLTH falls within the price gird.
+#
+# - Amount of WLTH bought/sold per trade within the price band is randomized and centered around a mean,
+#   value for which can be set within the bindings.
+# - Range for the grid can also be provided within the bindings.
+# - Strategy provides a guard against orcale manipulation by enforcing that the ratio of the current price offered
+#   by the order to the 30 min average price is within the threshold, which can be provided as a binding in the strategy.
+
+networks:
+  base-community: 
+    rpc: https://mainnet.base.org 
+    chain-id: 8453 
+    network-id: 8453 
+    currency: ETH
+
+subgraphs:
+  base-community: https://api.thegraph.com/subgraphs/name/h20liquidity/base-0x2aee87
+  
+orderbooks:
+  base:
+    address: 0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76
+    network: base-community
+    subgraph: base-community
+
+deployers:
+  base:
+    address: 0xfca89cD12Ba1346b1ac570ed988AB43b812733fe
+    network: base-community
+
+tokens:
+  base-wlth:
+    network: base-community
+    address: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+  base-usdc:
+    network: base-community
+    address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+
+orders:
+  # vault-id generated with `openssl rand -hex 32`
+  base-wlth-sell:
+    orderbook: base-community
+    inputs:
+      - token: base-usdc
+        vault-id: 
+    outputs:
+      - token: base-wlth
+        vault-id: 
+  base-wlth-buy:
+    orderbook: base-community
+    inputs:
+      - token: base-wlth
+        vault-id: 
+    outputs:
+      - token: base-usdc
+        vault-id: 
+
+scenarios:
+    base-wlth-dca-univ3:
+        network: base-community
+        deployer: base-community
+        orderbook: base-community
+        bindings:
+          # Ask for now, registry in future.
+          uniswap-words: 0xbc609623F5020f6Fc7481024862cD5EE3FFf52D7
+          orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1 
+
+          # Uniswap V3 factory addresses and init code
+          uniswap-v3-factory: '[uniswap-v3-factory]'
+          uniswap-v3-init-code: '[uniswap-v3-init-code]'
+          
+          # Twap fee for tokens
+          # `twap-io-fee`: Uniswap-v3 pool fee for token pair.
+          # If distribution token is paired with a stable token, the binding value is the fee
+          # for the WLTH-USDC pool.
+          #
+          # If distribution token is paired with native wrapped token, for eg WETH, then the 
+          # binding value is the fee for WLTH-WETH pool.
+          twap-io-fee: '[uniswap-v3-fee-medium]'
+
+          # `twap-multiplier-fee`: Uniswap-v3 pool fee for stable-reserve pair.
+          # If distribution token is paired with a stable token then binding value is irrelevant.
+          #
+          # If distribution token is paired with native wrapped token, for eg WETH, then the 
+          # binding value is the fee for WETH-USDC pool
+          twap-multiplier-fee: '[uniswap-v3-fee-low]'
+          
+          # Jittery binomial bits for randomness.
+          # If the number of bits are more, the randomess is centered towards mean.
+          # If the number of bits are less, the randomess is more spread out.
+          jittery-binomial-bits: 10
+
+        scenarios:
+          buy:
+            bindings:
+              # Input token, this is the token being received.
+              input-token: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
+              
+              # Output token, this is the token that is being offered.
+              # Output token, mean amount 
+              # Amount of output tokens offered per trade.
+              # For gas expensive networks mean amount needs to be higher to compensate for gas fee and bounty.
+              mean-output-amount : 10
+
+              # Output token, this is the token being sold
+              output-token: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+
+              # Reserve token, If the output token is paired with the input token on a uniswap v3,
+              # then the reserve is the input token. 
+              # If the output token is NOT paired with the input token on a uniswap v3 pool,
+              # then the reserve address is the token which the ouput token is paired with.
+              reserve-token: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
+
+              # Quote and Twap multiplier to get quote and 30min twap for input-output token pair.
+              # If the output token is paired with the input token on a uniswap v3,
+              # then set it to identity
+              # If the output token is NOT paired with the input token on a uniswap v3 pool,
+              # then set it to reserve
+              io-quote: '''io-quote-identity'
+              twap-multiplier: '''twap-multiplier-identity'
+
+              # Params for bounty auction which is input token denominated. Min price, max price, time in seconds and unit increase
+              bounty-min: 1.1
+              bounty-max: 27
+              bounty-unit-increase: 0.001
+              bounty-unit-time: 60
+              
+              # Cooldown between two trades in seconds. 3600, default, is 1 hour.
+              cooldown-time: 3600
+              
+            scenarios:
+              deviation:
+                bindings:
+                  # Percentage acceptable twap deviation
+                  # Acceptable deviation from the 30min average price.
+                  # Binding value is dependent upon the network, token pair and the mean amount of 
+                  # tokens traded per trade. If the mean amount of tokens traded is low, or if 
+                  # the network gas fee is high, then deviation needs to be a higher value.
+                  # - For 1% deviation, binding value is 0.01
+                  # - For 10% deviation, binding value is 0.1
+                  twap-deviation: 0.1
+
+                  # Minimum io-ratio for the order. 
+                  # Strategy will not buy output token with input token for a lower ratio.
+                  min-ratio: 80
+                scenarios:
+                  prod:
+                    bindings:
+                      enforce-twap-check: '''enforce-twap-check-prod'
+                      ensure-min-ratio: '''ensure-min-ratio-prod'
+                      ensure-cooldown: '''ensure-cooldown-prod'
+                      plottables: '''plottables-prod'
+                  chart:
+                    runs: 1000
+                    bindings:
+                      enforce-twap-check: '''enforce-twap-check-chart'
+                      ensure-min-ratio: '''ensure-min-ratio-chart'
+                      ensure-cooldown: '''ensure-cooldown-chart'
+                      plottables: '''plottables-chart'
+                  metric:
+                    runs: 1
+                    bindings:
+                      enforce-twap-check: '''enforce-twap-check-chart'
+                      ensure-min-ratio: '''ensure-min-ratio-chart'
+                      ensure-cooldown: '''ensure-cooldown-metric'
+                      plottables: '''plottables-chart'
+              test:
+                bindings:
+                  min-ratio: 80
+                  twap-deviation: 0.01
+                  enforce-twap-check: '''enforce-twap-check-prod'
+                  ensure-min-ratio: '''ensure-min-ratio-chart'
+                  ensure-cooldown: '''ensure-cooldown-chart'
+                  plottables: '''plottables-prod'
+
+          sell:
+            bindings:
+              # Input token, this is the token being received.
+              input-token: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+
+              # Output token, this is the token that is being offered.
+              # Amount of output tokens offered per trade.
+              # For gas expensive networks mean amount needs to be higher to compensate for gas fee and bounty.
+              mean-output-amount : 900
+
+              # Output token, this is the token being bought
+              output-token: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
+
+              # Reserve token, If the output token is paired with the input token on a uniswap v3,
+              # then the reserve is the input token. 
+              # If the output token is NOT paired with the input token on a uniswap v3 pool,
+              # then the reserve address is the token which the ouput token is paired with.
+              reserve-token: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+
+              # Quote and Twap multiplier to get quote and 30min twap for input-output token pair.
+              # If the output token is paired with the input token on a uniswap v3,
+              # then set it to identity
+              # If the output token is NOT paired with the input token on a uniswap v3 pool,
+              # then set it to reserve
+              io-quote: '''io-quote-identity'
+              twap-multiplier: '''twap-multiplier-identity'
+
+              # Params for bounty auction which is input token denominated.
+              bounty-min: 0.012
+              bounty-max: 0.3
+              bounty-unit-increase: 0.01
+              bounty-unit-time: 60
+
+              # Cooldown between two trades in seconds.
+              cooldown-time: 3600
+      
+            scenarios:
+              deviation:
+                bindings:
+                  # Percentage acceptable twap deviation
+                  # Acceptable deviation from the 30min average price.
+                  # Binding value is dependent upon the network, token pair and the mean amount of 
+                  # tokens traded per trade. If the mean amount of tokens traded is low, or if 
+                  # the network gas fee is high, then deviation needs to be a higher value.
+                  # - For 1% deviation, binding value is 0.01
+                  # - For 5% deviation, binding value is 0.05
+                  # - For 10% deviation, binding value is 0.1
+                  twap-deviation: 0.1
+
+                  # Minimum io-ratio for the order. 
+                  # Strategy will not buy input token with output token for a higher ratio.
+                  # Can also be laelled min sell price. 
+                  min-ratio: 0.01
+                scenarios:
+                  prod:
+                    bindings:
+                      enforce-twap-check: '''enforce-twap-check-prod'
+                      ensure-min-ratio: '''ensure-min-ratio-prod'
+                      ensure-cooldown: '''ensure-cooldown-prod'
+                      plottables: '''plottables-prod'
+                  chart:
+                    runs: 1000
+                    bindings:
+                      enforce-twap-check: '''enforce-twap-check-chart'
+                      ensure-min-ratio: '''ensure-min-ratio-chart'
+                      ensure-cooldown: '''ensure-cooldown-chart'
+                      plottables: '''plottables-chart'
+                  metric:
+                    runs: 1
+                    bindings:
+                      enforce-twap-check: '''enforce-twap-check-chart'
+                      ensure-min-ratio: '''ensure-min-ratio-chart'
+                      ensure-cooldown: '''ensure-cooldown-metric'
+                      plottables: '''plottables-chart'
+              test:
+                bindings:
+                  min-ratio: 0.02
+                  twap-deviation: 0.12
+                  enforce-twap-check: '''enforce-twap-check-prod'
+                  ensure-min-ratio: '''ensure-min-ratio-prod'
+                  ensure-cooldown: '''ensure-cooldown-chart'
+                  plottables: '''plottables-prod'
+                
+charts:
+  wlth-buy-dca-univ3: 
+    scenario: base-wlth-dca-univ3.buy.deviation.metric
+    metrics:
+      - label: Amount of USDC offered for first trade.
+        value: 0.3
+        description: Amount of USDC offered for the current block.
+      - label: Amount of WLTH received for frist trade.
+        value: 0.4
+        description: Amount of WLTH received for USDC offered.
+      - label: io-ratio WLTH/USDC
+        value: 0.7
+        description: Ratio offered by the order for the current block accounting for bounty.
+      - label: Minimum Bounty amount
+        value: 0.7.5
+        description: Minimum amount of WLTH offered as bounty.
+      - label: Maximum Bounty amount
+        value: 0.7.6    
+        description: Maximum amount of WLTH offered as bounty.
+      - label: Bounty increase per minute
+        value: 0.7.10   
+        description: Amount by which bounty increases every minute after cooldown.
+      - label: Max Bounty ratio
+        value: 0.7.9
+        unit-suffix: '%'   
+        description: Ratio of max bounty amount to order amount
+      - label: Mean amount
+        value: 0.7.4
+        description: Mean amount of USDC sold 
+      - label: Cooldown in minutes
+        value: 0.7.11        
+        description: Number of minutes between strategy running
+      - label: Trades per hour
+        value: 0.7.12       
+        description: Number of trades per hour  
+      - label: Strategy twap buy deviation
+        value: 0.7.7
+        unit-suffix: '%'         
+        description: Twap deviation percentage acceptable     
+      - label: Current twap buy deviation
+        value: 0.7.8
+        unit-suffix: '%'       
+        description: Twap deviation occuring at current block with maximum bounty on the buy side to prevent higher than deviations buys.
+      - label: Cummulative amount traded daily
+        value: 0.7.13     
+        description: Cummulative amount of USDC tokens offered in a day.
+      - label: Cummulative amount traded weekly
+        value: 0.7.14     
+        description: Cummulative amount of USDC tokens offered in a week.
+      - label: Cummulative amount traded montly
+        value: 0.7.15     
+        description: Cummulative amount of USDC tokens offered in a month.
+      - label: Twap-ratio
+        value: 0.7.2     
+
+    plots:
+
+  buy-wlth-simulation:
+    scenario: base-wlth-dca-univ3.buy.deviation.chart
+    plots:
+      Mean amount of USDC offered:
+        marks:
+          - type: recty
+            options:
+              transform:
+                type: binx
+                content:
+                  outputs:
+                    y: "count"
+                  options:
+                    x: "0.3"
+                    thresholds: 25
+                    
+      Mean amount of WLTH received:
+        marks:
+          - type: recty
+            options:
+              transform:
+                type: binx
+                content:
+                  outputs:
+                    y: "count"
+                  options:
+                    x: "0.4"
+                    thresholds: 25
+  
+  wlth-sell-dca-univ3: 
+    scenario: base-wlth-dca-univ3.sell.deviation.metric
+    metrics:
+      - label: Amount of WLTH offered for first trade.
+        value: 0.3
+        description: Amount of WLTH offered for the current block.
+      - label: Amount of USDC received for frist trade.
+        value: 0.4
+        description: Amount of USDC received for WLTH offered.
+      - label: io-ratio USDC/WLTH
+        value: 0.7
+        description: Ratio offered by the order for the current block accounting for bounty.
+      - label: Minimum Bounty amount
+        value: 0.7.5        
+        description: Minimum amount of USDC offered as bounty.
+      - label: Maximum Bounty amount
+        value: 0.7.6
+        description: Maximum amount of USDC offered as bounty.
+      - label: Bounty increase per minute
+        value: 0.7.10   
+        description: Amount by which bounty increases every minute after cooldown.
+      - label: Max Bounty ratio
+        value: 0.7.9
+        unit-suffix: '%'   
+        description: Ratio of max bounty amount to order amount
+      - label: Mean amount
+        value: 0.7.4        
+        description: Mean amount of WLTH offered 
+      - label: Cooldown in minutes
+        value: 0.7.11        
+        description: Number of minutes between strategy running
+      - label: Trades per hour
+        value: 0.7.12       
+        description: Number of trades per hour  
+      - label: Strategy twap sell deviation
+        value: 0.7.7
+        unit-suffix: '%'         
+        description: Twap deviation percentage acceptable     
+      - label: Current sell twap deviation
+        value: 0.7.8
+        unit-suffix: '%'       
+        description: Twap deviation occuring at current block with maximum bounty on the sell side to prevent lower than deviation sells.
+      - label: Cummulative amount traded daily
+        value: 0.7.13     
+        description: Cummulative amount of WLTH tokens offered in a day.
+      - label: Cummulative amount traded weekly
+        value: 0.7.14     
+        description: Cummulative amount of WLTH tokens offered in a week.
+      - label: Cummulative amount traded montly
+        value: 0.7.15    
+        description: Cummulative amount of WLTH tokens offered in a month.
+      - label: Twap-ratio
+        value: 0.7.2     
+        
+  sell-wlth-simulation:
+    scenario: base-wlth-dca-univ3.sell.deviation.chart
+    plots:
+      Mean amount of WLTH offered:
+        marks:
+          - type: recty
+            options:
+              transform:
+                type: binx
+                content:
+                  outputs:
+                    y: "count"
+                  options:
+                    x: "0.3"
+                    thresholds: 25
+                    
+      Mean amount of USDC received:
+        marks:
+          - type: recty
+            options:
+              transform:
+                type: binx
+                content:
+                  outputs:
+                    y: "count"
+                  options:
+                    x: "0.4"
+                    thresholds: 25
+
+deployments:
+  h20-wlth-sell:
+    scenario: base-wlth-dca-univ3.sell.deviation.prod
+    order: base-wlth-sell    
+  h20-wlth-buy:
+    scenario: base-wlth-dca-univ3.buy.deviation.prod
+    order: base-wlth-buy                                        
+---
+#cooldown-time !The minimum amount of seconds that must elapse between trades.
+#bounty-min !Minimum bounty to offer for each trade denominated in input tokens.
+#bounty-unit-increase !Amount to increase bounty per unit time.
+#bounty-unit-time !Unit of time to increase the bounty.
+#bounty-max !Maximum bounty that can be offered denominated in input tokens. 
+
+#input-token !Input token from the perspective of the order.
+#output-token !Ouput token from the perspective of the order.
+#reserve-token !Token which is paired with the ouput token on uniswap-v3 pool.
+
+#min-ratio !Minimum io-ratio for the order.
+#mean-output-amount  !Mean amount of output tokens offered per trade.
+#jittery-binomial-bits !Number of bits for jittery binomial to calculate random amount of stable token traded per trade.
+
+#uniswap-v3-factory !Uniswap v3 factory address.
+#uniswap-v3-init-code !Uniswap v3 init code hash.
+#twap-io-fee !Twap fee for the distribution token pool, paired with either stable or reserve token.
+#twap-multiplier !Binding to get the twap for input output token pair.
+#twap-multiplier-fee !Twap fee for reserve token paired with stable token.
+#twap-deviation !Acceptable percentage twap deviation to guard against the 30min price change.
+
+#test-current-time !Test current time for plotting.
+#test-last-time !Test last time for plotting.
+
+#ensure-cooldown !Binding to enforce cooldown check.
+#ensure-min-ratio !Binding to enforce price remains between minimum and maximum price set.
+#enforce-twap-check !Binding to enforce oracle manipulation protection guard.
+#io-quote !Binding to get the quote for input output token pair.
+#plottables !The binding for additional things we want to plot during testing.
+
+#uniswap-words !The subparser for the Uniswap words
+#orderbook-subparser !The subparser for the Orderbook words
+#cooldown-key "cooldown-key"
+
+#jittery-binomial
+  seed:,
+  binomial18-10:
+    bitwise-count-ones(bitwise-decode<0 jittery-binomial-bits>(hash(seed))),
+  noise18-1:
+    mod(hash(seed 0) 1),
+  jittery-combined:
+    add(binomial18-10 noise18-1),
+  jittery-combined-normalized:
+    div(jittery-combined add(1 jittery-binomial-bits));
+
+#bounty-auction
+  time-since-cooldown: ,
+  bounty: min(
+    linear-growth(
+      bounty-min
+      div(bounty-unit-increase bounty-unit-time)
+      time-since-cooldown
+    )
+    bounty-max
+  );
+
+#twap-multiplier-identity
+  _: 1;
+
+#twap-multiplier-reserve
+  _: uniswap-v3-twap-output-ratio(reserve-token input-token 1800 0 uniswap-v3-factory uniswap-v3-init-code twap-multiplier-fee);
+
+#enforce-twap-check-chart
+  _: ;
+
+#enforce-twap-check-prod
+  twap-ratio: ,
+  :ensure(
+      less-than(
+        twap-ratio
+        add(1 twap-deviation)
+        )
+    "twap check"
+  );
+
+#calculate-twap-ratio
+  io-ratio: ,
+  twap-30: mul(
+    uniswap-v3-twap-output-ratio(output-token reserve-token 1800 0 uniswap-v3-factory uniswap-v3-init-code twap-io-fee)
+    call<'twap-multiplier>()
+  ),
+  twap-ratio: div(twap-30 io-ratio),
+  :call<'enforce-twap-check>(twap-ratio);
+
+#ensure-cooldown-metric
+ _ _: block-timestamp() 0;
+
+#ensure-cooldown-chart
+ _ _: test-current-time test-last-time;
+ 
+#ensure-cooldown-prod
+ current-time: block-timestamp(),
+ last-time: get(hash(order-hash() cooldown-key)),
+ :ensure(
+   greater-than-or-equal-to(
+     current-time
+     add(last-time cooldown-time)
+   )
+   "cooldown"
+ ),
+ :set(hash(order-hash() cooldown-key) current-time);
+
+#ensure-min-ratio-chart
+  _: ;
+  
+#ensure-min-ratio-prod
+  order-io-ratio: ,
+  :ensure(
+    greater-than(order-io-ratio min-ratio)
+    "min ratio"
+  );
+
+#calculate-io-ratio
+  output-amount
+  input-amount
+  time-since-cooldown: ,
+  io-ratio: div(saturating-sub(input-amount call<'bounty-auction>(time-since-cooldown)) output-amount),
+  _ :call<'calculate-twap-ratio>(io-ratio),
+  /* Add io-ratio and max-op on stack*/
+  _: output-amount,
+  _: io-ratio;
+
+#io-quote-reserve
+  reserve-amount: ,
+  _: uniswap-v3-quote-exact-input(
+    reserve-token input-token
+    reserve-amount
+    uniswap-v3-factory uniswap-v3-init-code
+    twap-multiplier-fee
+  );
+
+#io-quote-identity
+  _: ;
+
+#calculate-exact-quote
+  output-amount: ,
+  output-to-reserve: uniswap-v3-quote-exact-input(
+    output-token reserve-token
+    output-amount
+    uniswap-v3-factory uniswap-v3-init-code
+    twap-io-fee
+  ),
+  reserve-to-input: call<'io-quote>(output-to-reserve);
+
+#plottables-chart
+  max-output-amount io-ratio twap-ratio: ,
+  _: cooldown-time,
+  _: mean-output-amount ,
+  _: bounty-min,
+  _: bounty-max,
+  _: mul(twap-deviation 100),
+  current-twap-deviation: if(
+    greater-than(1 twap-ratio)
+    mul(saturating-sub(1 twap-ratio) 100)
+    mul(saturating-sub(twap-ratio 1) 100)
+  ),
+  max-bounty-ratio: mul(div(bounty-max mean-output-amount ) 100),
+  bounty-increase-per-minute: mul(div(bounty-unit-increase bounty-unit-time) 60),
+  cooldown-in-minutes: div(cooldown-time 60),
+  cooldown-in-hours: div(60 cooldown-in-minutes),
+  total-amount-daily: mul(cooldown-in-hours mean-output-amount 24),
+  total-amount-weekly: mul(total-amount-daily 7),
+  total-amount-montly: mul(total-amount-daily 30);
+
+
+#plottables-prod
+  _ _ _: ;
+
+#calculate-io
+  using-words-from uniswap-words orderbook-subparser
+
+  current-time last-time: call<'ensure-cooldown>(),
+  random-multiplier18: call<'jittery-binomial>(last-time), 
+  jittered-output-amount: mul(
+    mul(mean-output-amount 2)
+    random-multiplier18
+  ), 
+  quote-input-amount: call<'calculate-exact-quote>(jittered-output-amount),
+  twap-ratio max-output final-io-ratio: call<'calculate-io-ratio>(
+    jittered-output-amount
+    quote-input-amount
+    saturating-sub(current-time add(last-time cooldown-time))
+  ),
+  :call<'ensure-min-ratio>(final-io-ratio),
+  :call<'plottables>(max-output final-io-ratio twap-ratio); 
+
+#handle-io
+:ensure(
+    greater-than-or-equal-to(
+      uint256-output-vault-decrease()
+      scale-n-dynamic(output-token-decimals() calculated-max-output())
+    )
+    "Partial trade"
+  );

@@ -135,7 +135,7 @@ scenarios:
         
 
 charts:
-  buy-wlth-metrics:
+  base-wlth-buy-metrics:
     scenario: limit-orders.buy.metric
     metrics:
       - label: io-ratio-1
@@ -159,7 +159,7 @@ charts:
       - label: amount-5
         value: 0.3.11
 
-  sell-wlth-metrics:
+  base-wlth-sell-metrics:
     scenario: limit-orders.sell.metric
     metrics:
       - label: io-ratio-1
@@ -252,10 +252,10 @@ charts:
                 y: 0.3.0
 
 deployments:
-  wlth-buy:
+  base-wlth-buy:
     scenario: limit-orders.buy.prod
     order: base-wlth-buy
-  wlth-sell:
+  base-wlth-sell:
     scenario: limit-orders.sell.prod
     order: base-wlth-sell
 ---

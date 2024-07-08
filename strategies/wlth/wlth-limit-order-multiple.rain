@@ -11,79 +11,79 @@
 # Liquidity pool fee: 0.3%
 
 networks:
-  base: 
-    rpc: https://mainnet.base.org 
+  base-community: 
+    rpc: https://rpc.ankr.com/base/8e4cac5728d95471ae55724953c7ae6f19a227ac05146276f09717692b732dae
     chain-id: 8453 
     network-id: 8453 
     currency: ETH
 
 subgraphs:
-  base: https://api.thegraph.com/subgraphs/name/h20liquidity/base-0x2aee87
+  base-community: https://api.thegraph.com/subgraphs/name/h20liquidity/base-0x2aee87
   
 orderbooks:
-  base:
+  base-community:
     address: 0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76
-    network: base
-    subgraph: base
+    network: base-community
+    subgraph: base-community
 
 deployers:
-  base:
-    address: 0xfca89cD12Ba1346b1ac570ed988AB43b812733fe
-    network: base
+  base-community:
+    address: 0x56394785a22b3BE25470a0e03eD9E0a939C47b9b
+    network: base-community
 
 tokens:
   base-wlth:
-    network: base
+    network: base-community
     address: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
   base-usdc:
-    network: base
+    network: base-community
     address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
 orders:
   # vault-id generated with `openssl rand -hex 32`
   base-wlth-sell:
-    orderbook: base
+    orderbook: base-community
     inputs:
       - token: base-usdc
-        vault-id: 
+        vault-id: 0x4cdcdc67a7a737779706b4490be2bef03155001562525dbe78200bc0839f8c35
     outputs:
       - token: base-wlth
-        vault-id: 
+        vault-id: 0x4cdcdc67a7a737779706b4490be2bef03155001562525dbe78200bc0839f8c35 
   base-wlth-buy:
-    orderbook: base
+    orderbook: base-community
     inputs:
       - token: base-wlth
-        vault-id: 
+        vault-id: 0x4cdcdc67a7a737779706b4490be2bef03155001562525dbe78200bc0839f8c35
     outputs:
       - token: base-usdc
-        vault-id: 
+        vault-id: 0x4cdcdc67a7a737779706b4490be2bef03155001562525dbe78200bc0839f8c35
 
 scenarios:
     limit-orders:
-      network: base
-      deployer: base
-      orderbook: base
+      network: base-community
+      deployer: base-community
+      orderbook: base-community
       bindings:
         # Ask for now, registry in future.
-        uniswap-words: 0xbc609623F5020f6Fc7481024862cD5EE3FFf52D7
-        orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1
+        uniswap-words: 0xD6B34F97d4A8Cb38D0544dB241CB3f335866f490
+        orderbook-subparser: 0x8D96ea3EF24D7123882c51CE4325b89bc0d63f9e
       scenarios:
         buy:
           bindings:
             # io-ratio and amount for first order. 
-            io-ratio-1: 100
+            io-ratio-1: 35
             ouptut-amount-1: 1
             # io-ratio and amount for second order. 
-            io-ratio-2: 105
+            io-ratio-2: 36
             ouptut-amount-2: 1.5
             # io-ratio and amount for third order. 
-            io-ratio-3: 110
+            io-ratio-3: 37
             ouptut-amount-3: 2
             # io-ratio and amount for third order. 
-            io-ratio-4: 115
+            io-ratio-4: 38
             ouptut-amount-4: 2.5
             # io-ratio and amount for third order. 
-            io-ratio-5: 120
+            io-ratio-5: 39
             ouptut-amount-5: 3
           scenarios:
             prod:
@@ -103,20 +103,20 @@ scenarios:
         sell:
           bindings:
             # io-ratio and amount for first order. 
-            io-ratio-1: 0.0080
-            ouptut-amount-1: 100
+            io-ratio-1: 0.02
+            ouptut-amount-1: 50
             # io-ratio and amount for second order. 
-            io-ratio-2: 0.0085
-            ouptut-amount-2: 150
+            io-ratio-2: 0.021
+            ouptut-amount-2: 75
             # io-ratio and amount for third order. 
-            io-ratio-3: 0.0090
-            ouptut-amount-3: 200
+            io-ratio-3: 0.022
+            ouptut-amount-3: 100
             # io-ratio and amount for third order. 
-            io-ratio-4: 0.0095
-            ouptut-amount-4: 250
+            io-ratio-4: 0.023
+            ouptut-amount-4: 125
             # io-ratio and amount for third order. 
-            io-ratio-5: 0.0100
-            ouptut-amount-5: 300
+            io-ratio-5: 0.024
+            ouptut-amount-5: 150
           scenarios:
             prod:
               bindings:

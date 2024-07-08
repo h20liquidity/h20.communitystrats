@@ -1,14 +1,8 @@
-# Limit Order Strategy
-# 5 buy and sell targets
-# Each target you set buy price and amount and sell price and amount
-# Target Network: Base
-# Quote (Input / Incoming): USDC or WLTH
-# Base (Output / Outgoing): WLTH or USDC
-# Token contract: https://basescan.org/address/0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
-# Token github: NA
-# Liquidity protocol: Uniswap V3
-# Liquidity pool address: https://www.dextools.io/app/en/base/pair-explorer/0x1536ee1506e24e5a36be99c73136cd82907a902e?t=1717921711270
-# Liquidity pool fee: 0.3%
+# Stop Limit Orders.
+#
+# The stop price dictates the price whether the order is triggered, then the limit price dictates the price at which the order is filled.
+# Once the market price reaches below the stop price, the order becomes a limit order and then the limit price dictates the price at which the order is filled.
+# https://www.investopedia.com/terms/s/stop-limitorder.asp
 
 networks:
   base-community: 
@@ -69,7 +63,7 @@ scenarios:
         orderbook-subparser: 0x8D96ea3EF24D7123882c51CE4325b89bc0d63f9e
 
         # Uniswap V3 factory addresses and init code
-        uniswap-v3-factory: '[uniswap-v3-factory]'
+        uniswap-v3-factory: 0x33128a8fC17869897dcE68Ed026d694621f6FDfD
         uniswap-v3-init-code: '[uniswap-v3-init-code]'
 
         # Uniswap V3 pool fee
@@ -255,7 +249,7 @@ deployments:
   using-words-from uniswap-words orderbook-subparser
 
   orcale-price: call<'get-oracle-price>(),
-  :ensure<'ensure-stop-loss>(orcale-price),
+  :call<'ensure-stop-loss>(orcale-price),
   final-amount
   final-ratio: call<'get-ratio-amount>(),
   :call<'plottables>(final-amount final-ratio); 

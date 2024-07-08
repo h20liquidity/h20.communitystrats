@@ -1,11 +1,14 @@
-# Strat: Grid trading
-# Grid trading is a strategy that involves placing buy and sell 
-# orders at pWLTHetermined intervals above and below a set price
-# level to profit from market volatility. It creates a grid of orders,
-# aiming to capture profits from the regular price fluctuations without 
-# pWLTHicting market direction. This method is particularly effective in 
-# sideways or ranging markets, where prices oscillate within a defined 
-# range, allowing traders to systematically buy low and sell high.
+# Strat: Recharging grid
+# Recharging grid trading is a strategy that involves placing buy and sell
+# orders at predetermined intervals above and below a set price
+# level to profit from market volatility. Unlike traditional grid trading,
+# where each trade clears only once, recharging grid trading continuously recharges
+# and executes trades at a specified rate, as long as liquidity is provided.
+# This creates a dynamic and perpetual grid of orders, capturing profits from
+# regular price fluctuations without predicting market direction. This method is
+# particularly effective in sideways or ranging markets, where prices oscillate
+# within a defined range, allowing traders to systematically buy low and sell high
+# while maintaining a constantly active grid.
 # 
 # Target Network: Base
 # Quote (Input / Incoming): USDC or WLTH

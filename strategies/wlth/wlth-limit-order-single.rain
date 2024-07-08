@@ -101,22 +101,28 @@ scenarios:
         
 
 charts:
-  base-wlth-buy-metrics:
+  Buy WLTH, sell USDC single limit order:
     scenario: limit-orders.buy.metric
     metrics:
-      - label: io-ratio-1
+      - label: Price
         value: 0.3.2
-      - label: amount-1
+        unit-suffix: " WLTH"            
+        description: 'Unit price, USDC per WLTH (stack item 0.3.2)'   
+      - label: Units
         value: 0.3.3
-
-  base-wlth-sell-metrics:
+        unit-suffix: " USDC"            
+        description: 'Units purchased (stack item 0.3.3)'  
+  Buy USDC, sell WLTH single limit order:
     scenario: limit-orders.sell.metric
     metrics:
-      - label: io-ratio-1
+      - label: Price
         value: 0.3.2
-      - label: amount-1
+        unit-suffix: " USDC"            
+        description: 'Unit price, WLTH per USDC (stack item 0.3.2)'   
+      - label: Units
         value: 0.3.3
-  
+        unit-suffix: " WLTH"    
+        description: 'Units sold (stack item 0.3.3)'  
 deployments:
   base-wlth-buy:
     scenario: limit-orders.buy.prod

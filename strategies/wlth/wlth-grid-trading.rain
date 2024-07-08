@@ -17,64 +17,64 @@
 # Liquidity pool fee: 0.3%
 
 networks:
-  base: 
+  base-community: 
     rpc: https://mainnet.base.org 
     chain-id: 8453 
     network-id: 8453 
     currency: ETH
 
 subgraphs:
-  base: https://api.thegraph.com/subgraphs/name/h20liquidity/base-0x2aee87
+  base-community: https://api.thegraph.com/subgraphs/name/h20liquidity/base-0x2aee87
   
 orderbooks:
-  base:
+  base-community:
     address: 0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76
-    network: base
-    subgraph: base
+    network: base-community
+    subgraph: base-community
 
 deployers:
-  base:
-    address: 0xfca89cD12Ba1346b1ac570ed988AB43b812733fe
-    network: base
+  base-community:
+    address: 0x56394785a22b3BE25470a0e03eD9E0a939C47b9b
+    network: base-community
 
 tokens:
   base-wlth:
-    network: base
+    network: base-community
     address: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
   base-usdc:
-    network: base
+    network: base-community
     address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
 orders:
   # vault-id generated with `openssl rand -hex 32`
   base-wlth-sell:
-    orderbook: base
+    orderbook: base-community
     inputs:
       - token: base-usdc
-        vault-id: 
+        vault-id: 0x28e042e95154e0eaa486f57c65f44e3fd2ea345bb61aca594e074fd4028b2f9d 
     outputs:
       - token: base-wlth
-        vault-id: 
+        vault-id: 0x28e042e95154e0eaa486f57c65f44e3fd2ea345bb61aca594e074fd4028b2f9d
   base-wlth-buy:
-    orderbook: base
+    orderbook: base-community
     inputs:
       - token: base-wlth
-        vault-id: 
+        vault-id: 0x85bdfb90f2cabd6661c1bce26962cb35b8c1f43687641f4a4aa58066be447b52
     outputs:
       - token: base-usdc
-        vault-id: 
+        vault-id: 0x85bdfb90f2cabd6661c1bce26962cb35b8c1f43687641f4a4aa58066be447b52 
 
 scenarios:
     grid-trading:
-        network: base
-        deployer: base
-        orderbook: base
+        network: base-community
+        deployer: base-community
+        orderbook: base-community
         bindings:
           # The uniswap words are only requiWLTH if there is a conversion between
           # the input/output token and some external price. Typically this is
           # not the case as the io-ratio is defined in terms of the input/output
           # token and the io-ratio-multiplier is set to the identity function.
-          uniswap-words: 0xbc609623F5020f6Fc7481024862cD5EE3FFf52D7
+          uniswap-words: 0xD6B34F97d4A8Cb38D0544dB241CB3f335866f490
           
           # Uniswap v3 factory contract address and corresponding init code hash.
           # If the factory address and the init code aren't available as a literals
@@ -83,17 +83,17 @@ scenarios:
           uniswap-v3-init-code: '[uniswap-v3-init-code]'
 
           # Orderbook subparser for orderbook words.
-          orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1
+          orderbook-subparser: 0x8D96ea3EF24D7123882c51CE4325b89bc0d63f9e
         scenarios:
           buy:
             bindings:
               # WLTH/USDC base ratio and increment.
-              io-ratio-base: 1
-              io-ratio-growth: 0.05
+              io-ratio-base: 40
+              io-ratio-growth: 2.5
 
               # Base amount of USDC tokens to offer and increment.
-              tranche-size-base: 1
-              tranche-size-growth: 0.01
+              tranche-size-base: 5
+              tranche-size-growth: 1
 
             scenarios:
               grid:
@@ -136,12 +136,12 @@ scenarios:
           sell:
             bindings:
               # USDC/WLTH base ratio and increment.
-              io-ratio-base: 1
-              io-ratio-growth: 0.05
+              io-ratio-base: 0.020
+              io-ratio-growth: 0.002
 
               # Base amount of WLTH tokens to offer and increment.
-              tranche-size-base: 1
-              tranche-size-growth: 0.01
+              tranche-size-base: 200
+              tranche-size-growth: 50
 
             scenarios:
               grid:
@@ -321,10 +321,10 @@ charts:
 
 deployments:
   base-wlth-buy:
-    scenario: grid-trading.buy.prod
+    scenario: grid-trading.buy.grid.prod
     order: base-wlth-buy
   base-wlth-sell:
-    scenario: grid-trading.sell.prod
+    scenario: grid-trading.sell.grid.prod
     order: base-wlth-sell
 ---
 #tranche-space-per-second !The amount of tranche space that is recharged per second.

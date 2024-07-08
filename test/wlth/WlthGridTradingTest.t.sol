@@ -25,27 +25,29 @@ import "h20.test-std/lib/LibProcessStream.sol";
 
 uint256 constant VAULT_ID = uint256(keccak256("vault"));
 
+/// @dev https://basescan.org/address/0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+IERC20 constant BASE_WLTH= IERC20(0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D); 
 
-IERC20 constant RED_TOKEN = IERC20(0xE38D92733203E6f93C634304b777490e67Dc4Bdf);
-IERC20 constant BLUE_TOKEN = IERC20(0x40D44abeC30288BFcd400200BA65FBD05daA5321);
+/// @dev https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+IERC20 constant BASE_USDC = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
 
-function flareRedIo() pure returns (IO memory) {
-    return IO(address(RED_TOKEN), 18, VAULT_ID);
+function baseWlthIo() pure returns (IO memory) {
+    return IO(address(BASE_WLTH), 18, VAULT_ID);
 }
 
-function flareBlueIo() pure returns (IO memory) {
-    return IO(address(BLUE_TOKEN), 18, VAULT_ID);
-}
+function baseUsdcIo() pure returns (IO memory) {
+    return IO(address(BASE_USDC), 6, VAULT_ID);
+} 
 
-contract GridTradingTest is StrategyTests {
+contract WlthGridTradingTest is StrategyTests {
 
     using SafeERC20 for IERC20;
     using Strings for address;
 
-    uint256 constant FORK_BLOCK_NUMBER = 26478013;
-   
+    uint256 constant FORK_BLOCK_NUMBER = 16819021;
+    
     function selectFork() internal {
-        uint256 fork = vm.createFork(vm.envString("RPC_URL_FLARE"));
+        uint256 fork = vm.createFork(vm.envString("RPC_URL_BASE"));
         vm.selectFork(fork);
         vm.rollFork(FORK_BLOCK_NUMBER);
     }
@@ -57,40 +59,45 @@ contract GridTradingTest is StrategyTests {
     function setUp() public {
         selectFork();
         
-        PARSER = IParserV1(0xA073E75E39C402d2AFFb48E5e8EC18169daeC31D);
-        ORDERBOOK = IOrderBookV3(0x07701e3BcE4248EFDFc7D31392a43c8b82a7A260);
-        ARB_INSTANCE = IOrderBookV3ArbOrderTaker(0xF9323B7d23c655122Fb0272D989b83E105cBcf9d);
-        EXPRESSION_DEPLOYER = IExpressionDeployerV3(0xEBe394cff4980992B826Ec70ef0a9ec8b5D4C640);
-        ROUTE_PROCESSOR = IRouteProcessor(address(0x0bB72B4C7c0d47b2CaED07c804D9243C1B8a0728)); 
+        PARSER = IParserV1(0xF836f2746B407136a5bCB515495949B1edB75184);
+        STORE = IInterpreterStoreV2(0x6E4b01603edBDa617002A077420E98C86595748E); 
+        INTERPRETER = IInterpreterV2(0x379b966DC6B117dD47b5Fc5308534256a4Ab1BCC); 
+        EXPRESSION_DEPLOYER = IExpressionDeployerV3(0x56394785a22b3BE25470a0e03eD9E0a939C47b9b); 
+        ORDERBOOK = IOrderBookV3(0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76);
+        ARB_INSTANCE = IOrderBookV3ArbOrderTaker(0x199b22ce0c9fD88476cCaA2d2aB253Af38BAE3Ae);
+        ROUTE_PROCESSOR = IRouteProcessor(address(0x83eC81Ae54dD8dca17C3Dd4703141599090751D1)); 
+        EXTERNAL_EOA = address(0x654FEf5Fb8A1C91ad47Ba192F7AA81dd3C821427);
+        APPROVED_EOA = address(0x669845c29D9B1A64FFF66a55aA13EB4adB889a88);
+        ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C); 
+
         EXTERNAL_EOA = address(0x654FEf5Fb8A1C91ad47Ba192F7AA81dd3C821427);
         APPROVED_EOA = address(0x669845c29D9B1A64FFF66a55aA13EB4adB889a88);
         ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
+    } 
 
-    }
-
-    function testGridTradingBuy() public {
+    function testWlthGridTradingBuy() public {
         // Input vaults
         IO[] memory inputVaults = new IO[](1);
-        inputVaults[0] = flareRedIo();
+        inputVaults[0] = baseWlthIo();
 
         // Output vaults
         IO[] memory outputVaults = new IO[](1);
-        outputVaults[0] = flareBlueIo();
+        outputVaults[0] = baseUsdcIo();
 
-        uint256 expectedRatio = 1e18;
-        uint256 expectedAmountOutputMax = 1e18;
+        uint256 expectedRatio = 40e18;
+        uint256 expectedAmountOutputMax = 2.5e18;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
-            getEncodedRedToBlueRoute(address(ARB_INSTANCE)),
-            getEncodedBlueToRedRoute(address(ARB_INSTANCE)),
+            getEncodedSellWlthRoute(address(ARB_INSTANCE)),
+            getEncodedBuyWlthRoute(address(ARB_INSTANCE)),
             0,
             0,
-            10e18,
+            1e18,
             1e18,
             expectedRatio,
             expectedAmountOutputMax,
-            "strategies/grid-trading.rain",
-            "flare-red-blue.buy.grid.prod",
+            "strategies/wlth/wlth-grid-trading.rain",
+            "grid-trading.buy.grid.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
@@ -101,29 +108,29 @@ contract GridTradingTest is StrategyTests {
         checkStrategyCalculationsArbOrder(strategy);
     }
 
-    function testGridTradingSell() public {
+    function testWlthGridTradingSell() public {
         // Input vaults
         IO[] memory inputVaults = new IO[](1);
-        inputVaults[0] = flareBlueIo();
+        inputVaults[0] = baseUsdcIo();
 
         // Output vaults
         IO[] memory outputVaults = new IO[](1);
-        outputVaults[0] = flareRedIo();
+        outputVaults[0] = baseWlthIo();
 
-        uint256 expectedRatio = 1e18;
-        uint256 expectedAmountOutputMax = 1e18;
+        uint256 expectedRatio = 0.02e18;
+        uint256 expectedAmountOutputMax = 200e18;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
-            getEncodedBlueToRedRoute(address(ARB_INSTANCE)),
-            getEncodedRedToBlueRoute(address(ARB_INSTANCE)),
+            getEncodedBuyWlthRoute(address(ARB_INSTANCE)),
+            getEncodedSellWlthRoute(address(ARB_INSTANCE)),
             0,
             0,
-            10000e18,
+            1e6,
             10000e18,
             expectedRatio,
             expectedAmountOutputMax,
-            "strategies/grid-trading.rain",
-            "flare-red-blue.sell.grid.prod",
+            "strategies/wlth/wlth-grid-trading.rain",
+            "grid-trading.sell.grid.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
@@ -134,32 +141,19 @@ contract GridTradingTest is StrategyTests {
         checkStrategyCalculationsArbOrder(strategy);
     }
 
-    function getEncodedRedToBlueRoute(address toAddress) internal pure returns (bytes memory) {
-        bytes memory RED_TO_BLUE_ROUTE_PRELUDE =
-            hex"02"
-            hex"E38D92733203E6f93C634304b777490e67Dc4Bdf"
-            hex"01"
-            hex"ffff"
-            hex"00"
-            hex"03585a45Af10963838e435601487516F97B18aF7"
-            hex"00";
-
-        return abi.encode(bytes.concat(RED_TO_BLUE_ROUTE_PRELUDE, abi.encodePacked(address(toAddress))));
+    function getEncodedBuyWlthRoute(address toAddress) internal pure returns (bytes memory) {
+        bytes memory ROUTE_PRELUDE =
+            hex"02833589fCD6eDb6E08f4c7C32D4f71b54bdA0291301ffff011536EE1506e24e5A36Be99C73136cD82907A902E01";
+            
+        return abi.encode(bytes.concat(ROUTE_PRELUDE, abi.encodePacked(address(toAddress))));
     }
 
-    // Inheriting contract defines the route for the strategy.
-    function getEncodedBlueToRedRoute(address toAddress) internal pure returns (bytes memory) {
-        bytes memory BLUE_TO_RED_ROUTE_PRELUDE =
-            hex"02"
-            hex"40D44abeC30288BFcd400200BA65FBD05daA5321"
-            hex"01"
-            hex"ffff"
-            hex"00"
-            hex"03585a45Af10963838e435601487516F97B18aF7"
-            hex"01";
-
-        return abi.encode(bytes.concat(BLUE_TO_RED_ROUTE_PRELUDE, abi.encodePacked(address(toAddress))));
-    } 
+    function getEncodedSellWlthRoute(address toAddress) internal pure returns (bytes memory) {
+        bytes memory ROUTE_PRELUDE =
+            hex"0299b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D01ffff011536EE1506e24e5A36Be99C73136cD82907A902E00";
+            
+        return abi.encode(bytes.concat(ROUTE_PRELUDE, abi.encodePacked(address(toAddress))));
+    }
 
 
 

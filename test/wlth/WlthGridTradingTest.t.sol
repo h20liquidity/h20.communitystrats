@@ -85,7 +85,7 @@ contract WlthGridTradingTest is StrategyTests {
         outputVaults[0] = baseUsdcIo();
 
         uint256 expectedRatio = 40e18;
-        uint256 expectedAmountOutputMax = 2.5e18;
+        uint256 expectedAmountOutputMax = 5e18;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
             getEncodedSellWlthRoute(address(ARB_INSTANCE)),
@@ -118,7 +118,7 @@ contract WlthGridTradingTest is StrategyTests {
         outputVaults[0] = baseWlthIo();
 
         uint256 expectedRatio = 0.02e18;
-        uint256 expectedAmountOutputMax = 200e18;
+        uint256 expectedAmountOutputMax = 250e18;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
             getEncodedBuyWlthRoute(address(ARB_INSTANCE)),

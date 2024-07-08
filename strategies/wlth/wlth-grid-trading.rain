@@ -139,9 +139,9 @@ scenarios:
               io-ratio-base: 0.020
               io-ratio-growth: 0.002
 
-              # Base amount of WLTH tokens to offer and increment.
-              tranche-size-base: 200
-              tranche-size-growth: 50
+              # Base amount of USDC tokens to received and increment.
+              tranche-size-base: 5
+              tranche-size-growth: 1
 
             scenarios:
               grid:

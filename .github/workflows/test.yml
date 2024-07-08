@@ -15,6 +15,8 @@ jobs:
       RPC_URL_ETHEREUM_FORK: ${{ secrets.RPC_URL_ETHEREUM_FORK }}
       RPC_URL_POLYGON: ${{ secrets.CI_DEPLOY_POLYGON_RPC_URL || vars.CI_DEPLOY_POLYGON_RPC_URL }}
       RPC_URL_BASE: ${{ secrets.CI_DEPLOY_BASE_RPC_URL || vars.CI_DEPLOY_BASE_RPC_URL }}
+      RPC_URL_FLARE: ${{ secrets.CI_DEPLOY_FLARE_RPC_URL || vars.CI_DEPLOY_FLARE_RPC_URL }}
+
 
     steps:
       - uses: actions/checkout@v4

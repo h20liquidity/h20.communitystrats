@@ -36,7 +36,7 @@ orderbooks:
 
 deployers:
   base-community:
-    address: 0xfca89cD12Ba1346b1ac570ed988AB43b812733fe
+    address: 0x56394785a22b3BE25470a0e03eD9E0a939C47b9b
     network: base-community
 
 tokens:
@@ -49,22 +49,22 @@ tokens:
 
 orders:
   # vault-id generated with `openssl rand -hex 32`
-  polygon-wlth-sell:
-    orderbook: polygon-wlth
+  base-wlth-sell:
+    orderbook: base-community
     inputs:
-      - token: polygon-usdt
-        vault-id: 0x6049f8ee79b82dd5bc82b368114bb0a69f34d539b04b43208241e1f68da134a8
+      - token: base-usdc
+        vault-id: 0x10a99da34ba197357c7799dc2b97088ca7ae48d7e89ced420cc6f9f7247373ab
     outputs:
-      - token: polygon-wlth
-        vault-id: 0x6049f8ee79b82dd5bc82b368114bb0a69f34d539b04b43208241e1f68da134a8
-  polygon-wlth-buy:
-    orderbook: polygon-wlth
+      - token: base-wlth
+        vault-id: 0x10a99da34ba197357c7799dc2b97088ca7ae48d7e89ced420cc6f9f7247373ab
+  base-wlth-buy:
+    orderbook: base-community
     inputs:
-      - token: polygon-wlth
-        vault-id: 0x6049f8ee79b82dd5bc82b368114bb0a69f34d539b04b43208241e1f68da134a8
+      - token: base-wlth
+        vault-id: 0x653455b2594761c14979e694b92c26a9a196230d66496d337aabdbad8a185c96
     outputs:
-      - token: polygon-usdt
-        vault-id: 0x6049f8ee79b82dd5bc82b368114bb0a69f34d539b04b43208241e1f68da134a8
+      - token: base-usdc
+        vault-id: 0x653455b2594761c14979e694b92c26a9a196230d66496d337aabdbad8a185c96
 
 scenarios:
     streaming-dca:
@@ -73,26 +73,26 @@ scenarios:
         orderbook: base-community
         bindings:
           # Ask for now, registry in future.
-          uniswap-words: 0xbc609623F5020f6Fc7481024862cD5EE3FFf52D7
-          orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1
+          uniswap-words: 0xD6B34F97d4A8Cb38D0544dB241CB3f335866f490
+          orderbook-subparser: 0x8D96ea3EF24D7123882c51CE4325b89bc0d63f9e
 
           # Uniswap V3 factory addresses and init code
-          uniswap-v3-factory: '[uniswap-v3-factory]'
+          uniswap-v3-factory: 0x33128a8fC17869897dcE68Ed026d694621f6FDfD
           uniswap-v3-init-code: '[uniswap-v3-init-code]'
 
         scenarios:
           sell-wlth:
             bindings:
               # Input and Output token addresses are from perspective of order.
-              input-token-address: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
-              output-token-address: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
+              input-token-address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+              output-token-address: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
 
               # If the order's input-output tokens are NOT paired on the uniswap v3 pool,
               # then the reserve token address is the address of the token which is paired with order's output token on uniswapv3 pool.
               # Eg: If WLTH is paired with WETH on the uniswap v3 pool for a USDT-WLTH order, reserve token address is the WETH address.
               # If the order's input-output tokens are paired on the uniswap v3 pool, then reserve token address is same as the input token address.
               # Eg: For WLTH/USDT pair where USDT is also the order's input token, reserve token address is same as the input token address.
-              reserve-token-address: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+              reserve-token-address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
               # Ratio multiplier for calculating the io-ratio.
               # If the order's input-output token are paired on the uniswap v3 pool, then set to identity
@@ -102,19 +102,19 @@ scenarios:
               # Number of output tokens offered per second.
               # Total number of output tokens offered / Total time duration.
               # Eg : 100 tokens cost averaged in 1 hours: 100/3600 = 0.027777777777777778  
-              per-second-rate: 0.027777777777777778
+              per-second-rate: 0.277777777777777778
     
               # Unix timestamp for strating of the strategy.
               # Ideally set it 15 minutes ahead of the whatever the timestamp is while you're deploying the order.
               # https://www.epochconverter.com/
-              strat-start-time: 1719907190
+              strat-start-time: 1720430887
                                 
               # Bounty amount denominated in input tokens
               #
               # Minimum bounty offered in input token denominations. 
-              bounty-min: 0.012
+              bounty-min: 0.02
               # Maximum bounty offered in input token denominations.
-              bounty-max: 0.3
+              bounty-max: 1
               # Number of seconds after which the bounty auction starts once the order is evaling.
               auction-start-time: 300
               # Number of seconds for which bounty auction will last.
@@ -136,14 +136,14 @@ scenarios:
                 bindings:
                   # Minimum input/output token ratio accepatble for the order.
                   # Eg: For sell WLTH, min-ratio is the minimum USDT/WLTH value to sell above.
-                  min-ratio: 0.005
+                  min-ratio: 0.01
                   plottables: '''plottables-prod'
                   get-last-time: '''get-last-time-prod'
                   ensure-ratio: '''ensure-ratio-prod'
               chart:
                 runs: 1000
                 bindings:
-                  min-ratio: 0.009
+                  min-ratio: 0.01
                   plottables: '''plottables-plot'
                   get-last-time: '''get-last-time-plot'
                   ensure-ratio: '''ensure-ratio-plot'
@@ -157,15 +157,15 @@ scenarios:
           buy-wlth:
             bindings:
               # Input and Output token addresses from perspective of order
-              input-token-address: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
-              output-token-address: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+              input-token-address: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+              output-token-address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
               # If the order's input-output tokens are NOT paired on the uniswap v3 pool,
               # then the reserve token address is the address of the token which is paired with order's output token on uniswapv3 pool.
               # Eg: If WLTH is paired with WETH on the uniswap v3 pool for a USDT-WLTH order, reserve token address is the WETH address.
               # If the order's input-output tokens are paired on the uniswap v3 pool, then reserve token address is same as the input token address.
               # Eg: For WLTH/USDT pair where USDT is also the order's input token, reserve token address is same as the input token address.
-              reserve-token-address: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
+              reserve-token-address: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
 
               # Ratio multiplier for calculating the io-ratio.
               # If the order's input-output token are paired on the uniswap v3 pool, then set to identity
@@ -180,7 +180,7 @@ scenarios:
               # Unix timestamp for strating of the strategy.
               # Ideally set it 15 minutes ahead of the whatever the timestamp is while you're deploying the order.
               # https://www.epochconverter.com/
-              strat-start-time: 1719907190
+              strat-start-time: 1720430887
 
               # Bounty amount denominated in input tokens
               #
@@ -209,14 +209,14 @@ scenarios:
                 bindings:
                   # Minimum input/output token ratio
                   # Eg: For buy WLTH, min-ratio is the minimum WLTH/USDT value to buy above.
-                  min-ratio: 70
+                  min-ratio: 20
                   plottables: '''plottables-prod'
                   get-last-time: '''get-last-time-prod'
                   ensure-ratio: '''ensure-ratio-prod'
               chart:
                 runs: 1000
                 bindings:
-                  min-ratio: 70
+                  min-ratio: 20
                   plottables: '''plottables-plot'
                   get-last-time: '''get-last-time-plot'
                   ensure-ratio: '''ensure-ratio-plot'  
@@ -322,10 +322,10 @@ charts:
 deployments:
   base-wlth-dca:
     scenario: streaming-dca.sell-wlth.prod
-    order: polygon-wlth-sell    
+    order: base-wlth-sell    
   base-usdc-dca:
     scenario: streaming-dca.buy-wlth.prod
-    order: polygon-wlth-buy    
+    order: base-wlth-buy    
 ---
 #input-token-address !Order input token address.
 #output-token-address !Order output token address.

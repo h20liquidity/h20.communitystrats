@@ -1,85 +1,83 @@
 # Strategy: Oracle based DCA, uniswap v3
 #
-# High level, this strategy trades mean amount of USDC denominated DOLZ tokens at the end of every cooldown period
-# provided that current calculated USDC denominated price of DOLZ falls within the price gird.
+# This strategy trades mean amount of USDC denominated WLTH tokens at the end of every cooldown period
+# provided that current calculated USDC denominated price of WLTH falls within the price gird.
 #
-# - Amount of DOLZ bought/sold per trade within the price band is randomized and centered around a mean,
+# - Amount of WLTH bought/sold per trade within the price band is randomized and centered around a mean,
 #   value for which can be set within the bindings.
 # - Range for the grid can also be provided within the bindings.
 # - Strategy provides a guard against orcale manipulation by enforcing that the ratio of the current price offered
 #   by the order to the 30 min average price is within the threshold, which can be provided as a binding in the strategy.
 
 networks:
-  h20-community-polygon: 
-    rpc: https://polygon-mainnet.g.alchemy.com/v2/y3BXawVv5uuP_g8BaDlKbKoTBGHo9zD9
-    chain-id: 137 
-    network-id: 137 
-    currency: MATIC
+  base-community: 
+    rpc: https://mainnet.base.org 
+    chain-id: 8453 
+    network-id: 8453 
+    currency: ETH
 
 subgraphs:
-  h20-community-polygon: https://api.thegraph.com/subgraphs/name/h20liquidity/polygon-0xc95a5f8e
+  base-community: https://api.thegraph.com/subgraphs/name/h20liquidity/base-0x2aee87
   
 orderbooks:
-  h20-community-polygon:
-    address: 0xc95A5f8eFe14d7a20BD2E5BAFEC4E71f8Ce0B9A6
-    network: h20-community-polygon
-    subgraph: h20-community-polygon
+  base-community:
+    address: 0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76
+    network: base-community
+    subgraph: base-community
 
 deployers:
-  h20-community-polygon:
-    address: 0xB3aC858bEAf7814892d3946A8C109A7D701DF8E7
-    network: h20-community-polygon
+  base-community:
+    address: 0x56394785a22b3BE25470a0e03eD9E0a939C47b9b
+    network: base-community
 
 tokens:
-  polygon-dolz:
-    network: h20-community-polygon
-    address: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
-  polygon-usdt:
-    network: h20-community-polygon
-    address: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+  base-wlth:
+    network: base-community
+    address: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+  base-usdc:
+    network: base-community
+    address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
 orders:
   # vault-id generated with `openssl rand -hex 32`
-  polygon-dolz-sell:
-    orderbooks: h20-community-polygon
+  base-wlth-sell:
+    orderbook: base-community
     inputs:
-      - token: polygon-usdt
-        vault-id: 0xce6765342b3ada1ee9f3ef752e16b1feb23a65be85446988ca84749c3da416b8
+      - token: base-usdc
+        vault-id: 0x7f18c87908babda92ceaaf2fd5539a175360b25322939d8ef3682d14479c4c94
     outputs:
-      - token: polygon-dolz
-        vault-id: 0xce6765342b3ada1ee9f3ef752e16b1feb23a65be85446988ca84749c3da416b8
-
-  polygon-dolz-buy:
-    orderbook: h20-community-polygon
+      - token: base-wlth
+        vault-id: 0x7f18c87908babda92ceaaf2fd5539a175360b25322939d8ef3682d14479c4c94
+  base-wlth-buy:
+    orderbook: base-community
     inputs:
-      - token: polygon-dolz
-        vault-id: 0xce6765342b3ada1ee9f3ef752e16b1feb23a65be85446988ca84749c3da416b8
+      - token: base-wlth
+        vault-id: 0x007f0b0501c677a80add43e246b5ab8999703a6d5fc3fd3eb025685426ea5a65
     outputs:
-      - token: polygon-usdt
-        vault-id: 0xce6765342b3ada1ee9f3ef752e16b1feb23a65be85446988ca84749c3da416b8
-
+      - token: base-usdc
+        vault-id: 0x007f0b0501c677a80add43e246b5ab8999703a6d5fc3fd3eb025685426ea5a65
 
 scenarios:
-    polygon-dolz-dca-univ3:
-        network: h20-community-polygon
-        deployer: h20-community-polygon
-        orderbook: h20-community-polygon
+    base-wlth-dca-univ3:
+        network: base-community
+        deployer: base-community
+        orderbook: base-community
         bindings:
           # Ask for now, registry in future.
-          uniswap-words: 0xbc609623F5020f6Fc7481024862cD5EE3FFf52D7
-          orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1 
+          uniswap-words: 0xD6B34F97d4A8Cb38D0544dB241CB3f335866f490
+          orderbook-subparser: 0x8D96ea3EF24D7123882c51CE4325b89bc0d63f9e 
 
           # Uniswap V3 factory addresses and init code
-          uniswap-v3-factory: '[uniswap-v3-factory]'
+          uniswap-v3-factory: 0x33128a8fC17869897dcE68Ed026d694621f6FDfD
           uniswap-v3-init-code: '[uniswap-v3-init-code]'
           
           # Twap fee for tokens
           # `twap-io-fee`: Uniswap-v3 pool fee for token pair.
           # If distribution token is paired with a stable token, the binding value is the fee
-          # for the DOLZ-USDC pool.
+          # for the WLTH-USDC pool.
           #
           # If distribution token is paired with native wrapped token, for eg WETH, then the 
-          # binding value is the fee for DOLZ-WETH pool.
+          # binding value is the fee for WLTH-WETH pool.
           twap-io-fee: '[uniswap-v3-fee-medium]'
 
           # `twap-multiplier-fee`: Uniswap-v3 pool fee for stable-reserve pair.
@@ -98,7 +96,7 @@ scenarios:
           buy:
             bindings:
               # Input token, this is the token being received.
-              input-token: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
+              input-token: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
               
               # Output token, this is the token that is being offered.
               # Output token, mean amount 
@@ -107,13 +105,13 @@ scenarios:
               mean-output-amount : 10
 
               # Output token, this is the token being sold
-              output-token: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+              output-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
               # Reserve token, If the output token is paired with the input token on a uniswap v3,
               # then the reserve is the input token. 
               # If the output token is NOT paired with the input token on a uniswap v3 pool,
               # then the reserve address is the token which the ouput token is paired with.
-              reserve-token: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
+              reserve-token: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
 
               # Quote and Twap multiplier to get quote and 30min twap for input-output token pair.
               # If the output token is paired with the input token on a uniswap v3,
@@ -124,9 +122,9 @@ scenarios:
               twap-multiplier: '''twap-multiplier-identity'
 
               # Params for bounty auction which is input token denominated. Min price, max price, time in seconds and unit increase
-              bounty-min: 1.1
-              bounty-max: 27
-              bounty-unit-increase: 0.001
+              bounty-min: 1.5
+              bounty-max: 25
+              bounty-unit-increase: 1
               bounty-unit-time: 60
               
               # Cooldown between two trades in seconds. 3600, default, is 1 hour.
@@ -146,7 +144,7 @@ scenarios:
 
                   # Minimum io-ratio for the order. 
                   # Strategy will not buy output token with input token for a lower ratio.
-                  min-ratio: 80
+                  min-ratio: 20
                 scenarios:
                   prod:
                     bindings:
@@ -160,7 +158,7 @@ scenarios:
                       enforce-twap-check: '''enforce-twap-check-chart'
                       ensure-min-ratio: '''ensure-min-ratio-chart'
                       ensure-cooldown: '''ensure-cooldown-chart'
-                      plottables: '''plottables-chart'
+                      plottables: '''plottables-prod'
                   metric:
                     runs: 1
                     bindings:
@@ -180,21 +178,21 @@ scenarios:
           sell:
             bindings:
               # Input token, this is the token being received.
-              input-token: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+              input-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
               # Output token, this is the token that is being offered.
               # Amount of output tokens offered per trade.
               # For gas expensive networks mean amount needs to be higher to compensate for gas fee and bounty.
-              mean-output-amount : 900
+              mean-output-amount : 2500
 
               # Output token, this is the token being bought
-              output-token: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
+              output-token: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
 
               # Reserve token, If the output token is paired with the input token on a uniswap v3,
               # then the reserve is the input token. 
               # If the output token is NOT paired with the input token on a uniswap v3 pool,
               # then the reserve address is the token which the ouput token is paired with.
-              reserve-token: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+              reserve-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
               # Quote and Twap multiplier to get quote and 30min twap for input-output token pair.
               # If the output token is paired with the input token on a uniswap v3,
@@ -206,7 +204,7 @@ scenarios:
 
               # Params for bounty auction which is input token denominated.
               bounty-min: 0.012
-              bounty-max: 0.3
+              bounty-max: 0.5
               bounty-unit-increase: 0.01
               bounty-unit-time: 60
 
@@ -229,7 +227,7 @@ scenarios:
                   # Minimum io-ratio for the order. 
                   # Strategy will not buy input token with output token for a higher ratio.
                   # Can also be laelled min sell price. 
-                  min-ratio: 0.01
+                  min-ratio: 0.005
                 scenarios:
                   prod:
                     bindings:
@@ -243,7 +241,7 @@ scenarios:
                       enforce-twap-check: '''enforce-twap-check-chart'
                       ensure-min-ratio: '''ensure-min-ratio-chart'
                       ensure-cooldown: '''ensure-cooldown-chart'
-                      plottables: '''plottables-chart'
+                      plottables: '''plottables-prod'
                   metric:
                     runs: 1
                     bindings:
@@ -261,24 +259,24 @@ scenarios:
                   plottables: '''plottables-prod'
                 
 charts:
-  dolz-buy-dca-univ3: 
-    scenario: polygon-dolz-dca-univ3.buy.deviation.metric
+  wlth-buy-dca-univ3: 
+    scenario: base-wlth-dca-univ3.buy.deviation.metric
     metrics:
       - label: Amount of USDC offered for first trade.
         value: 0.3
         description: Amount of USDC offered for the current block.
-      - label: Amount of DOLZ received for frist trade.
+      - label: Amount of WLTH received for frist trade.
         value: 0.4
-        description: Amount of DOLZ received for USDC offered.
-      - label: io-ratio DOLZ/USDC
+        description: Amount of WLTH received for USDC offered.
+      - label: io-ratio WLTH/USDC
         value: 0.7
         description: Ratio offered by the order for the current block accounting for bounty.
       - label: Minimum Bounty amount
         value: 0.7.5
-        description: Minimum amount of DOLZ offered as bounty.
+        description: Minimum amount of WLTH offered as bounty.
       - label: Maximum Bounty amount
         value: 0.7.6    
-        description: Maximum amount of DOLZ offered as bounty.
+        description: Maximum amount of WLTH offered as bounty.
       - label: Bounty increase per minute
         value: 0.7.9   
         description: Amount by which bounty increases every minute after cooldown.
@@ -313,8 +311,8 @@ charts:
 
     plots:
 
-  buy-dolz-simulation:
-    scenario: polygon-dolz-dca-univ3.buy.deviation.chart
+  buy-wlth-simulation:
+    scenario: base-wlth-dca-univ3.buy.deviation.chart
     plots:
       Mean amount of USDC offered:
         marks:
@@ -329,7 +327,7 @@ charts:
                     x: "0.3"
                     thresholds: 25
                     
-      Mean amount of DOLZ received:
+      Mean amount of WLTH received:
         marks:
           - type: recty
             options:
@@ -342,16 +340,16 @@ charts:
                     x: "0.4"
                     thresholds: 25
   
-  dolz-sell-dca-univ3: 
-    scenario: polygon-dolz-dca-univ3.sell.deviation.metric
+  wlth-sell-dca-univ3: 
+    scenario: base-wlth-dca-univ3.sell.deviation.metric
     metrics:
-      - label: Amount of DOLZ offered for first trade.
+      - label: Amount of WLTH offered for first trade.
         value: 0.3
-        description: Amount of DOLZ offered for the current block.
+        description: Amount of WLTH offered for the current block.
       - label: Amount of USDC received for frist trade.
         value: 0.4
-        description: Amount of USDC received for DOLZ offered.
-      - label: io-ratio USDC/DOLZ
+        description: Amount of USDC received for WLTH offered.
+      - label: io-ratio USDC/WLTH
         value: 0.7
         description: Ratio offered by the order for the current block accounting for bounty.
       - label: Minimum Bounty amount
@@ -361,11 +359,11 @@ charts:
         value: 0.7.6
         description: Maximum amount of USDC offered as bounty.
       - label: Bounty increase per minute
-        value: 0.7.9   
+        value: 0.7.9
         description: Amount by which bounty increases every minute after cooldown.
       - label: Mean amount
         value: 0.7.4        
-        description: Mean amount of DOLZ offered 
+        description: Mean amount of WLTH offered 
       - label: Cooldown in minutes
         value: 0.7.10        
         description: Number of minutes between strategy running
@@ -382,20 +380,20 @@ charts:
         description: Twap deviation occuring at current block with maximum bounty on the sell side to prevent lower than deviation sells.
       - label: Cummulative amount traded daily
         value: 0.7.12     
-        description: Cummulative amount of DOLZ tokens offered in a day.
+        description: Cummulative amount of WLTH tokens offered in a day.
       - label: Cummulative amount traded weekly
         value: 0.7.13     
-        description: Cummulative amount of DOLZ tokens offered in a week.
+        description: Cummulative amount of WLTH tokens offered in a week.
       - label: Cummulative amount traded montly
         value: 0.7.14    
-        description: Cummulative amount of DOLZ tokens offered in a month.
+        description: Cummulative amount of WLTH tokens offered in a month.
       - label: Twap-ratio
         value: 0.7.2     
         
-  sell-dolz-simulation:
-    scenario: polygon-dolz-dca-univ3.sell.deviation.chart
+  sell-wlth-simulation:
+    scenario: base-wlth-dca-univ3.sell.deviation.chart
     plots:
-      Mean amount of DOLZ offered:
+      Mean amount of WLTH offered:
         marks:
           - type: recty
             options:
@@ -422,12 +420,12 @@ charts:
                     thresholds: 25
 
 deployments:
-  h20-dolz-sell:
-    scenario: polygon-dolz-dca-univ3.sell.deviation.prod
-    order: polygon-dolz-sell    
-  h20-dolz-buy:
-    scenario: polygon-dolz-dca-univ3.buy.deviation.prod
-    order: polygon-dolz-buy                                        
+  h20-wlth-sell:
+    scenario: base-wlth-dca-univ3.sell.deviation.prod
+    order: base-wlth-sell    
+  h20-wlth-buy:
+    scenario: base-wlth-dca-univ3.buy.deviation.prod
+    order: base-wlth-buy                                        
 ---
 #cooldown-time !The minimum amount of seconds that must elapse between trades.
 #bounty-min !Minimum bounty to offer for each trade denominated in input tokens.
@@ -586,7 +584,6 @@ deployments:
     mul(saturating-sub(1 twap-ratio) 100)
     mul(saturating-sub(twap-ratio 1) 100)
   ),
-  max-bounty-ratio: mul(div(bounty-max mean-output-amount ) 100),
   bounty-increase-per-minute: mul(div(bounty-unit-increase bounty-unit-time) 60),
   cooldown-in-minutes: div(cooldown-time 60),
   cooldown-in-hours: div(60 cooldown-in-minutes),

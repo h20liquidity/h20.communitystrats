@@ -145,18 +145,6 @@ deployments:
 #io-ratio-1 !IO ratio for first order.
 #ouptut-amount-1 !Output amount for first order.
 
-#io-ratio-2 !IO ratio for second order.
-#ouptut-amount-2 !Output amount for second order.
-
-#io-ratio-3 !IO ratio for third order.
-#ouptut-amount-3 !Output amount for third order.
-
-#io-ratio-4 !IO ratio for fourth order.
-#ouptut-amount-4 !Output amount for fourth order.
-
-#io-ratio-5 !IO ratio for fifth order.
-#ouptut-amount-5 !Output amount for fifth order.
-
 #count-key "count-key"
 #plottables !Binding to plot values.
 #get-trade-count !Binding to get trade count.

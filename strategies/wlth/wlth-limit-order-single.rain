@@ -107,13 +107,17 @@ charts:
       - label: Price
         value: 0.3.2
         unit-suffix: " WLTH"            
-        description: 'Unit price, WLTH per USDC (stack item 0.3.2)'   
-      - label: Units
+        description: 'Unit price, WLTH per USDC (stack item 0.3.2)'
+      - label: Effective Price (as visible on dex tools)
         value: 0.3.3
+        unit-suffix: " USDC"            
+        description: 'Effective price in USDC denomination'     
+      - label: Units
+        value: 0.3.4
         unit-suffix: " USDC"            
         description: 'Units purchased (stack item 0.3.3)'
       - label: Total Price
-        value: 0.3.4
+        value: 0.3.5
         unit-suffix: " WLTH"
         description: 'Amount of WLTH recevied.'
   Buy USDC, sell WLTH single limit order:
@@ -123,12 +127,16 @@ charts:
         value: 0.3.2
         unit-suffix: " USDC"            
         description: 'Unit price, USDC per WLTH (stack item 0.3.2)'   
+      - label: Effective Price (as visible on dex tools)
+        value: 0.3.2
+        unit-suffix: " USDC"            
+        description: 'Effective price in USDC denomination'   
       - label: Units
-        value: 0.3.3
+        value: 0.3.4
         unit-suffix: " WLTH"    
         description: 'Units sold (stack item 0.3.3)'
       - label: Total Price
-        value: 0.3.4
+        value: 0.3.5
         unit-suffix: " USDC"
         description: 'Amount of USDC recevied.'
 deployments:
@@ -156,6 +164,7 @@ deployments:
 #plottables-metric
   amount io-ratio: ,
   _: io-ratio-1,
+  effective-ratio-1: inv(io-ratio-1),
   _: ouptut-amount-1,
   input-amount-1: mul(io-ratio-1 ouptut-amount-1);
 

@@ -1,77 +1,89 @@
+# Limit Order Strategy
+# 5 buy and sell targets
+# Each target you set buy price and amount and sell price and amount
+# Target Network: Base
+# Quote (Input / Incoming): USDC or WLTH
+# Base (Output / Outgoing): WLTH or USDC
+# Token contract: https://basescan.org/address/0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+# Token github: NA
+# Liquidity protocol: Uniswap V3
+# Liquidity pool address: https://www.dextools.io/app/en/base/pair-explorer/0x1536ee1506e24e5a36be99c73136cd82907a902e?t=1717921711270
+# Liquidity pool fee: 0.3%
+
 networks:
-  polygon-dolz: 
-    rpc: https://polygon-mainnet.g.alchemy.com/v2/y3BXawVv5uuP_g8BaDlKbKoTBGHo9zD9
-    chain-id: 137 
-    network-id: 137 
-    currency: MATIC
+  base-community: 
+    rpc: https://rpc.ankr.com/base/8e4cac5728d95471ae55724953c7ae6f19a227ac05146276f09717692b732dae
+    chain-id: 8453 
+    network-id: 8453 
+    currency: ETH
 
 subgraphs:
-  polygon-dolz: https://api.thegraph.com/subgraphs/name/h20liquidity/polygon-0xc95a5f8e
+  base-community: https://api.thegraph.com/subgraphs/name/h20liquidity/base-0x2aee87
   
 orderbooks:
-  polygon-dolz:
-    address: 0xc95A5f8eFe14d7a20BD2E5BAFEC4E71f8Ce0B9A6
-    network: polygon-dolz
-    subgraph: polygon-dolz
+  base-community:
+    address: 0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76
+    network: base-community
+    subgraph: base-community
 
 deployers:
-  polygon-dolz:
-    address: 0xB3aC858bEAf7814892d3946A8C109A7D701DF8E7
-    network: polygon-dolz
+  base-community:
+    address: 0x56394785a22b3BE25470a0e03eD9E0a939C47b9b
+    network: base-community
 
 tokens:
-  polygon-dolz:
-    network: polygon-dolz
-    address: 0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
-  polygon-usdt:
-    network: polygon-dolz
-    address: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+  base-wlth:
+    network: base-community
+    address: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+  base-usdc:
+    network: base-community
+    address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
 orders:
   # vault-id generated with `openssl rand -hex 32`
-  polygon-dolz-sell:
-    orderbook: polygon-dolz
+  base-wlth-sell:
+    orderbook: base-community
     inputs:
-      - token: polygon-usdt
-        vault-id: 0x6049f8ee79b82dd5bc82b368114bb0a69f34d539b04b43208241e1f68da134a8
+      - token: base-usdc
+        vault-id: 0x4cdcdc67a7a737779706b4490be2bef03155001562525dbe78200bc0839f8c35
     outputs:
-      - token: polygon-dolz
-        vault-id: 0x6049f8ee79b82dd5bc82b368114bb0a69f34d539b04b43208241e1f68da134a8
-  polygon-dolz-buy:
-    orderbook: polygon-dolz
+      - token: base-wlth
+        vault-id: 0x4cdcdc67a7a737779706b4490be2bef03155001562525dbe78200bc0839f8c35 
+  base-wlth-buy:
+    orderbook: base-community
     inputs:
-      - token: polygon-dolz
-        vault-id: 0x6049f8ee79b82dd5bc82b368114bb0a69f34d539b04b43208241e1f68da134a8
+      - token: base-wlth
+        vault-id: 0x4cdcdc67a7a737779706b4490be2bef03155001562525dbe78200bc0839f8c35
     outputs:
-      - token: polygon-usdt
-        vault-id: 0x6049f8ee79b82dd5bc82b368114bb0a69f34d539b04b43208241e1f68da134a8
+      - token: base-usdc
+        vault-id: 0x4cdcdc67a7a737779706b4490be2bef03155001562525dbe78200bc0839f8c35
 
 scenarios:
     limit-orders:
-      network: polygon-dolz
-      deployer: polygon-dolz
-      orderbook: polygon-dolz
+      network: base-community
+      deployer: base-community
+      orderbook: base-community
       bindings:
         # Ask for now, registry in future.
-        uniswap-words: 0xbc609623F5020f6Fc7481024862cD5EE3FFf52D7
-        orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1
+        uniswap-words: 0xD6B34F97d4A8Cb38D0544dB241CB3f335866f490
+        orderbook-subparser: 0x8D96ea3EF24D7123882c51CE4325b89bc0d63f9e
       scenarios:
         buy:
           bindings:
             # io-ratio and amount for first order. 
-            io-ratio-1: 100
+            io-ratio-1: 35
             ouptut-amount-1: 1
             # io-ratio and amount for second order. 
-            io-ratio-2: 105
+            io-ratio-2: 36
             ouptut-amount-2: 1.5
             # io-ratio and amount for third order. 
-            io-ratio-3: 110
+            io-ratio-3: 37
             ouptut-amount-3: 2
             # io-ratio and amount for third order. 
-            io-ratio-4: 115
+            io-ratio-4: 38
             ouptut-amount-4: 2.5
             # io-ratio and amount for third order. 
-            io-ratio-5: 120
+            io-ratio-5: 39
             ouptut-amount-5: 3
           scenarios:
             prod:
@@ -91,20 +103,20 @@ scenarios:
         sell:
           bindings:
             # io-ratio and amount for first order. 
-            io-ratio-1: 0.0080
-            ouptut-amount-1: 100
+            io-ratio-1: 0.02
+            ouptut-amount-1: 50
             # io-ratio and amount for second order. 
-            io-ratio-2: 0.0085
-            ouptut-amount-2: 150
+            io-ratio-2: 0.021
+            ouptut-amount-2: 75
             # io-ratio and amount for third order. 
-            io-ratio-3: 0.0090
-            ouptut-amount-3: 200
+            io-ratio-3: 0.022
+            ouptut-amount-3: 100
             # io-ratio and amount for third order. 
-            io-ratio-4: 0.0095
-            ouptut-amount-4: 250
+            io-ratio-4: 0.023
+            ouptut-amount-4: 125
             # io-ratio and amount for third order. 
-            io-ratio-5: 0.0100
-            ouptut-amount-5: 300
+            io-ratio-5: 0.024
+            ouptut-amount-5: 150
           scenarios:
             prod:
               bindings:
@@ -123,7 +135,7 @@ scenarios:
         
 
 charts:
-  buy-dolz-metrics:
+  base-wlth-buy-metrics:
     scenario: limit-orders.buy.metric
     metrics:
       - label: io-ratio-1
@@ -147,7 +159,7 @@ charts:
       - label: amount-5
         value: 0.3.11
 
-  sell-dolz-metrics:
+  base-wlth-sell-metrics:
     scenario: limit-orders.sell.metric
     metrics:
       - label: io-ratio-1
@@ -240,12 +252,12 @@ charts:
                 y: 0.3.0
 
 deployments:
-  dolz-buy:
+  base-wlth-buy:
     scenario: limit-orders.buy.prod
-    order: polygon-dolz-buy
-  dolz-sell:
+    order: base-wlth-buy
+  base-wlth-sell:
     scenario: limit-orders.sell.prod
-    order: polygon-dolz-sell
+    order: base-wlth-sell
 ---
 #uniswap-words !The subparser for the Uniswap words
 #orderbook-subparser !The subparser for the Orderbook words

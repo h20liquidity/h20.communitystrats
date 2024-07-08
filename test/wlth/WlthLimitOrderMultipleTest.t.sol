@@ -26,29 +26,29 @@ import "h20.test-std/lib/LibProcessStream.sol";
 uint256 constant VAULT_ID = uint256(keccak256("vault"));
 
 
-/// @dev https://polygonscan.com/address/0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be
-IERC20 constant POLYGON_DOLZ = IERC20(0x6ab4E20f36ca48B61ECd66c0450fDf665Fa130be); 
+/// @dev https://basescan.org/address/0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+IERC20 constant BASE_WLTH= IERC20(0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D); 
 
-/// @dev https://polygonscan.com/address/0xc2132D05D31c914a87C6611C10748AEb04B58e8F
-IERC20 constant POLYGON_USDT = IERC20(0xc2132D05D31c914a87C6611C10748AEb04B58e8F);
+/// @dev https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+IERC20 constant BASE_USDC = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
 
-function polygonDolzIo() pure returns (IO memory) {
-    return IO(address(POLYGON_DOLZ), 18, VAULT_ID);
+function baseWlthIo() pure returns (IO memory) {
+    return IO(address(BASE_WLTH), 18, VAULT_ID);
 }
 
-function polygonUsdtIo() pure returns (IO memory) {
-    return IO(address(POLYGON_USDT), 6, VAULT_ID);
-}
-contract DcaOracleUniv3Test is StrategyTests {
+function baseUsdcIo() pure returns (IO memory) {
+    return IO(address(BASE_USDC), 6, VAULT_ID);
+} 
+
+contract WlthLimitOrderMultipleTest is StrategyTests { 
 
     using SafeERC20 for IERC20;
     using Strings for address;
 
-    uint256 constant FORK_BLOCK_NUMBER = 59037467;
-   
+    uint256 constant FORK_BLOCK_NUMBER = 16817115;
     
     function selectFork() internal {
-        uint256 fork = vm.createFork(vm.envString("RPC_URL_POLYGON"));
+        uint256 fork = vm.createFork(vm.envString("RPC_URL_BASE"));
         vm.selectFork(fork);
         vm.rollFork(FORK_BLOCK_NUMBER);
     }
@@ -60,35 +60,39 @@ contract DcaOracleUniv3Test is StrategyTests {
     function setUp() public {
         selectFork();
         
-        PARSER = IParserV1(0x7A44459893F99b9d9a92d488eb5d16E4090f0545);
-        INTERPRETER = IInterpreterV2(0x762adD85a30A83722feF2e029087C9D110B6a7b3); 
-        STORE = IInterpreterStoreV2(0x59401C9302E79Eb8AC6aea659B8B3ae475715e86); 
-        EXPRESSION_DEPLOYER = IExpressionDeployerV3(0xB3aC858bEAf7814892d3946A8C109A7D701DF8E7); 
-        ORDERBOOK = IOrderBookV3(0xc95A5f8eFe14d7a20BD2E5BAFEC4E71f8Ce0B9A6); 
-        ARB_INSTANCE = IOrderBookV3ArbOrderTaker(0x9a8545FA798A7be7F8E1B8DaDD79c9206357C015);
-        ROUTE_PROCESSOR = IRouteProcessor(address(0xE7eb31f23A5BefEEFf76dbD2ED6AdC822568a5d2)); 
+        PARSER = IParserV1(0xF836f2746B407136a5bCB515495949B1edB75184);
+        STORE = IInterpreterStoreV2(0x6E4b01603edBDa617002A077420E98C86595748E); 
+        INTERPRETER = IInterpreterV2(0x379b966DC6B117dD47b5Fc5308534256a4Ab1BCC); 
+        EXPRESSION_DEPLOYER = IExpressionDeployerV3(0x56394785a22b3BE25470a0e03eD9E0a939C47b9b); 
+        ORDERBOOK = IOrderBookV3(0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76);
+        ARB_INSTANCE = IOrderBookV3ArbOrderTaker(0x199b22ce0c9fD88476cCaA2d2aB253Af38BAE3Ae);
+        ROUTE_PROCESSOR = IRouteProcessor(address(0x83eC81Ae54dD8dca17C3Dd4703141599090751D1)); 
+        EXTERNAL_EOA = address(0x654FEf5Fb8A1C91ad47Ba192F7AA81dd3C821427);
+        APPROVED_EOA = address(0x669845c29D9B1A64FFF66a55aA13EB4adB889a88);
+        ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C); 
+
         EXTERNAL_EOA = address(0x654FEf5Fb8A1C91ad47Ba192F7AA81dd3C821427);
         APPROVED_EOA = address(0x669845c29D9B1A64FFF66a55aA13EB4adB889a88);
         ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
-    }
+    } 
 
-    function testPolygonLimitOrdersSell() public {
+    function testWlthLimitOrdersSell() public {
         IO[] memory inputVaults = new IO[](1);
-        inputVaults[0] = polygonUsdtIo();
+        inputVaults[0] = baseUsdcIo();
 
         IO[] memory outputVaults = new IO[](1);
-        outputVaults[0] = polygonDolzIo();
+        outputVaults[0] = baseWlthIo();
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
-            getEncodedBuyDolzRoute(address(ARB_INSTANCE)),
-            getEncodedSellDolzRoute(address(ARB_INSTANCE)),
+            getEncodedBuyWlthRoute(address(ARB_INSTANCE)),
+            getEncodedSellWlthRoute(address(ARB_INSTANCE)),
             0,
             0,
             1e6,
             10000e18,
             0,
             0,
-            "strategies/limit-order-multiple.rain",
+            "strategies/wlth/wlth-limit-order-multiple.rain",
             "limit-orders.sell.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
@@ -106,7 +110,29 @@ contract DcaOracleUniv3Test is StrategyTests {
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
 
-            assertEq(strategyRatio, 0.008e18);
+            assertEq(strategyRatio, 0.02e18);
+            assertEq(strategyAmount, 50e18);
+        }
+        {
+            vm.recordLogs();
+            // `arb()` called
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            assertEq(strategyRatio, 0.021e18);
+            assertEq(strategyAmount, 75e18);
+        }
+        {
+            vm.recordLogs();
+            // `arb()` called
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            assertEq(strategyRatio, 0.022e18);
             assertEq(strategyAmount, 100e18);
         }
         {
@@ -117,65 +143,44 @@ contract DcaOracleUniv3Test is StrategyTests {
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
 
-            assertEq(strategyRatio, 0.0085e18);
+            assertEq(strategyRatio, 0.023e18);
+            assertEq(strategyAmount, 125e18); 
+        }
+        {
+            vm.recordLogs();
+            // `arb()` called
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            assertEq(strategyRatio, 0.024e18);
             assertEq(strategyAmount, 150e18);
-        }
-        {
-            vm.recordLogs();
-            // `arb()` called
-            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
-
-            Vm.Log[] memory entries = vm.getRecordedLogs();
-            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
-
-            assertEq(strategyRatio, 0.0090e18);
-            assertEq(strategyAmount, 200e18);
-        }
-        {
-            vm.recordLogs();
-            // `arb()` called
-            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
-
-            Vm.Log[] memory entries = vm.getRecordedLogs();
-            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
-
-            assertEq(strategyRatio, 0.0095e18);
-            assertEq(strategyAmount, 250e18); 
-        }
-        {
-            vm.recordLogs();
-            // `arb()` called
-            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
-
-            Vm.Log[] memory entries = vm.getRecordedLogs();
-            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
-
-            assertEq(strategyRatio, 0.01e18);
-            assertEq(strategyAmount, 300e18);
         }
         {
             vm.expectRevert("Max order count");
             takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
-        }
+        } 
+
     }
 
-    function testPolygonLimitOrdersBuy() public {
+    function testWlthLimitOrdersBuy() public {
         IO[] memory inputVaults = new IO[](1);
-        inputVaults[0] = polygonDolzIo();
+        inputVaults[0] = baseWlthIo();
 
         IO[] memory outputVaults = new IO[](1);
-        outputVaults[0] = polygonUsdtIo();
+        outputVaults[0] = baseUsdcIo();
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
-            getEncodedSellDolzRoute(address(ARB_INSTANCE)),
-            getEncodedBuyDolzRoute(address(ARB_INSTANCE)),
+            getEncodedSellWlthRoute(address(ARB_INSTANCE)),
+            getEncodedBuyWlthRoute(address(ARB_INSTANCE)),
             0,
             0,
-            2000000e18,
+            100000e18,
             10000e6,
             0,
             0,
-            "strategies/limit-order-multiple.rain",
+            "strategies/wlth/wlth-limit-order-multiple.rain",
             "limit-orders.buy.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
@@ -202,7 +207,7 @@ contract DcaOracleUniv3Test is StrategyTests {
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
 
-            assertEq(strategyRatio, 100e18);
+            assertEq(strategyRatio, 35e18);
             assertEq(strategyAmount, 1e18);
         }
         {
@@ -213,7 +218,7 @@ contract DcaOracleUniv3Test is StrategyTests {
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
 
-            assertEq(strategyRatio, 105e18);
+            assertEq(strategyRatio, 36e18);
             assertEq(strategyAmount, 1.5e18);
         }
         {
@@ -224,7 +229,7 @@ contract DcaOracleUniv3Test is StrategyTests {
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
 
-            assertEq(strategyRatio, 110e18);
+            assertEq(strategyRatio, 37e18);
             assertEq(strategyAmount, 2e18);
         }
         {
@@ -235,7 +240,7 @@ contract DcaOracleUniv3Test is StrategyTests {
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
 
-            assertEq(strategyRatio, 115e18);
+            assertEq(strategyRatio, 38e18);
             assertEq(strategyAmount, 2.5e18); 
         }
         {
@@ -246,7 +251,7 @@ contract DcaOracleUniv3Test is StrategyTests {
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
 
-            assertEq(strategyRatio, 120e18);
+            assertEq(strategyRatio, 39e18);
             assertEq(strategyAmount, 3e18);
         }
         {
@@ -255,18 +260,21 @@ contract DcaOracleUniv3Test is StrategyTests {
         }
     }
 
-    function getEncodedBuyDolzRoute(address toAddress) internal pure returns (bytes memory) {
+    function getEncodedBuyWlthRoute(address toAddress) internal pure returns (bytes memory) {
         bytes memory ROUTE_PRELUDE =
-            hex"02c2132D05D31c914a87C6611C10748AEb04B58e8F01ffff01C56DDB5C93B8E92B9409DCE43a9169aa643495b800";
+            hex"02833589fCD6eDb6E08f4c7C32D4f71b54bdA0291301ffff011536EE1506e24e5A36Be99C73136cD82907A902E01";
             
         return abi.encode(bytes.concat(ROUTE_PRELUDE, abi.encodePacked(address(toAddress))));
     }
 
-    function getEncodedSellDolzRoute(address toAddress) internal pure returns (bytes memory) {
+    function getEncodedSellWlthRoute(address toAddress) internal pure returns (bytes memory) {
         bytes memory ROUTE_PRELUDE =
-            hex"026ab4E20f36ca48B61ECd66c0450fDf665Fa130be01ffff01C56DDB5C93B8E92B9409DCE43a9169aa643495b801";
+            hex"0299b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D01ffff011536EE1506e24e5A36Be99C73136cD82907A902E00";
             
         return abi.encode(bytes.concat(ROUTE_PRELUDE, abi.encodePacked(address(toAddress))));
     }
 
 }
+
+
+

@@ -101,22 +101,44 @@ scenarios:
         
 
 charts:
-  base-wlth-buy-metrics:
+  Buy WLTH, sell USDC single limit order:
     scenario: limit-orders.buy.metric
     metrics:
-      - label: io-ratio-1
+      - label: Price
         value: 0.3.2
-      - label: amount-1
+        unit-suffix: " WLTH"            
+        description: 'Unit price, WLTH per USDC (stack item 0.3.2)'
+      - label: Effective Price (as visible on dex tools)
         value: 0.3.3
-
-  base-wlth-sell-metrics:
+        unit-suffix: " USDC"            
+        description: 'Effective price in USDC denomination'     
+      - label: Units
+        value: 0.3.4
+        unit-suffix: " USDC"            
+        description: 'Units purchased (stack item 0.3.3)'
+      - label: Total Price
+        value: 0.3.5
+        unit-suffix: " WLTH"
+        description: 'Amount of WLTH recevied.'
+  Buy USDC, sell WLTH single limit order:
     scenario: limit-orders.sell.metric
     metrics:
-      - label: io-ratio-1
+      - label: Price
         value: 0.3.2
-      - label: amount-1
-        value: 0.3.3
-  
+        unit-suffix: " USDC"            
+        description: 'Unit price, USDC per WLTH (stack item 0.3.2)'   
+      - label: Effective Price (as visible on dex tools)
+        value: 0.3.2
+        unit-suffix: " USDC"            
+        description: 'Effective price in USDC denomination'   
+      - label: Units
+        value: 0.3.4
+        unit-suffix: " WLTH"    
+        description: 'Units sold (stack item 0.3.3)'
+      - label: Total Price
+        value: 0.3.5
+        unit-suffix: " USDC"
+        description: 'Amount of USDC recevied.'
 deployments:
   base-wlth-buy:
     scenario: limit-orders.buy.prod
@@ -131,18 +153,6 @@ deployments:
 #io-ratio-1 !IO ratio for first order.
 #ouptut-amount-1 !Output amount for first order.
 
-#io-ratio-2 !IO ratio for second order.
-#ouptut-amount-2 !Output amount for second order.
-
-#io-ratio-3 !IO ratio for third order.
-#ouptut-amount-3 !Output amount for third order.
-
-#io-ratio-4 !IO ratio for fourth order.
-#ouptut-amount-4 !Output amount for fourth order.
-
-#io-ratio-5 !IO ratio for fifth order.
-#ouptut-amount-5 !Output amount for fifth order.
-
 #count-key "count-key"
 #plottables !Binding to plot values.
 #get-trade-count !Binding to get trade count.
@@ -154,7 +164,9 @@ deployments:
 #plottables-metric
   amount io-ratio: ,
   _: io-ratio-1,
-  _: ouptut-amount-1;
+  effective-ratio-1: inv(io-ratio-1),
+  _: ouptut-amount-1,
+  input-amount-1: mul(io-ratio-1 ouptut-amount-1);
 
 #get-trade-count-prod
   trade-count-key: hash(order-hash() count-key), 

@@ -278,20 +278,16 @@ charts:
         value: 0.7.6    
         description: Maximum amount of WLTH offered as bounty.
       - label: Bounty increase per minute
-        value: 0.7.10   
+        value: 0.7.9   
         description: Amount by which bounty increases every minute after cooldown.
-      - label: Max Bounty ratio
-        value: 0.7.9
-        unit-suffix: '%'   
-        description: Ratio of max bounty amount to order amount
       - label: Mean amount
         value: 0.7.4
         description: Mean amount of USDC sold 
       - label: Cooldown in minutes
-        value: 0.7.11        
+        value: 0.7.10        
         description: Number of minutes between strategy running
       - label: Trades per hour
-        value: 0.7.12       
+        value: 0.7.11       
         description: Number of trades per hour  
       - label: Strategy twap buy deviation
         value: 0.7.7
@@ -302,13 +298,13 @@ charts:
         unit-suffix: '%'       
         description: Twap deviation occuring at current block with maximum bounty on the buy side to prevent higher than deviations buys.
       - label: Cummulative amount traded daily
-        value: 0.7.13     
+        value: 0.7.12     
         description: Cummulative amount of USDC tokens offered in a day.
       - label: Cummulative amount traded weekly
-        value: 0.7.14     
+        value: 0.7.13     
         description: Cummulative amount of USDC tokens offered in a week.
       - label: Cummulative amount traded montly
-        value: 0.7.15     
+        value: 0.7.14     
         description: Cummulative amount of USDC tokens offered in a month.
       - label: Twap-ratio
         value: 0.7.2     
@@ -363,20 +359,16 @@ charts:
         value: 0.7.6
         description: Maximum amount of USDC offered as bounty.
       - label: Bounty increase per minute
-        value: 0.7.10   
-        description: Amount by which bounty increases every minute after cooldown.
-      - label: Max Bounty ratio
         value: 0.7.9
-        unit-suffix: '%'   
-        description: Ratio of max bounty amount to order amount
+        description: Amount by which bounty increases every minute after cooldown.
       - label: Mean amount
         value: 0.7.4        
         description: Mean amount of WLTH offered 
       - label: Cooldown in minutes
-        value: 0.7.11        
+        value: 0.7.10        
         description: Number of minutes between strategy running
       - label: Trades per hour
-        value: 0.7.12       
+        value: 0.7.11       
         description: Number of trades per hour  
       - label: Strategy twap sell deviation
         value: 0.7.7
@@ -387,13 +379,13 @@ charts:
         unit-suffix: '%'       
         description: Twap deviation occuring at current block with maximum bounty on the sell side to prevent lower than deviation sells.
       - label: Cummulative amount traded daily
-        value: 0.7.13     
+        value: 0.7.12     
         description: Cummulative amount of WLTH tokens offered in a day.
       - label: Cummulative amount traded weekly
-        value: 0.7.14     
+        value: 0.7.13     
         description: Cummulative amount of WLTH tokens offered in a week.
       - label: Cummulative amount traded montly
-        value: 0.7.15    
+        value: 0.7.14    
         description: Cummulative amount of WLTH tokens offered in a month.
       - label: Twap-ratio
         value: 0.7.2     
@@ -592,7 +584,6 @@ deployments:
     mul(saturating-sub(1 twap-ratio) 100)
     mul(saturating-sub(twap-ratio 1) 100)
   ),
-  max-bounty-ratio: mul(div(bounty-max mean-output-amount ) 100),
   bounty-increase-per-minute: mul(div(bounty-unit-increase bounty-unit-time) 60),
   cooldown-in-minutes: div(cooldown-time 60),
   cooldown-in-hours: div(60 cooldown-in-minutes),

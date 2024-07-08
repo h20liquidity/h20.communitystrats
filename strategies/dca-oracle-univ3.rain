@@ -280,20 +280,16 @@ charts:
         value: 0.7.6    
         description: Maximum amount of DOLZ offered as bounty.
       - label: Bounty increase per minute
-        value: 0.7.10   
+        value: 0.7.9   
         description: Amount by which bounty increases every minute after cooldown.
-      - label: Max Bounty ratio
-        value: 0.7.9
-        unit-suffix: '%'   
-        description: Ratio of max bounty amount to order amount
       - label: Mean amount
         value: 0.7.4
         description: Mean amount of USDC sold 
       - label: Cooldown in minutes
-        value: 0.7.11        
+        value: 0.7.10        
         description: Number of minutes between strategy running
       - label: Trades per hour
-        value: 0.7.12       
+        value: 0.7.11       
         description: Number of trades per hour  
       - label: Strategy twap buy deviation
         value: 0.7.7
@@ -304,13 +300,13 @@ charts:
         unit-suffix: '%'       
         description: Twap deviation occuring at current block with maximum bounty on the buy side to prevent higher than deviations buys.
       - label: Cummulative amount traded daily
-        value: 0.7.13     
+        value: 0.7.12     
         description: Cummulative amount of USDC tokens offered in a day.
       - label: Cummulative amount traded weekly
-        value: 0.7.14     
+        value: 0.7.13     
         description: Cummulative amount of USDC tokens offered in a week.
       - label: Cummulative amount traded montly
-        value: 0.7.15     
+        value: 0.7.14     
         description: Cummulative amount of USDC tokens offered in a month.
       - label: Twap-ratio
         value: 0.7.2     
@@ -365,20 +361,16 @@ charts:
         value: 0.7.6
         description: Maximum amount of USDC offered as bounty.
       - label: Bounty increase per minute
-        value: 0.7.10   
+        value: 0.7.9   
         description: Amount by which bounty increases every minute after cooldown.
-      - label: Max Bounty ratio
-        value: 0.7.9
-        unit-suffix: '%'   
-        description: Ratio of max bounty amount to order amount
       - label: Mean amount
         value: 0.7.4        
         description: Mean amount of DOLZ offered 
       - label: Cooldown in minutes
-        value: 0.7.11        
+        value: 0.7.10        
         description: Number of minutes between strategy running
       - label: Trades per hour
-        value: 0.7.12       
+        value: 0.7.11       
         description: Number of trades per hour  
       - label: Strategy twap sell deviation
         value: 0.7.7
@@ -389,13 +381,13 @@ charts:
         unit-suffix: '%'       
         description: Twap deviation occuring at current block with maximum bounty on the sell side to prevent lower than deviation sells.
       - label: Cummulative amount traded daily
-        value: 0.7.13     
+        value: 0.7.12     
         description: Cummulative amount of DOLZ tokens offered in a day.
       - label: Cummulative amount traded weekly
-        value: 0.7.14     
+        value: 0.7.13     
         description: Cummulative amount of DOLZ tokens offered in a week.
       - label: Cummulative amount traded montly
-        value: 0.7.15    
+        value: 0.7.14    
         description: Cummulative amount of DOLZ tokens offered in a month.
       - label: Twap-ratio
         value: 0.7.2     
@@ -522,13 +514,14 @@ deployments:
   :call<'enforce-twap-check>(twap-ratio);
 
 #ensure-cooldown-metric
- _ _: block-timestamp() 0;
+ _ _: now() 0;
 
 #ensure-cooldown-chart
- _ _: test-current-time test-last-time;
+ current-time: test-current-time,
+ last-time: sub(current-time mod(current-time 86400));
  
 #ensure-cooldown-prod
- current-time: block-timestamp(),
+ current-time: now(),
  last-time: get(hash(order-hash() cooldown-key)),
  :ensure(
    greater-than-or-equal-to(

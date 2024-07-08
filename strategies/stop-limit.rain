@@ -131,44 +131,44 @@ charts:
     scenario: stop-limit-order.buy.metric
     metrics:
       - label: Stop Price
-        value: 0.3.2
+        value: 0.5.2
         unit-suffix: " WLTH/USDC"            
       - label: Price
-        value: 0.3.3
+        value: 0.5.3
         unit-suffix: " WLTH"            
-        description: 'Unit price, WLTH per USDC (stack item 0.3.2)'
+        description: 'Unit price, WLTH per USDC (stack item 0.5.3)'
       - label: Effective Price (as visible on dex tools)
-        value: 0.3.4
+        value: 0.5.4
         unit-suffix: " USDC"            
         description: 'Effective price in USDC denomination'     
       - label: Units
-        value: 0.3.5
+        value: 0.5.5
         unit-suffix: " USDC"            
-        description: 'Units purchased (stack item 0.3.3)'
+        description: 'Units purchased (stack item 0.5.5)'
       - label: Total Price
-        value: 0.3.6
+        value: 0.5.6
         unit-suffix: " WLTH"
         description: 'Amount of WLTH recevied.'
   Buy USDC, sell WLTH single limit order:
     scenario: stop-limit-order.sell.metric
     metrics:
       - label: Stop Price
-        value: 0.3.2
+        value: 0.5.2
         unit-suffix: " USDC/WLTH"   
       - label: Price
-        value: 0.3.3
+        value: 0.5.3
         unit-suffix: " USDC"            
-        description: 'Unit price, USDC per WLTH (stack item 0.3.2)'   
+        description: 'Unit price, USDC per WLTH (stack item 0.5.3)'   
       - label: Effective Price (as visible on dex tools)
-        value: 0.3.3
+        value: 0.5.3
         unit-suffix: " USDC"            
         description: 'Effective price in USDC denomination'   
       - label: Units
-        value: 0.3.4
+        value: 0.5.4
         unit-suffix: " WLTH"    
-        description: 'Units sold (stack item 0.3.3)'
+        description: 'Units sold (stack item 0.5.4)'
       - label: Total Price
-        value: 0.3.6
+        value: 0.5.6
         unit-suffix: " USDC"
         description: 'Amount of USDC recevied.'
 

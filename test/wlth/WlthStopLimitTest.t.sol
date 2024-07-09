@@ -45,7 +45,7 @@ contract WlthLimitOrderSingleTest is StrategyTests {
     using SafeERC20 for IERC20;
     using Strings for address;
 
-    uint256 constant FORK_BLOCK_NUMBER = 16833054;
+    uint256 constant FORK_BLOCK_NUMBER = 16863755;
     
     function selectFork() internal {
         uint256 fork = vm.createFork(vm.envString("RPC_URL_BASE"));
@@ -74,96 +74,9 @@ contract WlthLimitOrderSingleTest is StrategyTests {
         EXTERNAL_EOA = address(0x654FEf5Fb8A1C91ad47Ba192F7AA81dd3C821427);
         APPROVED_EOA = address(0x669845c29D9B1A64FFF66a55aA13EB4adB889a88);
         ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
-    } 
-
-    function testStopLimitSell() public {
-        IO[] memory inputVaults = new IO[](1);
-        inputVaults[0] = baseUsdcIo();
-
-        IO[] memory outputVaults = new IO[](1);
-        outputVaults[0] = baseWlthIo();
-
-        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
-            getEncodedBuyWlthRoute(address(ARB_INSTANCE)),
-            getEncodedSellWlthRoute(address(ARB_INSTANCE)),
-            0,
-            0,
-            10000e6,
-            10000e18,
-            0,
-            0,
-            "strategies/wlth/wlth-stop-limit.rain",
-            "stop-limit-order.sell.prod",
-            "./lib/h20.test-std/lib/rain.orderbook",
-            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
-            inputVaults,
-            outputVaults
-        );
-
-        OrderV2 memory order = addOrderDepositOutputTokens(strategy); 
-
-        {
-            vm.recordLogs();
-            // `arb()` called
-            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
-
-            Vm.Log[] memory entries = vm.getRecordedLogs();
-            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
-
-            assertEq(strategyRatio, 0.02e18);
-            assertEq(strategyAmount, 50e18);
-        }
-        {
-            vm.expectRevert("Max order count");
-            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
-        } 
-
     }
 
-    function testStopLimitBuy() public {
-        IO[] memory inputVaults = new IO[](1);
-        inputVaults[0] = baseWlthIo();
-
-        IO[] memory outputVaults = new IO[](1);
-        outputVaults[0] = baseUsdcIo();
-
-        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
-            getEncodedSellWlthRoute(address(ARB_INSTANCE)),
-            getEncodedBuyWlthRoute(address(ARB_INSTANCE)),
-            0,
-            0,
-            100000e18,
-            10000e6,
-            0,
-            0,
-            "strategies/wlth/wlth-stop-limit.rain",
-            "stop-limit-order.buy.prod",
-            "./lib/h20.test-std/lib/rain.orderbook",
-            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
-            inputVaults,
-            outputVaults
-        );
-
-        OrderV2 memory order = addOrderDepositOutputTokens(strategy); 
-
-        {
-            vm.recordLogs();
-            // `arb()` called
-            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
-
-            Vm.Log[] memory entries = vm.getRecordedLogs();
-            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
-
-            assertEq(strategyRatio, 35e18);
-            assertEq(strategyAmount, 1e18);
-        }
-        {
-            vm.expectRevert("Max order count");
-            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
-        }
-    }
-
-    function testEnsureStopLimit() public {
+    function testEnsureStopLimitSell() public {
 
         IO[] memory inputVaults = new IO[](1);
         inputVaults[0] = baseUsdcIo();
@@ -190,17 +103,94 @@ contract WlthLimitOrderSingleTest is StrategyTests {
 
         OrderV2 memory order = addOrderDepositOutputTokens(strategy);
 
-        moveExternalPrice(
-            strategy.inputVaults[strategy.inputTokenIndex].token,
-            strategy.outputVaults[strategy.outputTokenIndex].token,
-            100000e6,
-            strategy.makerRoute
+        // Current Price is not below the market price.
+        {
+            vm.expectRevert("Stop price.");
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+        }
+
+        // When current price goes below the market price the order suceeds.
+        {
+            moveExternalPrice(
+                strategy.outputVaults[strategy.outputTokenIndex].token,
+                strategy.inputVaults[strategy.inputTokenIndex].token,
+                200000e18,
+                strategy.takerRoute
+            );
+            
+            vm.recordLogs();
+            // `arb()` called
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            assertEq(strategyRatio, 0.02e18);
+            assertEq(strategyAmount, 50e18);
+        
+            vm.expectRevert("Max order count");
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+             
+        }
+    }
+
+    function testEnsureStopLimitBuy() public {
+
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = baseWlthIo();
+
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = baseUsdcIo();
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            getEncodedSellWlthRoute(address(ARB_INSTANCE)),
+            getEncodedBuyWlthRoute(address(ARB_INSTANCE)),
+            0,
+            0,
+            200000e18,
+            10000e6,
+            0,
+            0,
+            "strategies/wlth/wlth-stop-limit.rain",
+            "stop-limit-order.buy.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
         );
-        vm.expectRevert("Stop price.");
-        takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+        OrderV2 memory order = addOrderDepositOutputTokens(strategy);
+
+        // Current Price is not above the market price.
+        {
+            vm.expectRevert("Stop price.");
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+        }
+        {
+            moveExternalPrice(
+                strategy.inputVaults[strategy.inputTokenIndex].token,
+                strategy.outputVaults[strategy.outputTokenIndex].token,
+                strategy.makerAmount,
+                strategy.makerRoute
+            );
+        }
+
+        {
+            vm.recordLogs();
+            // `arb()` called
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            assertEq(strategyRatio, 46e18);
+            assertEq(strategyAmount, 1e18);
+    
+            vm.expectRevert("Max order count");
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+        } 
     }
     
-
     function getEncodedBuyWlthRoute(address toAddress) internal pure returns (bytes memory) {
         bytes memory ROUTE_PRELUDE =
             hex"02833589fCD6eDb6E08f4c7C32D4f71b54bdA0291301ffff011536EE1506e24e5A36Be99C73136cD82907A902E01";

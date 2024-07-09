@@ -98,20 +98,19 @@ scenarios:
               tranche-size-base: 5
               tranche-size-growth: 1
 
+              # How far we move through tranche space in a second.
+              # 1 is a whole tranche, so we divide 1 by the number of seconds
+              # per recharge to calculate the per-second rate.
+              # Examples:
+              # 172800 seconds in 2 days, 48 hours = 1 / 172800 = 0.000005787037037037
+              # 86400 seconds in 1 day, 24 hours = 1 / 86400 = 0.000011574074074074
+              # 43200 seconds in 12 hours, 12 hours = 1 / 43200 = 0.000023148148148148
+              # 3600 seconds in 1 hour, 1 hour = 1 / 3600 = 0.000277777777777777
+              tranche-space-per-second: 0.000011574074074074
+
             scenarios:
               grid:
                 bindings:
-
-                  # How far we move through tranche space in a second.
-                  # 1 is a whole tranche, so we divide 1 by the number of seconds
-                  # per recharge to calculate the per-second rate.
-                  # Examples:
-                  # 172800 seconds in 2 days, 48 hours = 1 / 172800 = 0.000005787037037037
-                  # 86400 seconds in 1 day, 24 hours = 1 / 86400 = 0.000011574074074074
-                  # 43200 seconds in 12 hours, 12 hours = 1 / 43200 = 0.000023148148148148
-                  # 3600 seconds in 1 hour, 1 hour = 1 / 3600 = 0.000277777777777777
-                  tranche-space-per-second: 0.000011574074074074
-
                   tranche-space-recharge-delay: 300
                   min-tranche-space-diff: 0.1
                   tranche-space-snap-threshold: 0.01
@@ -156,10 +155,19 @@ scenarios:
               tranche-size-base: 5
               tranche-size-growth: 1
 
+              # How far we move through tranche space in a second.
+              # 1 is a whole tranche, so we divide 1 by the number of seconds
+              # per recharge to calculate the per-second rate.
+              # Examples:
+              # 172800 seconds in 2 days, 48 hours = 1 / 172800 = 0.000005787037037037
+              # 86400 seconds in 1 day, 24 hours = 1 / 86400 = 0.000011574074074074
+              # 43200 seconds in 12 hours, 12 hours = 1 / 43200 = 0.000023148148148148
+              # 3600 seconds in 1 hour, 1 hour = 1 / 3600 = 0.000277777777777777
+              tranche-space-per-second: 0.000011574074074074
+
             scenarios:
               grid:
                 bindings:
-                  tranche-space-per-second: 0
                   tranche-space-recharge-delay: 300
                   min-tranche-space-diff: 0.1
                   tranche-space-snap-threshold: 0.01

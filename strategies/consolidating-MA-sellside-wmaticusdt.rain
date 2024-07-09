@@ -1,0 +1,217 @@
+# Strategy: consolidating-MA-sellside-wmaticuusdt
+
+networks:
+  polygon-wmatic: 
+    rpc: https://polygon-mainnet.g.alchemy.com/v2/y3BXawVv5uuP_g8BaDlKbKoTBGHo9zD9
+    chain-id: 137 
+    network-id: 137 
+    currency: MATIC
+
+subgraphs:
+  polygon-wmatic: https://api.thegraph.com/subgraphs/name/h20liquidity/polygon-0xc95a5f8e
+  
+orderbooks:
+  polygon-wmatic:
+    address: 0xc95A5f8eFe14d7a20BD2E5BAFEC4E71f8Ce0B9A6
+    network: polygon-wmatic
+    subgraph: polygon-wmatic
+
+deployers:
+  polygon-wmatic:
+    address: 0xB3aC858bEAf7814892d3946A8C109A7D701DF8E7
+    network: polygon-wmatic
+
+tokens:
+  polygon-wmatic:
+    network: polygon-wmatic
+    address: 0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270
+  polygon-usdt:
+    network: polygon-wmatic
+    address: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+
+orders:
+  # vault-id generated with `openssl rand -hex 32`
+  polygon-wmatic-sell:
+    orderbook: polygon-wmatic
+    inputs:
+      - token: polygon-usdt
+        vault-id: 0xa9b76ae447edfa90d6e5911be0ca03ba717f93a87d592ed47a707b596328c84d
+    outputs:
+      - token: polygon-wmatic
+        vault-id: 0xa9b76ae447edfa90d6e5911be0ca03ba717f93a87d592ed47a707b596328c84d
+
+scenarios:
+    consolidated-ma:
+        network: polygon-wmatic
+        deployer: polygon-wmatic
+        orderbook: polygon-wmatic
+        bindings:
+          # Ask for now, registry in future.
+          uniswap-words: 0x2382e861cF4F47578aC29B50944b3b445577aF74
+          orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1
+        scenarios:
+          wmatic:
+            bindings:
+              # Input and Output token addresses from perspective of order
+              sale-token: 0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270
+              buyback-token: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F
+              poolfee: "[uniswap-v3-fee-low]"
+              range-ceiling: 2
+              range-floor: 0.01
+              input-trade-size: 50
+              price-average-time: 600
+              sell-percentage-increase: 0.00001
+              buy-percentage-decrease: 0.00001
+              buy-time-expiry: 3000000
+            scenarios:
+              prod:
+                bindings:
+                  plottables: '''plottables-prod'
+              metric:
+                runs: 1
+                bindings:
+                  plottables: '''plottables-plot'
+
+charts:
+  wmatic-consolidated-ma:
+    scenario: consolidated-ma.wmatic.metric
+    metrics:
+      - label: Moving average length (seconds)
+        value: 0.0
+        description: Moving average length (seconds)
+      - label: Moving average value
+        value: 0.1
+        description: Moving average value
+      - label: Sell condition
+        value: 0.4
+        description: Needs a value of 1 to be true 
+      - label: Sell percentage increase(without gas)
+        value: 0.5
+        description: The percentage increase aboveth emoving average
+      - label: Current percentage increase
+        value: 0.7
+        description: Current percentage increase
+      - label: gas percent
+        value: 0.8
+        description: The percentage increase needed to cover gas cost 
+      - label: sell percent (with gas)
+        value: 0.9
+        description: logic percentage plus gas percent
+      - label: Current price
+        value: 0.2
+        description: Current price
+      - label: price neededed (without gas)
+        value: 0.6
+        description: Price needed
+      - label: price needed (with gas)
+        value: 0.10
+        description: total price needed taking into account gas
+      - label: percentage difference
+        value: 0.11
+        description: the percentage points needed to hit the percentage increase, if 0 its hit or above 
+      - label: price value change needed
+        value: 0.12
+        description: the price value needed to hit the percentage increase, if 0 its hit or above 
+      - label: trade size (wmatic sell)
+        value: 0.13
+        description: trade size wmatic 
+      
+      
+deployments:
+  wmatic-consolidated-ma:
+    scenario: consolidated-ma.wmatic.prod
+    order: polygon-wmatic-sell              
+---
+/* trimeme strat draft */
+#sale-token !the token address of the input token.
+#buyback-token !the token address of the output token.
+#poolfee !the uniswap v3 pool fee for the pair.
+#range-ceiling !The upper bound of the range, if price is above here it will not trade.
+#range-floor  !The lower bound of the range, if price is below here it will not trade.
+#input-trade-size !Trade size the input price token.
+#price-average-time !the length of the average price, measured in time by seconds.
+#sell-percentage-increase !the percentage diffrence for the sell price from the average.
+#buy-percentage-decrease !the percentage diffrence for the buy price from the sale entry.
+#buy-time-expiry  !the time expiry of the buy order.
+#orderbook-subparser !the address for uniswap subparser.
+#uniswap-words !the address for orderbook subparser.
+#plottables !Binding for charting metrics.
+
+#plottables-plot
+  _: poolfee,
+  _: range-ceiling,
+  _: range-floor,
+  _: input-trade-size,
+  _: price-average-time,
+  _: sell-percentage-increase;
+
+#plottables-prod
+ :;
+
+
+#calculate-io 
+using-words-from orderbook-subparser uniswap-words
+
+moving-average-length: price-average-time,
+
+/*obtain price average*/
+price-average: uniswap-v3-twap-output-ratio(
+    sale-token buyback-token 
+    price-average-time 0
+    poolfee
+  ),
+current-price: uniswap-v3-twap-output-ratio(
+    sale-token buyback-token 
+    0 0
+    poolfee
+  ),
+
+/*obtain time */
+current-time: block-timestamp(),
+
+/*manage buy expiry, if expired reset to get ready for sells*/
+:set("trimeme-24-has-sold-binary"
+  if(greater-than(current-time get("trimeme-24-buy-expiry-time")) 
+    0
+    get("trimeme-24-has-sold-binary"))),
+
+/*set conditions*/
+sellcondition: every(
+  is-zero(get("trimeme-24-has-sold-binary")) 
+  greater-than(current-price range-floor) 
+  less-than(current-price range-ceiling)),
+
+/*price params*/
+sell-percentage: sell-percentage-increase,
+price-needed: mul(price-average add(1 sell-percentage-increase)),
+current-percentage-increase: div(saturating-sub(current-price price-average) price-average),
+gaspercent: div(0.02 mul(input-trade-size current-price)),
+totalpercent: add(gaspercent sell-percentage-increase),
+totalprice-needed: mul(price-needed add(1 gaspercent)),
+percent-needed: saturating-sub(totalpercent current-percentage-increase),
+price-change-needed: saturating-sub(totalprice-needed current-price),
+
+:ensure(sellcondition "sell condition is not met"),
+
+/*sets*/
+:set("trimeme-24-completed-sell-price"
+  if(sellcondition 
+    current-price 
+    get("trimeme-24-completed-sell-price"))),
+:set("trimeme-24-sell-output-size"
+  if(sellcondition 
+    mul(current-price input-trade-size) 
+    get("trimeme-24-sell-output-size"))),
+:set("trimeme-24-buy-expiry-time"
+  if(sellcondition 
+    add(current-time buy-time-expiry) 
+    get("trimeme-24-buy-expiry-time"))),
+
+/*calculate amount*/
+amount: input-trade-size,
+
+/*calculate price*/
+price: price-needed;
+
+#handle-io
+:set("trimeme-24-has-sold-binary" 1);

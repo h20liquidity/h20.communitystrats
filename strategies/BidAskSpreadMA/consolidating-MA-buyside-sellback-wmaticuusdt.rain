@@ -1,4 +1,4 @@
-# Strategy: consolidating-MA-buyside-wmaticuusdt
+#consolidating-MA-buyside-sellback-wmaticuusdt
 
 networks:
   polygon-wmatic: 
@@ -31,13 +31,13 @@ tokens:
 
 orders:
   # vault-id generated with `openssl rand -hex 32`
-  polygon-wmatic-buy:
+  polygon-wmatic-sell:
     orderbook: polygon-wmatic
     inputs:
-      - token: polygon-wmatic
+      - token: polygon-usdt
         vault-id: 0xa9b76ae447edfa90d6e5911be0ca03ba717f93a87d592ed47a707b596328c84d
     outputs:
-      - token: polygon-usdt
+      - token: polygon-wmatic
         vault-id: 0xa9b76ae447edfa90d6e5911be0ca03ba717f93a87d592ed47a707b596328c84d
 
 scenarios:
@@ -76,62 +76,62 @@ charts:
   wmatic-consolidated-ma:
     scenario: consolidated-ma.wmatic.metric
     metrics:
-      - label: Moving average length (seconds)
+      - label: Current inverted price
         value: 0.0
-        description: Moving average length (seconds)
-      - label: Moving average value
-        value: 0.1
-        description: Moving average value
-      - label: Sell condition
-        value: 0.4
-        description: Needs a value of 1 to be true 
-      - label: buy percentage decrease(without gas)
-        value: 0.5
-        description: The percentage below the emoving average
-      - label: Current percentage decrease
-        value: 0.7
-        description: Current percentage decrease
-      - label: gas percent
-        value: 0.8
-        description: The percentage decrease needed to cover gas cost 
-      - label: buy percent (with gas)
-        value: 0.9
-        description: logic percentage plus gas percent
-      - label: Current price
+        description: The current price inverted
+      - label: Buy condition
         value: 0.2
-        description: Current price
-      - label: price neededed (without gas)
+        description: Needs a value of 1 to be true 
+      - label: Completed buy price
+        value: 0.3
+        description: Completed buy price
+      - label: Completed buy price inverted
+        value: 0.4
+        description: Completed buy price inverted
+      - label: Completed buy output
+        value: 0.5
+        description: The USDT recieved from the Wamtic buy
+      - label: buy-percentage (without gas)
         value: 0.6
-        description: Price needed
-      - label: price needed (with gas)
+        description: the percentage needed for the price to decrease by from the completed buy price to trigger a buy (without gas)
+      - label: Price needed inverted
+        value: 0.7
+        description: the inverted price needed to trigger a buy (without gas)
+      - label: current percentage decrease
+        value: 0.8
+        description: the percent the price has moved off the completed buy
+      - label: gas percent
+        value: 0.9
+        description: The percentage increase needed to cover gas cost 
+      - label: total percent
         value: 0.10
+        description: gas percentage plus percentage decrease value
+      - label: price needed (with gas)
+        value: 0.11
         description: total price needed taking into account gas
       - label: percentage difference
-        value: 0.11
-        description: the percentage points needed to hit the percentage decrease, if 0 its hit or below 
-      - label: price value decrease needed
         value: 0.12
-        description: the price decrease needed to hit the percentage decrease, if 0 its hit or below
-      - label: trade size (wmatic sell)
+        description: the percentage points needed to hit the percentage increase, if 0 its hit or above 
+      - label: price value change needed
         value: 0.13
-        description: trade size wmatic 
+        description: the price value needed to hit the percentage increase, if 0 its hit or above 
       
       
 deployments:
   wmatic-consolidated-ma:
     scenario: consolidated-ma.wmatic.prod
-    order: polygon-wmatic-buy              
----
+    order: polygon-wmatic-sell              
+---           
 /* trimeme strat draft */
-#sellback-token !the token address of the input token.
-#buy-token !the token address of the output token.
+#buy-token !the token address of the input token.
+#sellback-token !the token address of the output token.
 #poolfee !the uniswap v3 pool fee for the pair.
 #range-ceiling !The upper bound of the range, if price is above here it will not trade.
 #range-floor  !The lower bound of the range, if price is below here it will not trade.
 #input-trade-size !Trade size the input price token.
 #price-average-time !the length of the average price, measured in time by seconds.
 #buy-percentage-decrease !the percentage diffrence for the buy price from the average.
-#sell-percentage-increase !the percentage diffrence for the sell price from the sale entry.
+#sell-percentage-increase !the percentage diffrence for the sell price from the  entry.
 #buy-time-expiry  !the time expiry of the buy order.
 #orderbook-subparser !the address for uniswap subparser.
 #uniswap-words !the address for orderbook subparser.
@@ -149,20 +149,12 @@ deployments:
 #plottables-prod
  :;
 
-
 #calculate-io 
 using-words-from orderbook-subparser uniswap-words
 
-moving-average-length: price-average-time,
-
 /*obtain price average*/
-price-average: uniswap-v3-twap-output-ratio(
-    buy-token sellback-token 
-    price-average-time 0
-    poolfee
-  ),
 current-price: uniswap-v3-twap-output-ratio(
-    buy-token sellback-token
+    sellback-token buy-token  
     0 0
     poolfee
   ),
@@ -170,49 +162,35 @@ current-price: uniswap-v3-twap-output-ratio(
 /*obtain time */
 current-time: block-timestamp(),
 
-/*manage buy expiry, if expired reset to get ready for sells*/
-:set("trimeme-24-has-buy-binary"
-  if(greater-than(current-time get("trimeme-24-sell-expiry-time")) 
-    0
-    get("trimeme-24-has-buy-binary"))),
-
 /*set conditions*/
-buycondition: every(
-  is-zero(get("trimeme-26-has-buy-binary")) 
-  greater-than(current-price range-floor) 
-  less-than(current-price range-ceiling)),
+sellcondition:every(
+  get("trimeme-24-has-buy-binary")
+  less-than(current-time get("trimeme-24-sell-expiry-time"))
+  less-than(current-price inv(range-floor))
+  greater-than(current-price inv(range-ceiling))),
 
 /*price params*/
-buy-percentage: buy-percentage-decrease,
-price-needed: mul(price-average sub(1 buy-percentage-decrease)),
-current-percentage-decrease: div(saturating-sub(price-average current-price) price-average),   
-gaspercent: div(0.02 mul(input-trade-size current-price)),
-totalpercent: add(gaspercent buy-percentage-decrease),
-totalprice-needed: mul(price-needed sub(1 gaspercent)),
-percent-needed: saturating-sub(totalpercent current-percentage-decrease),
+completed-buy: get("trimeme-24-completed-buy-price"),
+completed-buy-inverted: inv(completed-buy),
+completed-buy-output: get("trimeme-24-buy-output-size"), 
+
+sell-percentage: sell-percentage-increase,
+price-needed: inv(mul(completed-buy add(1 sell-percentage-increase))),
+current-percentage-increase: div(saturating-sub(current-price completed-buy) completed-buy),
+gaspercent: div(0.02 completed-buy-output),
+totalpercent: add(gaspercent sell-percentage),
+totalprice-needed: mul(price-needed add(1 gaspercent)),
+percent-needed: saturating-sub(totalpercent current-percentage-increase),
 price-change-needed: saturating-sub(current-price totalprice-needed),
 
-:ensure(buycondition "buy condition is not met"),
+:ensure(sellcondition "sell condition is not met"),
 
-/*sets*/
-:set("trimeme-24-completed-buy-price"
-  if(buycondition 
-    current-price 
-    get("trimeme-24-completed-buy-price"))),
-:set("trimeme-24-buy-output-size"
-  if(buycondition 
-    mul(current-price input-trade-size) 
-    get("trimeme-24-buy-output-size"))),
-:set("trimeme-24-sell-expiry-time"
-  if(buycondition 
-    add(current-time buy-time-expiry) 
-    get("trimeme-24-sell-expiry-time"))),
-
-/*calculate amount*/
-amount: input-trade-size,
+/*calculate amount */
+amount: completed-buy-output,
 
 /*calculate price*/
 price: price-needed;
 
 #handle-io
-:set("trimeme-24-has-buy-binary" 1);
+/*sets*/
+:set("trimeme-24-has-buy-binary" 0);

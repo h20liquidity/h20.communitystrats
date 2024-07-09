@@ -1,7 +1,9 @@
 # Stop Limit Orders.
 #
 # The stop price dictates the price whether the order is triggered, then the limit price dictates the price at which the order is filled.
-# Once the market price reaches below the stop price, the order becomes a limit order and then the limit price dictates the price at which the order is filled.
+# Once the market price reaches below the stop price, the order becomes a limit order and then the limit price dictates the price at
+# which the order is filled.
+# The only difference between a stop-limit and limit order is that the order won't even be visible until the stop price is reached.
 # https://www.investopedia.com/terms/s/stop-limitorder.asp
 
 networks:
@@ -79,7 +81,7 @@ scenarios:
             stop-ratio: 45
 
             # io-ratio and amount for first limit order.
-            limit-ratio-1: 35
+            limit-ratio- 1: 35
             ouptut-amount-1: 1
 
             # Binding to get current orcale price

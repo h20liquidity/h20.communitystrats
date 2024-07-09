@@ -70,7 +70,7 @@ orders:
         vault-id: 0x85bdfb90f2cabd6661c1bce26962cb35b8c1f43687641f4a4aa58066be447b52 
 
 scenarios:
-    grid-recharging:
+    shy-grid-recharging:
         network: base-community
         deployer: base-community
         orderbook: base-community
@@ -100,26 +100,37 @@ scenarios:
               tranche-size-base: 5
               tranche-size-growth: 1
 
+              # How far we move through tranche space in a second.
+              # 1 is a whole tranche, so we divide 1 by the number of seconds
+              # per recharge to calculate the per-second rate.
+              # Examples:
+              # 172800 seconds in 2 days, 48 hours = 1 / 172800 = 0.000005787037037037
+              # 86400 seconds in 1 day, 24 hours = 1 / 86400 = 0.000011574074074074
+              # 43200 seconds in 12 hours, 12 hours = 1 / 43200 = 0.000023148148148148
+              # 3600 seconds in 1 hour, 1 hour = 1 / 3600 = 0.000277777777777777
+              tranche-space-per-second: 0.000011574074074074
+
+              # When a tranche is completely cleared, the next tranche MAY be jumped
+              # into partially. For example, if tranches are 90% shy (i.e. 0.9) then
+              # if a tranche is cleared completely then the next tranche will be
+              # started at 10% of its maximum size. This means that the capital
+              # requirements for the strategy to reprice itself as the market moves
+              # are reduced.
+              # This MUST be set to a value less than 1e18, else it will entirely
+              # skip tranches.
+              # Shyness MAY be set to 0, in which case every tranche will be fully
+              # available as it is entered.
+              tranche-space-shyness: 0.9
+
             scenarios:
               grid:
                 bindings:
-
-                  # How far we move through tranche space in a second.
-                  # 1 is a whole tranche, so we divide 1 by the number of seconds
-                  # per recharge to calculate the per-second rate.
-                  # Examples:
-                  # 172800 seconds in 2 days, 48 hours = 1 / 172800 = 0.000005787037037037
-                  # 86400 seconds in 1 day, 24 hours = 1 / 86400 = 0.000011574074074074
-                  # 43200 seconds in 12 hours, 12 hours = 1 / 43200 = 0.000023148148148148
-                  # 3600 seconds in 1 hour, 1 hour = 1 / 3600 = 0.000277777777777777
-                  tranche-space-per-second: 0.000011574074074074
-
                   tranche-space-recharge-delay: 300
                   min-tranche-space-diff: 0.1
                   tranche-space-snap-threshold: 0.01
                   io-ratio-multiplier: '''io-ratio-multiplier-identity'
                   amount-is-output: 1
-                  tranche-space-shyness: 0.9
+                  
                   initial-tranche-space: 0
                   io-ratio-expr: '''linear-growth'
                   tranche-size-expr: '''linear-growth'
@@ -158,16 +169,36 @@ scenarios:
               tranche-size-base: 5
               tranche-size-growth: 1
 
+              # How far we move through tranche space in a second.
+              # 1 is a whole tranche, so we divide 1 by the number of seconds
+              # per recharge to calculate the per-second rate.
+              # Examples:
+              # 172800 seconds in 2 days, 48 hours = 1 / 172800 = 0.000005787037037037
+              # 86400 seconds in 1 day, 24 hours = 1 / 86400 = 0.000011574074074074
+              # 43200 seconds in 12 hours, 12 hours = 1 / 43200 = 0.000023148148148148
+              # 3600 seconds in 1 hour, 1 hour = 1 / 3600 = 0.000277777777777777
+              tranche-space-per-second: 0.000011574074074074
+
+              # When a tranche is completely cleared, the next tranche MAY be jumped
+              # into partially. For example, if tranches are 90% shy (i.e. 0.9) then
+              # if a tranche is cleared completely then the next tranche will be
+              # started at 10% of its maximum size. This means that the capital
+              # requirements for the strategy to reprice itself as the market moves
+              # are reduced.
+              # This MUST be set to a value less than 1e18, else it will entirely
+              # skip tranches.
+              # Shyness MAY be set to 0, in which case every tranche will be fully
+              # available as it is entered.
+              tranche-space-shyness: 0.9
+
             scenarios:
               grid:
                 bindings:
-                  tranche-space-per-second: 0
                   tranche-space-recharge-delay: 300
                   min-tranche-space-diff: 0.1
                   tranche-space-snap-threshold: 0.01
                   io-ratio-multiplier: '''io-ratio-multiplier-identity'
                   amount-is-output: 0
-                  tranche-space-shyness: 0.9
                   initial-tranche-space: 0
                   io-ratio-expr: '''linear-growth'
                   tranche-size-expr: '''linear-growth'
@@ -199,7 +230,7 @@ scenarios:
           
 charts:
     base-wlth-buy-deployment:
-      scenario: grid-recharging.buy.grid.init
+      scenario: shy-grid-recharging.buy.grid.init
       metrics:
         - label: Initial USDC sold
           value: 0.6
@@ -221,7 +252,7 @@ charts:
       plots:
 
     buy-simulation:
-      scenario: grid-recharging.buy.grid.test
+      scenario: shy-grid-recharging.buy.grid.test
       plots:    
         USDT sold per tranche:     
           x:
@@ -267,7 +298,7 @@ charts:
                 y: 0.5.3      
 
     base-wlth-sell-deployment:
-      scenario: grid-recharging.sell.grid.init
+      scenario: shy-grid-recharging.sell.grid.init
       metrics:
         - label: Initial WLTH sold
           value: 0.6
@@ -289,7 +320,7 @@ charts:
       plots:
 
     sell-simulation:
-      scenario: grid-recharging.sell.grid.test
+      scenario: shy-grid-recharging.sell.grid.test
       plots:
         WLTH sold per tranche:     
           x:
@@ -336,10 +367,10 @@ charts:
 
 deployments:
   base-wlth-buy:
-    scenario: grid-recharging.buy.grid.prod
+    scenario: shy-grid-recharging.buy.grid.prod
     order: base-wlth-buy
   base-wlth-sell:
-    scenario: grid-recharging.sell.grid.prod
+    scenario: shy-grid-recharging.sell.grid.prod
     order: base-wlth-sell
 ---
 #tranche-space-per-second !The amount of tranche space that is recharged per second.

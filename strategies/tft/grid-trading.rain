@@ -34,7 +34,7 @@ orderbooks:
 
 deployers:
   bsc-community:
-    address: 0x1eFd85E6C384fAD9B80C6D508E9098Eb91C4eD30
+    address: 0x379b966DC6B117dD47b5Fc5308534256a4Ab1BCC
     network: bsc-community
 
 tokens:
@@ -42,7 +42,6 @@ tokens:
     network: bsc-community
     address: 0x8f0FB159380176D324542b3a7933F0C2Fd0c2bbf
   tft-busd:
-  bsc-binance-peg:
     network: bsc-community
     address: 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56
 
@@ -52,18 +51,18 @@ orders:
     orderbook: bsc-community
     inputs:
       - token: tft-busd
-        vault-id:  
+        vault-id: 0x90879c42e70872f7bee992d25fc49c953f0b895ce5f7917fae32d2069bc2fc02 
     outputs:
       - token: tft-wlth
-        vault-id: 
+        vault-id: 0x90879c42e70872f7bee992d25fc49c953f0b895ce5f7917fae32d2069bc2fc02
   bsc-tft-buy:
     orderbook: bsc-community
     inputs:
       - token: tft-wlth
-        vault-id: 
+        vault-id: 0x90879c42e70872f7bee992d25fc49c953f0b895ce5f7917fae32d2069bc2fc02
     outputs:
       - token: tft-busd
-        vault-id:  
+        vault-id: 0x90879c42e70872f7bee992d25fc49c953f0b895ce5f7917fae32d2069bc2fc02 
 
 scenarios:
     grid-trading:
@@ -75,21 +74,21 @@ scenarios:
           # the input/output token and some external price. Typically this is
           # not the case as the io-ratio is defined in terms of the input/output
           # token and the io-ratio-multiplier is set to the identity function.
-          uniswap-words: 0xee873E21F8a6A256cb9f53BE491E569eA6cdd63E
+          uniswap-words: 0x80DE00e3cA96AE0569426A1bb1Ae22CD4181dE6F
 
           # Uniswap v3 factory contract address and corresponding init code hash.
           # If the factory address and the init code aren't available as a literals
           # then non-literal address and hash value can be given as bindings.
-          uniswap-v3-factory: 0x33128a8fC17869897dcE68Ed026d694621f6FDfD
-          uniswap-v3-init-code: '[uniswap-v3-init-code]'
+          uniswap-v3-factory: '[pancake-v3-factory]'
+          uniswap-v3-init-code: '[pancake-v3-init-code]'
 
           # Orderbook subparser for orderbook words.
-          orderbook-subparser: 0x90CAF23eA7E507BB722647B0674e50D8d6468234
+          orderbook-subparser: 0x59401c9302e79eb8ac6aea659b8b3ae475715e86
         scenarios:
           buy:
             bindings:
               # TFT/USDC base ratio and increment.
-              io-ratio-base: 40
+              io-ratio-base: 75
               io-ratio-growth: 2.5
 
               # Base amount of USDC tokens to offer and increment.
@@ -137,7 +136,7 @@ scenarios:
           sell:
             bindings:
               # USDC/TFT base ratio and increment.
-              io-ratio-base: 0.020
+              io-ratio-base: 0.010
               io-ratio-growth: 0.002
 
               # Base amount of USDC tokens to received and increment.

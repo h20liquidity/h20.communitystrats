@@ -86,8 +86,8 @@ scenarios:
         sell:
           bindings:
             # io-ratio and amount for first order. 
-            io-ratio-1: 0.02
-            ouptut-amount-1: 50
+            io-ratio-1: 0.0001
+            ouptut-amount-1: 60
           scenarios:
             prod:
               bindings:

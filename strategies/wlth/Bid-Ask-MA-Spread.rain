@@ -1,0 +1,328 @@
+# Strat: Bid-Ask-MA-Spread 
+# This strat works by taking some price average and running sells above and buys below that average.
+# You can change the distance of the buys/sells from the price average.
+# The aim is to sell when the price has diverged from the average and to buy when it has gone low.
+# Additionally, there is a revert mechanic whereby if it has just bought, it will sell if it can make a quick profit.
+# The distance from and the amount of time this revert order exists for can be edited. It works the same for sell side also.
+# This is a high trade volume strat and will have inventory for both.
+# Future improvments will work on protecting inventory.
+
+
+# Target Network: Base
+# Quote (Input / Incoming): USDC or WLTH
+# Base (Output / Outgoing): WLTH or USDC
+# Token contract: https://basescan.org/address/0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+# Token github: NA
+# Liquidity protocol: Uniswap V3
+# Liquidity pool address: https://www.dextools.io/app/en/base/pair-explorer/0x1536ee1506e24e5a36be99c73136cd82907a902e?t=1717921711270
+# Liquidity pool fee: 0.3%
+
+networks:
+  base-community: 
+    rpc: https://mainnet.base.org 
+    chain-id: 8453 
+    network-id: 8453 
+    currency: ETH
+
+subgraphs:
+  base-community: https://api.thegraph.com/subgraphs/name/h20liquidity/base-0x2aee87
+  
+orderbooks:
+  base-community:
+    address: 0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76
+    network: base-community
+    subgraph: base-community
+
+deployers:
+  base-community:
+    address: 0x56394785a22b3BE25470a0e03eD9E0a939C47b9b
+    network: base-community
+
+tokens:
+  base-wlth:
+    network: base-community
+    address: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+  base-usdc:
+    network: base-community
+    address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+
+orders:
+  # vault-id generated with `openssl rand -hex 32`
+  wlth-base-community:
+    orderbook: base-community
+    inputs:
+      - token: base-usdc
+        vault-id: 
+      - token: base-wlth
+        vault-id: 
+    outputs:
+      - token: base-wlth
+        vault-id: 
+      - token: base-usdc
+        vault-id:
+
+scenarios:
+    bid-ask-ma-spread :
+        network: base-community
+        deployer: base-community
+        orderbook: base-community
+        bindings:
+          # Ask for now, registry in future.
+          uniswap-words: 0xD6B34F97d4A8Cb38D0544dB241CB3f335866f490
+          orderbook-subparser: 0x8D96ea3EF24D7123882c51CE4325b89bc0d63f9e
+        scenarios:
+          wlth:
+            bindings:
+              # Input and Output token addresses from perspective of order
+              token: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+              stable: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+              poolfee: "[uniswap-v3-fee-medium]"
+              tokenstable-range-ceiling: 2
+              tokenstable-range-floor: 0.01
+              stable-outgoing-size: 50
+              price-average-time: 600
+              stable-percentage-decrease: 0.01
+              stablerevert-percentage-increase: 0.01
+              token-percentage-increase: 0.01
+              tokenrevert-percentage-decrease: 0.01
+              time-expiry: 3000000
+            scenarios:
+              prod:
+                bindings:
+                  plottables: '''plottables-prod'
+              metric:
+                runs: 1
+                bindings:
+                  plottables: '''plottables-plot'
+
+charts:
+  wmlth-bid-ask-ma-spread:
+    scenario: bid-ask-ma-spread.wlth.metric
+    metrics:
+      - label: Current inverted price
+        value: 0.0
+        description: The current price inverted
+    
+      
+deployments:
+  wmatic-consolidated-ma:
+    scenario: bid-ask-ma-spread.wlth.prod
+    order: wlth-base-community
+            
+---
+/* trimeme strat draft */
+#token !the token address of the token.
+#stable !the token address of the stable token.
+#poolfee !the uniswap v3 pool fee for the pair.
+#tokenstable-range-ceiling !The upper bound of the range, if price is above here it will not trade.
+#tokenstable-range-floor  !The lower bound of the range, if price is below here it will not trade.
+#stable-outgoing-size !Trade size for when stables are outgoing.
+#price-average-time !The length of the average price, measured in time by seconds.
+#stable-percentage-decrease !When stables are outgoing the percentage increase value above the price average.
+#stablerevert-percentage-increase !When stables were outgoing the percentage decrease from the last outgoing stable price for the trade to revert.
+#token-percentage-increase !When token are outgoing the percentage increase value above the price average.
+#tokenrevert-percentage-decrease !When stables were outgoing the percentage decrease from the last outgoing stable price for the trade to revert.
+#time-expiry  !the time expiry of the buy order.
+#orderbook-subparser !the address for uniswap subparser.
+#uniswap-words !the address for orderbook subparser.
+#plottables !Binding for charting metrics.
+
+#plottables-plot
+  _: poolfee,
+  _: tokenstable-range-ceiling,
+  _: tokenstable-range-floor,
+  _: input-trade-size,
+  _: stable-outgoing-size,
+  _: price-average-time,
+  _: stable-percentage-increase,
+  _: stablerevert-percentage-decrease,
+  _: token-percentage-decrease,
+  _: tokenrevert-percentage-increase,
+
+#plottables-prod
+ :;
+
+#calculate-io 
+using-words-from orderbook-subparser uniswap-words
+
+oving-average-length: price-average-time,
+
+/*obtain price average*/
+price-average: uniswap-v3-twap-output-ratio(
+    token stable
+    price-average-time 0
+    poolfee
+  ),
+current-price: uniswap-v3-twap-output-ratio(
+    token stable
+    0 0
+    poolfee
+  ),
+
+/*obtain time */
+current-time: block-timestamp(),
+
+/*manage revert expirys, if expired reset*/
+:set("100724-stable-revert"
+  if(greater-than(current-time get("100724-stable-revert-expiry")) 
+    0
+    get("100724-stable-revert"))),
+
+:set("token-revert"
+  if(greater-than(current-time get("100724-token-revert-expiry")) 
+    0
+    get("100724-token-revert"))),
+
+
+/*obtain context and direction*/
+order-input: input-token(),
+order-output:  output-token(),
+
+stable-outgoing: every(equal-to(order-input token) equal-to(order-output stable)),
+token-outgoing: every(equal-to(order-input stable) equal-to(order-output token)),
+
+/* make sure price is within range*/
+within-range:every(
+  greater-than(current-price tokenstable-range-floor) 
+  less-than(current-price tokenstable-range-ceiling)
+),
+
+/*set conditions*/
+
+stablecondition: every(
+  stable-outgoing
+  is-zero(get("100724-stable-revert"))
+  less-than(current-time get("100724-stable-revert-expiry")) 
+  within-range),
+
+stablerevertcondition:every(
+  token-outgoing
+  get("100724-stable-revert")
+  less-than(current-time get("100724-stable-revert-expiry"))
+  within-range),
+
+tokencondition: every(
+  token-outgoing
+  is-zero(get("100724-token-revert")) 
+  within-range),
+
+tokenrevertcondition: every(
+  stable-outgoing
+  get("100724-token-revert")
+  less-than(current-time get("100724-token-revert-expiry"))
+  within-range),
+
+
+/*obtain prices for the different scenarios*/
+
+/*stable condition*/
+stable-price: mul(price-average sub(1 stable-percentage-decrease)),
+
+/*stable condition revert*/
+stable-completed-price: get("100724-stable-price"),
+stablerevert-price: inv(mul(stable-completed-price add(1 stablerevert-percentage-increase))),
+
+/*token condition*/
+token-price: inv(mul(price-average add(1 token-percentage-increase))),
+
+/*stable condition revert*/
+token-completed-price: get("100724-token-price"),
+tokenrevert-price: mul(token-completed-price sub(1 tokenrevert-percentage-decrease)),
+
+  
+/*obtain amounts*/
+
+/*stable condition*/
+stable-amount: stable-outgoing-size,
+
+/*stable condition revert*/
+stablerevert-amount: get("100724-stable-output"),
+
+/*stable condition*/
+token-amount: mul(stable-outgoing-size inv(current-price)),
+
+/*stable condition revert*/
+tokenrevert-amount: get("100724-token-output"),
+
+/*SETS*/
+
+/*stable outgoing sets*/
+:set("100724-stable-price"
+  if(stablecondition 
+    stable-price 
+    get("100724-stable-price"))),
+:set("100724-stable-output"
+  if(stablecondition 
+    mul(stable-price stable-amount)
+    get("100724-stable-output"))),
+:set("100724-stable-revert-expiry"
+  if(stablecondition 
+    add(current-time time-expiry) 
+    get("100724-stable-revert-expiry"))),
+:set("100724-stable-revert"
+  if(stablecondition 
+    1 
+    get("100724-stable-revert"))),
+
+/*stable revert sets*/
+:set("100724-stable-revert"
+  if(stablerevertcondition 
+    0
+    get("100724-stable-revert"))),
+
+/*token outgoing sets*/
+:set("100724-token-price"
+  if(tokencondition 
+    token-price 
+    get("100724-token-price"))),
+:set("100724-token-output"
+  if(tokencondition 
+    mul(token-price token-amount)
+    get("100724-token-output"))),
+:set("100724-token-revert-expiry"
+  if(tokencondition 
+    add(current-time time-expiry) 
+    get("100724-token-revert-expiry"))),
+:set("100724-token-revert"
+  if(tokencondition 
+    1 
+    get("100724-token-revert"))),
+
+/*token revert sets*/
+:set("100724-token-revert"
+  if(tokenrevertcondition 
+    0
+    get("100724-token-revert"))),
+
+f:ensure(any(stablecondition stablerevertcondition tokencondition tokenrevertcondition) "trade conitinos not met"),
+
+/*set final price*/
+price:if(
+  stablecondition stable-price
+  if(stablerevertcondition stablerevert-price
+    if(tokencondition token-price
+      if(tokenrevertcondition tokenrevert-price max-value())
+    )
+  )
+),
+
+amount:if(
+  stablecondition stable-amount
+  if(stablerevertcondition stablerevert-amount
+    if(tokencondition token-amount
+      if(tokenrevertcondition tokenrevert-amount max-value())
+    )
+  )
+);
+
+#handle-io
+:;
+
+  
+
+
+
+
+
+
+

@@ -75,6 +75,7 @@ contract WlthGridTradingTest is StrategyTests {
         ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
     } 
 
+    // Test the 'wlth-grid-trading' strategy
     function testWlthGridTradingBuy() public {
         // Input vaults
         IO[] memory inputVaults = new IO[](1);
@@ -139,7 +140,581 @@ contract WlthGridTradingTest is StrategyTests {
         
         // OrderBook 'takeOrder'
         checkStrategyCalculationsArbOrder(strategy);
+    } 
+
+    // Test the 'wlth-grid-recharging-linear' strategy
+    function testWlthGridRechargeBuy() public {
+        // Input vaults
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = baseWlthIo();
+
+        // Output vaults
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = baseUsdcIo();
+
+        uint256 expectedRatio = 40e18;
+        uint256 expectedAmountOutputMax = 5e18;
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            getEncodedSellWlthRoute(address(ARB_INSTANCE)),
+            getEncodedBuyWlthRoute(address(ARB_INSTANCE)),
+            0,
+            0,
+            1e18,
+            1e18,
+            expectedRatio,
+            expectedAmountOutputMax,
+            "strategies/wlth/wlth-grid-recharging-linear.rain",
+            "grid-recharging.buy.grid.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+        // OrderBook 'takeOrder'
+        checkStrategyCalculationsArbOrder(strategy);
     }
+
+    function testWlthGridRechargeSell() public {
+        // Input vaults
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = baseUsdcIo();
+
+        // Output vaults
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = baseWlthIo();
+
+        uint256 expectedRatio = 0.02e18;
+        uint256 expectedAmountOutputMax = 250e18;
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            getEncodedBuyWlthRoute(address(ARB_INSTANCE)),
+            getEncodedSellWlthRoute(address(ARB_INSTANCE)),
+            0,
+            0,
+            1e6,
+            10000e18,
+            expectedRatio,
+            expectedAmountOutputMax,
+            "strategies/wlth/wlth-grid-recharging-linear.rain",
+            "grid-recharging.sell.grid.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+        
+        // OrderBook 'takeOrder'
+        checkStrategyCalculationsArbOrder(strategy);
+    }
+
+    // Test shy grid
+    function testWlthShyGridBuy() public {
+        // Input vaults
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = baseWlthIo();
+
+        // Output vaults
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = baseUsdcIo();
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            "",
+            "",
+            0,
+            0,
+            0,
+            1e18,
+            0,
+            0,
+            "strategies/wlth/wlth-grid-recharging-shy.rain",
+            "shy-grid-recharging.buy.grid.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+        OrderV2 memory order = addOrderDepositOutputTokens(strategy);
+
+        //Tranche 0- Full Tranche
+        {
+            vm.recordLogs();
+            takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            // 40 + (2.5 * 0) = 40
+            uint256 expectedRatio = 40e18;
+
+            // 5 + (1 * 0) = 5
+            uint256 expectedAmountOutputMax = 5e18;
+
+            assertEq(strategyRatio, expectedRatio);
+            assertEq(strategyAmount, expectedAmountOutputMax);
+        }
+
+        // Tranche 1 - Shy Tranche
+        {
+            vm.recordLogs();
+            takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            // 40 + (2.5 * 1) = 42.5
+            uint256 expectedTrancheRatio = 42.5e18; 
+
+            // 5 + (1 * 1) = 6
+            uint256 expectedTrancheAmount = 6e18;
+
+            // 10% of the expectedTrancheAmount
+            uint256 expectedShyTrancheAmount = expectedTrancheAmount / 10;
+
+            assertEq(strategyRatio, expectedTrancheRatio);
+            assertEq(strategyAmount, expectedShyTrancheAmount);
+        }
+    }
+
+    function testWlthShyGridSell() public {
+        // Input vaults
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = baseUsdcIo();
+
+        // Output vaults
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = baseWlthIo();
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            "",
+            "",
+            0,
+            0,
+            1e6,
+            10000e18,
+            0,
+            0,
+            "strategies/wlth/wlth-grid-recharging-shy.rain",
+            "shy-grid-recharging.sell.grid.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+        OrderV2 memory order = addOrderDepositOutputTokens(strategy);
+        
+        //Tranche 0- Full Tranche
+        {
+            vm.recordLogs();
+            takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            // 0.02 + (0.002 * 0) = 0.02
+            uint256 expectedRatio = 0.02e18;
+
+            // 250 * 0.02 = 5
+            uint256 expectedAmountOutputMax = 250e18;
+
+            assertEq(strategyRatio, expectedRatio);
+            assertEq(strategyAmount, expectedAmountOutputMax);
+        }
+
+        // Tranche 1 - Shy Tranche
+        {
+            vm.recordLogs();
+            takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            // 0.02 + (0.002 * 1) = 0.022
+            uint256 expectedTrancheRatio = 0.022e18; 
+
+            // 27.272727272727272727 * 0.022 = 0.6
+            uint256 expectedShyTrancheAmount = 27.272727272727272727e18;
+
+            assertEq(strategyRatio, expectedTrancheRatio);
+            assertEq(strategyAmount, expectedShyTrancheAmount);
+        } 
+
+    }
+
+    // Test grid exponential price
+    function testWlthGridExpPriceBuy() public {
+        // Input vaults
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = baseWlthIo();
+
+        // Output vaults
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = baseUsdcIo();
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            "",
+            "",
+            0,
+            0,
+            0,
+            1e18,
+            0,
+            0,
+            "strategies/wlth/wlth-grid-recharging-exponential-price.rain",
+            "grid-recharging-exp-price.buy.grid.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+        OrderV2 memory order = addOrderDepositOutputTokens(strategy);
+
+        //Tranche 0- Full Tranche
+        {
+            vm.recordLogs();
+            takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            // 40 * (1 + 0.05)^0 = 40
+            uint256 expectedRatio = 40e18;
+
+            // 5 + (1 * 0) = 5
+            uint256 expectedAmountOutputMax = 5e18;
+
+            assertEq(strategyRatio, expectedRatio);
+            assertEq(strategyAmount, expectedAmountOutputMax);
+        }
+
+        //Tranche 1
+        {
+            vm.recordLogs();
+            takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            // 40 * (1 + 0.05)^1 = 42
+            uint256 expectedRatio = 42e18;
+
+            // 5 + (1 * 1) = 6
+            uint256 expectedAmountOutputMax = 6e18;
+
+            assertEq(strategyRatio, expectedRatio);
+            assertEq(strategyAmount, expectedAmountOutputMax);
+        }
+
+        //Tranche 2
+        {
+            vm.recordLogs();
+            takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            // 40 * (1 + 0.05)^2 = 44.1
+            uint256 expectedRatio = 44.099999999999999000e18;
+
+            // 5 + (1 * 2) = 7
+            uint256 expectedAmountOutputMax = 7e18;
+
+            assertEq(strategyRatio, expectedRatio);
+            assertEq(strategyAmount, expectedAmountOutputMax);
+        }
+
+    }
+
+    function testWlthGridExpPriceSell() public {
+        // Input vaults
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = baseUsdcIo();
+
+        // Output vaults
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = baseWlthIo();
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            "",
+            "",
+            0,
+            0,
+            1e6,
+            10000e18,
+            0,
+            0,
+            "strategies/wlth/wlth-grid-recharging-exponential-price.rain",
+            "grid-recharging-exp-price.sell.grid.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+        OrderV2 memory order = addOrderDepositOutputTokens(strategy);
+        
+        //Tranche 0
+        {
+            vm.recordLogs();
+            takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            // 0.02 * (1 + 0.002)^0 = 0.02
+            uint256 expectedRatio = 0.02e18;
+
+            // 250 * 0.02 = 5
+            uint256 expectedAmountOutputMax = 250e18;
+
+            assertEq(strategyRatio, expectedRatio);
+            assertEq(strategyAmount, expectedAmountOutputMax);
+        }
+
+        //Tranche 1
+        {
+            vm.recordLogs();
+            takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            // 0.02 * (1 + 0.002)^1 = 0.02004
+            uint256 expectedRatio = 0.02004e18;
+
+            // 300 * 0.02004 = 6
+            uint256 expectedAmountOutputMax = 299.401197604790419161e18;
+
+            assertEq(strategyRatio, expectedRatio);
+            assertEq(strategyAmount, expectedAmountOutputMax);
+        }
+
+        //Tranche 2
+        {
+            vm.recordLogs();
+            takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            // 0.02 * (1 + 0.002)^2 = 0.02008008
+            uint256 expectedRatio = 0.020080079999999999e18;
+
+            // 348 * 0.02008 = 7
+            uint256 expectedAmountOutputMax = 348.604188827932973803e18;
+
+            assertEq(strategyRatio, expectedRatio);
+            assertEq(strategyAmount, expectedAmountOutputMax);
+        }
+    }
+
+    // Test grid exponential amount
+    function testWlthGridExpAmountBuy() public {
+        // Input vaults
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = baseWlthIo();
+
+        // Output vaults
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = baseUsdcIo();
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            "",
+            "",
+            0,
+            0,
+            0,
+            1e18,
+            0,
+            0,
+            "strategies/wlth/wlth-grid-recharging-exponential-amount.rain",
+            "grid-recharging-exp-amt.buy.grid.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+        OrderV2 memory order = addOrderDepositOutputTokens(strategy);
+
+        //Tranche 0- Full Tranche
+        {
+            vm.recordLogs();
+            takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            // 40 + (2.5 * 0) = 40
+            uint256 expectedRatio = 40e18;
+
+            // 5 * (1 + 0.05)^0 = 5
+            uint256 expectedAmountOutputMax = 5e18;
+
+            assertEq(strategyRatio, expectedRatio);
+            assertEq(strategyAmount, expectedAmountOutputMax);
+        }
+
+        //Tranche 1
+        {
+            vm.recordLogs();
+            takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            // 40 + (2.5 * 1) = 42.5
+            uint256 expectedRatio = 42.5e18;
+
+            // 5 * (1 + 0.05)^1 = 5.25
+            uint256 expectedAmountOutputMax = 5.25e18;
+
+            assertEq(strategyRatio, expectedRatio);
+            assertEq(strategyAmount, expectedAmountOutputMax);
+        }
+
+        //Tranche 2
+        {
+            vm.recordLogs();
+            takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            // 40 + (2.5 * 2) = 45
+            uint256 expectedRatio = 45e18;
+
+            // 5 * (1 + 0.05)^2 = 5.5125
+            uint256 expectedAmountOutputMax = 5.512499999999999875e18;
+
+            assertEq(strategyRatio, expectedRatio);
+            assertEq(strategyAmount, expectedAmountOutputMax);
+        }
+    }
+
+    function testWlthGridExpAmountSell() public {
+        // Input vaults
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = baseUsdcIo();
+
+        // Output vaults
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = baseWlthIo();
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            "",
+            "",
+            0,
+            0,
+            1e6,
+            10000e18,
+            0,
+            0,
+            "strategies/wlth/wlth-grid-recharging-exponential-amount.rain",
+            "grid-recharging-exp-amt.sell.grid.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+        OrderV2 memory order = addOrderDepositOutputTokens(strategy);
+        
+        //Tranche 0
+        {
+            vm.recordLogs();
+            takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            // 0.02 + (0.002 * 0) = 0.02
+            uint256 expectedRatio = 0.02e18;
+
+            // 250 * 0.02 = 5
+            uint256 expectedAmountOutputMax = 250e18;
+
+            assertEq(strategyRatio, expectedRatio);
+            assertEq(strategyAmount, expectedAmountOutputMax);
+        }
+
+        //Tranche 1
+        {
+            vm.recordLogs();
+            takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            // 0.02 + (0.002 * 1) = 0.022
+            uint256 expectedRatio = 0.022e18;
+
+            // 238.636363636363636363 * 0.022 = 5.25
+            uint256 expectedAmountOutputMax = 238.636363636363636363e18;
+
+            assertEq(strategyRatio, expectedRatio);
+            assertEq(strategyAmount, expectedAmountOutputMax);
+        }
+
+        //Tranche 2
+        {
+            vm.recordLogs();
+            takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            // 0.02 + (0.002 * 2) = 0.024
+            uint256 expectedRatio = 0.024e18;
+
+            // 229.687499999999994791 * 0.024 = 5.5125
+            uint256 expectedAmountOutputMax = 229.687499999999994791e18;
+
+            assertEq(strategyRatio, expectedRatio);
+            assertEq(strategyAmount, expectedAmountOutputMax);
+        }
+
+        // //Tranche 1
+        // {
+        //     vm.recordLogs();
+        //     takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+        //     Vm.Log[] memory entries = vm.getRecordedLogs();
+        //     (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+        //     // 0.02 * (1 + 0.002)^1 = 0.02004
+        //     uint256 expectedRatio = 0.02004e18;
+
+        //     // 300 * 0.02004 = 6
+        //     uint256 expectedAmountOutputMax = 299.401197604790419161e18;
+
+        //     assertEq(strategyRatio, expectedRatio);
+        //     assertEq(strategyAmount, expectedAmountOutputMax);
+        // }
+
+        // //Tranche 2
+        // {
+        //     vm.recordLogs();
+        //     takeExternalOrder(order, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+        //     Vm.Log[] memory entries = vm.getRecordedLogs();
+        //     (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+        //     // 0.02 * (1 + 0.002)^2 = 0.02008008
+        //     uint256 expectedRatio = 0.020080079999999999e18;
+
+        //     // 348 * 0.02008 = 7
+        //     uint256 expectedAmountOutputMax = 348.604188827932973803e18;
+
+        //     assertEq(strategyRatio, expectedRatio);
+        //     assertEq(strategyAmount, expectedAmountOutputMax);
+        // }
+    }    
+    
 
     function getEncodedBuyWlthRoute(address toAddress) internal pure returns (bytes memory) {
         bytes memory ROUTE_PRELUDE =

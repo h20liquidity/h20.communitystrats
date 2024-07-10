@@ -70,6 +70,10 @@ scenarios:
           # Ask for now, registry in future.
           uniswap-words: 0xD6B34F97d4A8Cb38D0544dB241CB3f335866f490
           orderbook-subparser: 0x8D96ea3EF24D7123882c51CE4325b89bc0d63f9e
+
+          # Uniswap V3 factory addresses and init code
+          uniswap-v3-factory: 0x33128a8fC17869897dcE68Ed026d694621f6FDfD
+          uniswap-v3-init-code: '[uniswap-v3-init-code]'
         scenarios:
           wlth:
             bindings:
@@ -125,6 +129,8 @@ deployments:
 #time-expiry  !the time expiry of the buy order.
 #orderbook-subparser !the address for uniswap subparser.
 #uniswap-words !the address for orderbook subparser.
+#uniswap-v3-factory !Uniswap v3 factory.
+#uniswap-v3-init-code !Uniswap v3 factory init code.
 #plottables !Binding for charting metrics.
 
 #plottables-plot
@@ -151,11 +157,13 @@ oving-average-length: price-average-time,
 price-average: uniswap-v3-twap-output-ratio(
     token stable
     price-average-time 0
+    uniswap-v3-factory uniswap-v3-init-code
     poolfee
   ),
 current-price: uniswap-v3-twap-output-ratio(
     token stable
     0 0
+    uniswap-v3-factory uniswap-v3-init-code
     poolfee
   ),
 
@@ -294,7 +302,7 @@ tokenrevert-amount: get("100724-token-output"),
     0
     get("100724-token-revert"))),
 
-f:ensure(any(stablecondition stablerevertcondition tokencondition tokenrevertcondition) "trade conitinos not met"),
+:ensure(any(stablecondition stablerevertcondition tokencondition tokenrevertcondition) "trade conitinos not met"),
 
 /*set final price*/
 price:if(
@@ -319,10 +327,3 @@ amount:if(
 :;
 
   
-
-
-
-
-
-
-

@@ -186,10 +186,7 @@ deployments:
 #calculate-io
   using-words-from uniswap-words orderbook-subparser
     
-  trade-count
-  final-amount
-  final-ratio: call<'get-ratio-amount>(),
-  :call<'plottables>(final-amount final-ratio); 
+  _ _:10 0; 
 
 #handle-io
   trade-count-key: hash(order-hash() count-key), 

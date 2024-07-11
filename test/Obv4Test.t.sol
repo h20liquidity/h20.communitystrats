@@ -21,6 +21,7 @@ import {LibEncodedDispatch} from "rain.interpreter.interface/lib/caller/LibEncod
 import {StateNamespace, LibNamespace, FullyQualifiedNamespace} from "rain.interpreter.interface/lib/ns/LibNamespace.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {SafeERC20, IERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol"; 
+import {IOrderBookV4ArbOrderTaker} from "test/interface/IOrderBookV4ArbOrderTaker.sol";
 import "test/interface/IOrderBookV4.sol";
 import "h20.test-std/lib/LibProcessStream.sol";
 
@@ -69,18 +70,19 @@ contract WlthGridTradingTest is StrategyTests {
         ROUTE_PROCESSOR = IRouteProcessor(address(0x83eC81Ae54dD8dca17C3Dd4703141599090751D1)); 
         EXTERNAL_EOA = address(0x654FEf5Fb8A1C91ad47Ba192F7AA81dd3C821427);
         APPROVED_EOA = address(0x669845c29D9B1A64FFF66a55aA13EB4adB889a88);
-        ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C); 
+        ORDER_OWNER = address(0x5e01e44aE1969e16B9160d903B6F2aa991a37B21); 
 
-        EXTERNAL_EOA = address(0x654FEf5Fb8A1C91ad47Ba192F7AA81dd3C821427);
-        APPROVED_EOA = address(0x669845c29D9B1A64FFF66a55aA13EB4adB889a88);
-        ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
+        // EXTERNAL_EOA = address(0x654FEf5Fb8A1C91ad47Ba192F7AA81dd3C821427);
+        // APPROVED_EOA = address(0x669845c29D9B1A64FFF66a55aA13EB4adB889a88);
+        // ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
     } 
 
     function testObv4() public { 
 
         console2.log("ob4");
         IOrderBookV4 obv4 = IOrderBookV4(0xA2f56F8F74B7d04d61f281BE6576b6155581dcBA);
-        IInterpreterV3 iv3 = IInterpreterV3(0x379b966DC6B117dD47b5Fc5308534256a4Ab1BCC); 
+        IInterpreterV3 iv3 = IInterpreterV3(0x379b966DC6B117dD47b5Fc5308534256a4Ab1BCC);
+        IOrderBookV4ArbOrderTaker arb2Contract = IOrderBookV4ArbOrderTaker(0xF97A86C2Cb3e42f89AC5f5AA020E5c3505015a88); 
 
         IO[] memory inputVaults = new IO[](1);
         inputVaults[0] = baseUsdcIo();
@@ -113,15 +115,31 @@ contract WlthGridTradingTest is StrategyTests {
 
         EvaluableV3 memory evaluableV3Config = EvaluableV3(iv3, STORE, bytecode);
 
-        OrderConfigV3 memory orderv3 = OrderConfigV3(evaluableV3Config, inputVaults, outputVaults, "", "", "");
+        OrderConfigV3 memory orderV3Config = OrderConfigV3(evaluableV3Config, inputVaults, outputVaults, "", "", "");
 
-        obv4.addOrder2(orderv3,new ActionV1[](0)); 
+        OrderV3 memory orderV3;
+        {   
+            vm.startPrank(ORDER_OWNER);
+            vm.recordLogs();
+            (bool stateChanged) = obv4.addOrder2(orderV3Config,new ActionV1[](0)); 
+            vm.stopPrank();
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (,, orderV3) = abi.decode(entries[0].data, (address, bytes32, OrderV3));
+            console2.log(orderV3.owner);
+        }
+        
+        {
+            vm.startPrank(APPROVED_EOA); 
 
-        takeArbOrder(orderv3, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            EvaluableV3 memory arbEvaluableV3Config = EvaluableV3(address(0x0000000000000000000000000000000000000000), address(0x0000000000000000000000000000000000000000), "");
+            TakeOrderConfigV3[] memory innerConfigs = new TakeOrderConfigV3[](1); 
+            innerConfigs[0] = TakeOrderConfigV3(orderV3, 0, 0, new SignedContextV1[](0)); 
 
-        console2.log(address(obv4));
-        console2.logBytes(bytecode);
-
+            TakeOrdersConfigV3 memory takeOrdersConfig =
+                TakeOrdersConfigV3(0, type(uint256).max, type(uint256).max, innerConfigs, getEncodedRpv4WlthUsdc());
+            arb2Contract.arb2(takeOrdersConfig, 0, arbEvaluableV3Config);
+            vm.stopPrank();
+        }
     }
 
     function getEncodedBuyWlthRoute(address toAddress) internal pure returns (bytes memory) {

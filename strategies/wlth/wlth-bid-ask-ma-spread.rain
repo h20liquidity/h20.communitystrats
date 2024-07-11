@@ -300,18 +300,22 @@ tokenrevert-amount: get("100724-token-output"),
     0
     get("100724-token-revert"))),
 
-/*set final price*/
-price:conditions(
-  stablecondition stable-price
-  stablerevertcondition stablerevert-price
-  tokencondition token-price
-  tokenrevertcondition tokenrevert-price),
-
-amount:conditions(
+amount: conditions(
   stablecondition stable-amount
   stablerevertcondition stablerevert-amount
   tokencondition token-amount
-  tokenrevertcondition tokenrevert-amount);
+  tokenrevertcondition tokenrevert-amount
+  "Amount condition"
+),
+
+/*set final price*/
+price: conditions(
+  stablecondition stable-price
+  stablerevertcondition stablerevert-price
+  tokencondition token-price
+  tokenrevertcondition tokenrevert-price
+  "Price condition"
+);
 
 #handle-io
 :;

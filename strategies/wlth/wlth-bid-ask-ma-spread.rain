@@ -85,11 +85,12 @@ scenarios:
               tokenstable-range-floor: 0.01
               stable-outgoing-size: 50
               price-average-time: 600
-              stable-percentage-decrease: 0.01
-              stablerevert-percentage-increase: 0.01
-              token-percentage-increase: 0.01
-              tokenrevert-percentage-decrease: 0.01
+              stable-percent-decrease: 0.01
+              stablerevert-percent-increase: 0.01
+              token-percent-increase: 0.01
+              tokenrevert-percent-decrease: 0.01
               time-expiry: 3000000
+              initial-price-complete: 0.001
             scenarios:
               prod:
                 bindings:
@@ -114,7 +115,6 @@ deployments:
     order: wlth-base-community
             
 ---
-/* trimeme strat draft */
 #token !the token address of the token.
 #stable !the token address of the stable token.
 #poolfee !the uniswap v3 pool fee for the pair.
@@ -122,28 +122,25 @@ deployments:
 #tokenstable-range-floor  !The lower bound of the range, if price is below here it will not trade.
 #stable-outgoing-size !Trade size for when stables are outgoing.
 #price-average-time !The length of the average price, measured in time by seconds.
-#stable-percentage-decrease !When stables are outgoing the percentage increase value above the price average.
-#stablerevert-percentage-increase !When stables were outgoing the percentage decrease from the last outgoing stable price for the trade to revert.
-#token-percentage-increase !When token are outgoing the percentage increase value above the price average.
-#tokenrevert-percentage-decrease !When stables were outgoing the percentage decrease from the last outgoing stable price for the trade to revert.
-#time-expiry  !the time expiry of the buy order.
-#orderbook-subparser !the address for uniswap subparser.
-#uniswap-words !the address for orderbook subparser.
+#stable-percent-decrease !When stables are outgoing the percentage increase value above the price average.
+#stablerevert-percent-increase !When stables were outgoing the percentage decrease from the last outgoing stable price for the trade to revert.
+#token-percent-increase !When token are outgoing the percentage increase value above the price average.
+#tokenrevert-percent-decrease !When stables were outgoing the percentage decrease from the last outgoing stable price for the trade to revert.
+#time-expiry  !The time expiry of the buy order.
+#orderbook-subparser !The address for uniswap subparser.
+#uniswap-words !The address for orderbook subparser.
 #uniswap-v3-factory !Uniswap v3 factory.
 #uniswap-v3-init-code !Uniswap v3 factory init code.
 #plottables !Binding for charting metrics.
+#initial-price-complete !Initial price complete to stop inv() on 0 error.
 
 #plottables-plot
   _: poolfee,
   _: tokenstable-range-ceiling,
   _: tokenstable-range-floor,
-  _: input-trade-size,
   _: stable-outgoing-size,
-  _: price-average-time,
-  _: stable-percentage-increase,
-  _: stablerevert-percentage-decrease,
-  _: token-percentage-decrease,
-  _: tokenrevert-percentage-increase,
+  _: price-average-time;
+
 
 #plottables-prod
  :;
@@ -200,13 +197,12 @@ within-range:every(
 stablecondition: every(
   stable-outgoing
   is-zero(get("100724-stable-revert"))
-  less-than(current-time get("100724-stable-revert-expiry")) 
   within-range),
 
 stablerevertcondition:every(
   token-outgoing
   get("100724-stable-revert")
-  less-than(current-time get("100724-stable-revert-expiry"))
+  less-than(current-time get("100724-stable-expiry"))
   within-range),
 
 tokencondition: every(
@@ -217,25 +213,28 @@ tokencondition: every(
 tokenrevertcondition: every(
   stable-outgoing
   get("100724-token-revert")
-  less-than(current-time get("100724-token-revert-expiry"))
+  less-than(current-time get("100724-token-expiry"))
   within-range),
 
 
 /*obtain prices for the different scenarios*/
 
 /*stable condition*/
-stable-price: mul(price-average sub(1 stable-percentage-decrease)),
+stable-price: mul(price-average sub(1 stable-percent-decrease)),
 
 /*stable condition revert*/
-stable-completed-price: get("100724-stable-price"),
-stablerevert-price: inv(mul(stable-completed-price add(1 stablerevert-percentage-increase))),
+stable-completed-price: any(
+  get("100724-stable-price")
+  initial-price-complete),
+
+stablerevert-price: inv(mul(stable-completed-price add(1 stablerevert-percent-increase))),
 
 /*token condition*/
-token-price: inv(mul(price-average add(1 token-percentage-increase))),
+token-price: inv(mul(price-average add(1 token-percent-increase))),
 
 /*stable condition revert*/
 token-completed-price: get("100724-token-price"),
-tokenrevert-price: mul(token-completed-price sub(1 tokenrevert-percentage-decrease)),
+tokenrevert-price: mul(token-completed-price sub(1 tokenrevert-percent-decrease)),
 
   
 /*obtain amounts*/
@@ -253,7 +252,6 @@ token-amount: mul(stable-outgoing-size inv(current-price)),
 tokenrevert-amount: get("100724-token-output"),
 
 /*SETS*/
-
 /*stable outgoing sets*/
 :set("100724-stable-price"
   if(stablecondition 
@@ -263,10 +261,10 @@ tokenrevert-amount: get("100724-token-output"),
   if(stablecondition 
     mul(stable-price stable-amount)
     get("100724-stable-output"))),
-:set("100724-stable-revert-expiry"
+:set("100724-stable-expiry"
   if(stablecondition 
     add(current-time time-expiry) 
-    get("100724-stable-revert-expiry"))),
+    get("100724-stable-expiry"))),
 :set("100724-stable-revert"
   if(stablecondition 
     1 
@@ -287,10 +285,10 @@ tokenrevert-amount: get("100724-token-output"),
   if(tokencondition 
     mul(token-price token-amount)
     get("100724-token-output"))),
-:set("100724-token-revert-expiry"
+:set("100724-token-expiry"
   if(tokencondition 
     add(current-time time-expiry) 
-    get("100724-token-revert-expiry"))),
+    get("100724-token-expiry"))),
 :set("100724-token-revert"
   if(tokencondition 
     1 
@@ -302,28 +300,23 @@ tokenrevert-amount: get("100724-token-output"),
     0
     get("100724-token-revert"))),
 
-:ensure(any(stablecondition stablerevertcondition tokencondition tokenrevertcondition) "trade conitinos not met"),
-
 /*set final price*/
-price:if(
+price:conditions(
   stablecondition stable-price
-  if(stablerevertcondition stablerevert-price
-    if(tokencondition token-price
-      if(tokenrevertcondition tokenrevert-price max-value())
-    )
-  )
-),
+  stablerevertcondition stablerevert-price
+  tokencondition token-price
+  tokenrevertcondition tokenrevert-price),
 
-amount:if(
+amount:conditions(
   stablecondition stable-amount
-  if(stablerevertcondition stablerevert-amount
-    if(tokencondition token-amount
-      if(tokenrevertcondition tokenrevert-amount max-value())
-    )
-  )
-);
+  stablerevertcondition stablerevert-amount
+  tokencondition token-amount
+  tokenrevertcondition tokenrevert-amount);
 
 #handle-io
 :;
+
+  
+
 
   

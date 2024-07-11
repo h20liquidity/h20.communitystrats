@@ -45,7 +45,7 @@ contract WlthGridTradingTest is StrategyTests {
     using SafeERC20 for IERC20;
     using Strings for address;
 
-    uint256 constant FORK_BLOCK_NUMBER = 16905814;
+    uint256 constant FORK_BLOCK_NUMBER = 16952956;
     
     function selectFork() internal {
         uint256 fork = vm.createFork(vm.envString("RPC_URL_BASE"));
@@ -76,11 +76,11 @@ contract WlthGridTradingTest is StrategyTests {
         ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
     } 
 
-    function testObv4() public {
+    function testObv4() public { 
+
         console2.log("ob4");
         IOrderBookV4 obv4 = IOrderBookV4(0xA2f56F8F74B7d04d61f281BE6576b6155581dcBA);
         IInterpreterV3 iv3 = IInterpreterV3(0x379b966DC6B117dD47b5Fc5308534256a4Ab1BCC); 
-
 
         IO[] memory inputVaults = new IO[](1);
         inputVaults[0] = baseUsdcIo();
@@ -115,7 +115,9 @@ contract WlthGridTradingTest is StrategyTests {
 
         OrderConfigV3 memory orderv3 = OrderConfigV3(evaluableV3Config, inputVaults, outputVaults, "", "", "");
 
-        obv4.addOrder2(orderv3,new ActionV1[](0));
+        obv4.addOrder2(orderv3,new ActionV1[](0)); 
+
+        takeArbOrder(orderv3, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
 
         console2.log(address(obv4));
         console2.logBytes(bytecode);
@@ -134,6 +136,10 @@ contract WlthGridTradingTest is StrategyTests {
             hex"0299b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D01ffff011536EE1506e24e5A36Be99C73136cD82907A902E00";
             
         return abi.encode(bytes.concat(ROUTE_PRELUDE, abi.encodePacked(address(toAddress))));
+    } 
+
+    function getEncodedRpv4WlthUsdc() internal pure returns (bytes memory){
+        bytes memory WLTH_TO_USDC = hex"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000420299b2b1a2adb02b38222adcd057783d7e5d1fcc7d01ffff011536ee1506e24e5a36be99c73136cd82907a902e00f97a86c2cb3e42f89ac5f5aa020e5c3505015a88000000000000000000000000000000000000000000000000000000000000";
     }
 
 

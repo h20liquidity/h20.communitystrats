@@ -95,10 +95,12 @@ scenarios:
               prod:
                 bindings:
                   plottables: '''plottables-prod'
+                  ensure-order-condition: '''ensure-order-condition-prod'
               metric:
                 runs: 1
                 bindings:
                   plottables: '''plottables-plot'
+                  ensure-order-condition: '''ensure-order-condition-chart'
 
 charts:
   wmlth-bid-ask-ma-spread:
@@ -133,6 +135,7 @@ deployments:
 #uniswap-v3-init-code !Uniswap v3 factory init code.
 #plottables !Binding for charting metrics.
 #initial-price-complete !Initial price complete to stop inv() on 0 error.
+#ensure-order-condition !Condition to check order validity.
 
 #plottables-plot
   _: poolfee,
@@ -144,6 +147,24 @@ deployments:
 
 #plottables-prod
  :;
+
+#ensure-order-condition-prod
+  stablecondition
+  stablerevertcondition
+  tokencondition
+  tokenrevertcondition: ,
+  :ensure(
+    any(
+      stablecondition
+      stablerevertcondition
+      tokencondition
+      tokenrevertcondition
+    )
+    "Order condition"
+  );
+
+#ensure-order-condition-chart
+  _ _ _ _: ;
 
 #calculate-io 
 using-words-from orderbook-subparser uniswap-words
@@ -300,27 +321,30 @@ tokenrevert-amount: get("100724-token-output"),
     0
     get("100724-token-revert"))),
 
-amount: conditions(
-  stablecondition stable-amount
-  stablerevertcondition stablerevert-amount
-  tokencondition token-amount
-  tokenrevertcondition tokenrevert-amount
-  "Amount condition"
+:call<'ensure-order-condition>(
+  stablecondition
+  stablerevertcondition
+  tokencondition
+  tokenrevertcondition
 ),
 
-/*set final price*/
-price: conditions(
+amount:if(
+  stablecondition stable-amount
+  if(stablerevertcondition stablerevert-amount
+    if(tokencondition token-amount
+      if(tokenrevertcondition tokenrevert-amount max-value())
+    )
+  )
+),
+
+price:if(
   stablecondition stable-price
-  stablerevertcondition stablerevert-price
-  tokencondition token-price
-  tokenrevertcondition tokenrevert-price
-  "Price condition"
+  if(stablerevertcondition stablerevert-price
+    if(tokencondition token-price
+      if(tokenrevertcondition tokenrevert-price max-value())
+    )
+  )
 );
 
 #handle-io
 :;
-
-  
-
-
-  

@@ -106,10 +106,72 @@ charts:
   wmlth-bid-ask-ma-spread:
     scenario: bid-ask-ma-spread.wlth.metric
     metrics:
-      - label: Current inverted price
+      - label: Length of the twap
         value: 0.0
-        description: The current price inverted
-    
+        description: Length of the twap in seconds
+      - label: Prive average
+        value: 0.1
+        description: The twap price average
+      - label: The current price
+        value: 0.2
+        description: The current price 
+      - label: A binary for if the current price is in range
+        value: 0.9
+        description: 1 means it is, 0 means it is not and will not trade
+      - label: time expiry for reverts
+        value: 0.3.6
+        description: time expiry for reverts in seconds 
+      - label: stable percent decrease
+        value: 0.3.2
+        description: the percent for price to decrease for stable outgoing
+      - label: stablerevert percent increase
+        value: 0.3.3
+        description: the percent for price to increase for token outgoing from the completed stable outgoing
+      - label: token percent increase
+        value: 0.3.4
+        description: the percent for price to increase for token outgoing
+      - label: tokenrevert percent decrease
+        value: 0.3.5
+        description: the percent for price to decrease for stable outgoing from the completed token outgoing
+      - label: Price required for stable outgoing 
+        value: 0.14
+        description: Price required for stable outgoing 
+      - label: Completed price of stable outgoing 
+        value: 0.15
+        description: Completed price of stable outgoing 
+      - label: Price required for stablerevert
+        value: 0.16
+        description: Price required for stablerevert, meaning token is outgoing
+      - label: Price required for token outgoing
+        value: 0.17
+        description: Price required for token outgoing
+      - label: Completed price of token outgoing 
+        value: 0.18
+        description: Completed price of token outgoing 
+      - label: Price required for tokenrevert
+        value: 0.19
+        description: Price required for tokenrevert, meaning stable is outgoing
+      - label: Stable outgoing amount 
+        value: 0.20
+        description: Stable outgoing amount 
+      - label: Stablerevert amount
+        value: 0.21
+        description: Stablerevert amount, token outgoing amount 
+      - label: Token outgoing amount 
+        value: 0.22
+        description: Token  outgoing amount 
+      - label: Tokenrevert amount
+        value: 0.23
+        description: Tokenrevert amount, stable outgoing amount 
+      - label: tokenstable range ceiling
+        value: 0.3.0
+        description: tokenstable range ceiling
+      - label: tokenstable range floor
+        value: 0.3.1
+        description: tokenstable range floor
+
+
+      
       
 deployments:
   wmatic-consolidated-ma:
@@ -138,11 +200,13 @@ deployments:
 #ensure-order-condition !Condition to check order validity.
 
 #plottables-plot
-  _: poolfee,
   _: tokenstable-range-ceiling,
   _: tokenstable-range-floor,
-  _: stable-outgoing-size,
-  _: price-average-time;
+  _: stable-percent-decrease,
+  _: stablerevert-percent-increase,
+  _: token-percent-increase,
+  _: tokenrevert-percent-decrease,
+  _: time-expiry;
 
 
 #plottables-prod
@@ -169,7 +233,7 @@ deployments:
 #calculate-io 
 using-words-from orderbook-subparser uniswap-words
 
-oving-average-length: price-average-time,
+moving-average-length: price-average-time,
 
 /*obtain price average*/
 price-average: uniswap-v3-twap-output-ratio(
@@ -240,36 +304,36 @@ tokenrevertcondition: every(
 
 /*obtain prices for the different scenarios*/
 
-/*stable condition*/
+/*stable condition price*/
 stable-price: mul(price-average sub(1 stable-percent-decrease)),
 
-/*stable condition revert*/
+/*stable condition revert price*/
 stable-completed-price: any(
   get("100724-stable-price")
   initial-price-complete),
 
 stablerevert-price: inv(mul(stable-completed-price add(1 stablerevert-percent-increase))),
 
-/*token condition*/
+/*token condition price*/
 token-price: inv(mul(price-average add(1 token-percent-increase))),
 
-/*stable condition revert*/
+/*token condition revert price*/
 token-completed-price: get("100724-token-price"),
 tokenrevert-price: mul(token-completed-price sub(1 tokenrevert-percent-decrease)),
 
   
 /*obtain amounts*/
 
-/*stable condition*/
+/*stable condition amount*/
 stable-amount: stable-outgoing-size,
 
-/*stable condition revert*/
+/*stable condition revert amount*/
 stablerevert-amount: get("100724-stable-output"),
 
-/*stable condition*/
+/*stable condition amount*/
 token-amount: mul(stable-outgoing-size inv(current-price)),
 
-/*stable condition revert*/
+/*stable condition revert amount*/
 tokenrevert-amount: get("100724-token-output"),
 
 /*SETS*/
@@ -328,6 +392,8 @@ tokenrevert-amount: get("100724-token-output"),
   tokenrevertcondition
 ),
 
+:call<'plottables-plot>(),
+  
 amount:if(
   stablecondition stable-amount
   if(stablerevertcondition stablerevert-amount
@@ -348,3 +414,11 @@ price:if(
 
 #handle-io
 :;
+
+  
+
+
+  
+  
+
+  

@@ -138,19 +138,19 @@ charts:
         description: Price required for stable outgoing 
       - label: Completed price of stable outgoing 
         value: 0.15
-        description: Completed price of stable outgoing 
+        description: Completed price of stable outgoing (if there is no completed price this will be inaccurate)
       - label: Price required for stablerevert
         value: 0.16
-        description: Price required for stablerevert, meaning token is outgoing
+        description: Price required for stablerevert, meaning token is outgoing (if there is no completed price this will be inaccurate)
       - label: Price required for token outgoing
         value: 0.17
         description: Price required for token outgoing
       - label: Completed price of token outgoing 
         value: 0.18
-        description: Completed price of token outgoing 
+        description: Completed price of token outgoing (if there is no completed price this will be inaccurate)
       - label: Price required for tokenrevert
         value: 0.19
-        description: Price required for tokenrevert, meaning stable is outgoing
+        description: Price required for tokenrevert, meaning stable is outgoing (if there is no completed price this will be inaccurate)
       - label: Stable outgoing amount 
         value: 0.20
         description: Stable outgoing amount 
@@ -414,7 +414,6 @@ price:if(
 
 #handle-io
 :;
-
   
 
 

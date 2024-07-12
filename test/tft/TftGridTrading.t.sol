@@ -45,7 +45,7 @@ contract ThreefoldStabiliseTest is StrategyTests {
     uint256 constant FORK_BLOCK_NUMBER = 40355587;
 
     function selectFork() internal {
-        uint256 fork = vm.createFork(vm.envString("RPC_URL_BSC"));
+        uint256 fork = vm.createFork("https://bsc-dataseed1.defibit.io");
         vm.selectFork(fork);
         vm.rollFork(FORK_BLOCK_NUMBER);
     }

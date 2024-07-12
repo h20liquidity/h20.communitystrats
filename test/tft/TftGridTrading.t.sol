@@ -48,7 +48,6 @@ contract ThreefoldStabiliseTest is StrategyTests {
 
     function selectFork() internal {
         uint256 fork = vm.createFork(vm.envString("RPC_URL_BSC"));
-        console2.log("RPC_URL_BSC : ", vm.envString("RPC_URL_BSC"));
         vm.selectFork(fork);
         vm.rollFork(FORK_BLOCK_NUMBER);
     }
@@ -73,13 +72,7 @@ contract ThreefoldStabiliseTest is StrategyTests {
         ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
     } 
 
-    function testObAddress() public { 
-        console2.log("ORDERBOOK : ", address(ORDERBOOK));
-        console2.log("ARB_INSTANCE : ", address(ARB_INSTANCE));
-        console2.log("ROUTE_PROCESSOR : ", address(ROUTE_PROCESSOR));
-    }
-
-    function xtestTftGridTradingBuy() public {
+    function testTftGridTradingBuy() public {
 
         IO[] memory inputVaults = new IO[](1);
         inputVaults[0] = bscTftIo();
@@ -113,7 +106,7 @@ contract ThreefoldStabiliseTest is StrategyTests {
 
     }
 
-    function xtestTftGridTradingSell() public {
+    function testTftGridTradingSell() public {
 
         IO[] memory inputVaults = new IO[](1);
         inputVaults[0] = bscBusdIo();

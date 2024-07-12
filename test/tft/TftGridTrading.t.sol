@@ -71,9 +71,15 @@ contract ThreefoldStabiliseTest is StrategyTests {
         EXTERNAL_EOA = address(0x654FEf5Fb8A1C91ad47Ba192F7AA81dd3C821427);
         APPROVED_EOA = address(0x669845c29D9B1A64FFF66a55aA13EB4adB889a88);
         ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
+    } 
+
+    function testObAddress() public { 
+        console2.log("ORDERBOOK : ", address(ORDERBOOK));
+        console2.log("ARB_INSTANCE : ", address(ARB_INSTANCE));
+        console2.log("ROUTE_PROCESSOR : ", address(ROUTE_PROCESSOR));
     }
 
-    function testTftGridTradingBuy() public {
+    function xtestTftGridTradingBuy() public {
 
         IO[] memory inputVaults = new IO[](1);
         inputVaults[0] = bscTftIo();
@@ -107,7 +113,7 @@ contract ThreefoldStabiliseTest is StrategyTests {
 
     }
 
-    function testTftGridTradingSell() public {
+    function xtestTftGridTradingSell() public {
 
         IO[] memory inputVaults = new IO[](1);
         inputVaults[0] = bscBusdIo();

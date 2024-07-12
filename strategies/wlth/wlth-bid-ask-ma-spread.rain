@@ -134,34 +134,34 @@ charts:
         value: 0.3.5
         description: the percent for price to decrease for stable outgoing from the completed token outgoing
       - label: Price required for stable outgoing 
-        value: 0.14
+        value: 0.13
         description: Price required for stable outgoing 
       - label: Completed price of stable outgoing 
-        value: 0.15
+        value: 0.14
         description: Completed price of stable outgoing (if there is no completed price this will be inaccurate)
       - label: Price required for stablerevert
-        value: 0.16
+        value: 0.15
         description: Price required for stablerevert, meaning token is outgoing (if there is no completed price this will be inaccurate)
       - label: Price required for token outgoing
-        value: 0.17
+        value: 0.16
         description: Price required for token outgoing
       - label: Completed price of token outgoing 
-        value: 0.18
+        value: 0.17
         description: Completed price of token outgoing (if there is no completed price this will be inaccurate)
       - label: Price required for tokenrevert
-        value: 0.19
+        value: 0.18
         description: Price required for tokenrevert, meaning stable is outgoing (if there is no completed price this will be inaccurate)
       - label: Stable outgoing amount 
-        value: 0.20
+        value: 0.19
         description: Stable outgoing amount 
       - label: Stablerevert amount
-        value: 0.21
+        value: 0.20
         description: Stablerevert amount, token outgoing amount 
       - label: Token outgoing amount 
-        value: 0.22
+        value: 0.21
         description: Token  outgoing amount 
       - label: Tokenrevert amount
-        value: 0.23
+        value: 0.22
         description: Tokenrevert amount, stable outgoing amount 
       - label: tokenstable range ceiling
         value: 0.3.0
@@ -198,6 +198,16 @@ deployments:
 #plottables !Binding for charting metrics.
 #initial-price-complete !Initial price complete to stop inv() on 0 error.
 #ensure-order-condition !Condition to check order validity.
+
+
+#stable-price "stable-price"
+#token-price "token-price"
+#stable-revert "stable-revert"
+#stable-expiry "stable-expiry"
+#token-revert "token-revert"
+#token-expiry "token-expiry"
+#stable-output "stable-output"
+#token-output "token-output"
 
 #plottables-plot
   _: tokenstable-range-ceiling,
@@ -253,15 +263,15 @@ current-price: uniswap-v3-twap-output-ratio(
 current-time: block-timestamp(),
 
 /*manage revert expirys, if expired reset*/
-:set("100724-stable-revert"
-  if(greater-than(current-time get("100724-stable-revert-expiry")) 
+:set(hash(order-hash() "stable-revert")
+  if(greater-than(current-time get(hash(order-hash() "stable-expiry"))) 
     0
-    get("100724-stable-revert"))),
+    get(hash(order-hash() "stable-revert")))),
 
-:set("token-revert"
-  if(greater-than(current-time get("100724-token-revert-expiry")) 
+:set(hash(order-hash() "token-revert")
+  if(greater-than(current-time get(hash(order-hash() "token-expiry"))) 
     0
-    get("100724-token-revert"))),
+    get(hash(order-hash() "token-revert")))),
 
 
 /*obtain context and direction*/
@@ -281,24 +291,24 @@ within-range:every(
 
 stablecondition: every(
   stable-outgoing
-  is-zero(get("100724-stable-revert"))
+  is-zero(get(hash(order-hash() "stable-revert")))
   within-range),
 
 stablerevertcondition:every(
   token-outgoing
-  get("100724-stable-revert")
-  less-than(current-time get("100724-stable-expiry"))
+  get(hash(order-hash() "stable-revert"))
+  less-than(current-time get(hash(order-hash() "stable-expiry")))
   within-range),
 
 tokencondition: every(
   token-outgoing
-  is-zero(get("100724-token-revert")) 
+  is-zero(get(hash(order-hash() "token-revert")))
   within-range),
 
 tokenrevertcondition: every(
   stable-outgoing
-  get("100724-token-revert")
-  less-than(current-time get("100724-token-expiry"))
+  get(hash(order-hash() "token-revert"))
+  less-than(current-time get(hash(order-hash() "token-expiry")))
   within-range),
 
 
@@ -309,7 +319,7 @@ stable-price: mul(price-average sub(1 stable-percent-decrease)),
 
 /*stable condition revert price*/
 stable-completed-price: any(
-  get("100724-stable-price")
+  get(hash(order-hash() "stable-price"))
   initial-price-complete),
 
 stablerevert-price: inv(mul(stable-completed-price add(1 stablerevert-percent-increase))),
@@ -318,7 +328,7 @@ stablerevert-price: inv(mul(stable-completed-price add(1 stablerevert-percent-in
 token-price: inv(mul(price-average add(1 token-percent-increase))),
 
 /*token condition revert price*/
-token-completed-price: get("100724-token-price"),
+token-completed-price: get(hash(order-hash() "token-price")),
 tokenrevert-price: mul(token-completed-price sub(1 tokenrevert-percent-decrease)),
 
   
@@ -328,62 +338,62 @@ tokenrevert-price: mul(token-completed-price sub(1 tokenrevert-percent-decrease)
 stable-amount: stable-outgoing-size,
 
 /*stable condition revert amount*/
-stablerevert-amount: get("100724-stable-output"),
+stablerevert-amount: get(hash(order-hash() "stable-output")),
 
 /*stable condition amount*/
 token-amount: mul(stable-outgoing-size inv(current-price)),
 
 /*stable condition revert amount*/
-tokenrevert-amount: get("100724-token-output"),
+tokenrevert-amount: get(hash(order-hash() "token-output")),
 
 /*SETS*/
 /*stable outgoing sets*/
-:set("100724-stable-price"
+:set(hash(order-hash() "stable-price")
   if(stablecondition 
     stable-price 
-    get("100724-stable-price"))),
-:set("100724-stable-output"
+    get(hash(order-hash() "stable-price")))),
+:set(hash(order-hash() "stable-output")
   if(stablecondition 
     mul(stable-price stable-amount)
-    get("100724-stable-output"))),
-:set("100724-stable-expiry"
+    get(hash(order-hash() "stable-output")))),
+:set(hash(order-hash() "stable-expiry")
   if(stablecondition 
     add(current-time time-expiry) 
-    get("100724-stable-expiry"))),
-:set("100724-stable-revert"
+    get(hash(order-hash() "stable-expiry")))),
+:set(hash(order-hash() "stable-revert")
   if(stablecondition 
     1 
-    get("100724-stable-revert"))),
+    get(hash(order-hash() "stable-revert")))),
 
 /*stable revert sets*/
-:set("100724-stable-revert"
+:set(hash(order-hash() "stable-revert")
   if(stablerevertcondition 
     0
-    get("100724-stable-revert"))),
+    get(hash(order-hash() "stable-revert")))),
 
 /*token outgoing sets*/
-:set("100724-token-price"
+:set(hash(order-hash() "token-price")
   if(tokencondition 
     token-price 
-    get("100724-token-price"))),
-:set("100724-token-output"
+    get(hash(order-hash() "token-price")))),
+:set(hash(order-hash() "token-output")
   if(tokencondition 
     mul(token-price token-amount)
-    get("100724-token-output"))),
-:set("100724-token-expiry"
+    get(hash(order-hash()"token-output")))),
+:set(hash(order-hash()"token-expiry")
   if(tokencondition 
     add(current-time time-expiry) 
-    get("100724-token-expiry"))),
-:set("100724-token-revert"
+    get(hash(order-hash() "token-expiry")))),
+:set(hash(order-hash() "token-revert")
   if(tokencondition 
     1 
-    get("100724-token-revert"))),
+    get(hash(order-hash() "token-revert")))),
 
 /*token revert sets*/
-:set("100724-token-revert"
+:set(hash(order-hash() "token-revert")
   if(tokenrevertcondition 
     0
-    get("100724-token-revert"))),
+    get(hash(order-hash() "token-revert")))),
 
 :call<'ensure-order-condition>(
   stablecondition
@@ -414,7 +424,6 @@ price:if(
 
 #handle-io
 :;
-  
 
 
   

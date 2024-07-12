@@ -42,10 +42,11 @@ contract ThreefoldStabiliseTest is StrategyTests {
     using SafeERC20 for IERC20;
     using Strings for address;
 
-    uint256 constant FORK_BLOCK_NUMBER = 40355587;
+    uint256 constant FORK_BLOCK_NUMBER = 40406023;
 
     function selectFork() internal {
-        uint256 fork = vm.createFork("https://bsc-dataseed1.defibit.io");
+        uint256 fork = vm.createFork(vm.envString("RPC_URL_BSC"));
+        console2.log("RPC_URL_BSC : ", vm.envString("RPC_URL_BSC"));
         vm.selectFork(fork);
         vm.rollFork(FORK_BLOCK_NUMBER);
     }

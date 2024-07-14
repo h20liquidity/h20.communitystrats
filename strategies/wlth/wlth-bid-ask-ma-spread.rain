@@ -199,15 +199,14 @@ deployments:
 #initial-price-complete !Initial price complete to stop inv() on 0 error.
 #ensure-order-condition !Condition to check order validity.
 
-
-#stable-price "stable-price"
-#token-price "token-price"
-#stable-revert "stable-revert"
-#stable-expiry "stable-expiry"
-#token-revert "token-revert"
-#token-expiry "token-expiry"
-#stable-output "stable-output"
-#token-output "token-output"
+#stable-price-130724 "stable-price-130724"
+#token-price-130724 "token-price-130724"
+#stable-revert-130724 "stable-revert-130724"
+#stable-expiry-130724 "stable-expiry-130724"
+#token-revert-130724 "token-revert-130724"
+#token-expiry-130724 "token-expiry-130724"
+#stable-output-130724 "stable-output-130724"
+#token-output-130724 "token-output-130724"
 
 #plottables-plot
   _: tokenstable-range-ceiling,
@@ -247,13 +246,13 @@ moving-average-length: price-average-time,
 
 /*obtain price average*/
 price-average: uniswap-v3-twap-output-ratio(
-    token stable
+    stable token
     price-average-time 0
     uniswap-v3-factory uniswap-v3-init-code
     poolfee
   ),
 current-price: uniswap-v3-twap-output-ratio(
-    token stable
+    stable token 
     0 0
     uniswap-v3-factory uniswap-v3-init-code
     poolfee
@@ -263,15 +262,15 @@ current-price: uniswap-v3-twap-output-ratio(
 current-time: block-timestamp(),
 
 /*manage revert expirys, if expired reset*/
-:set(hash(order-hash() "stable-revert")
-  if(greater-than(current-time get(hash(order-hash() "stable-expiry"))) 
+:set("stable-revert-100724"
+  if(greater-than(current-time get("stable-revert-expiry-100724")) 
     0
-    get(hash(order-hash() "stable-revert")))),
+    get("stable-revert-100724"))),
 
-:set(hash(order-hash() "token-revert")
-  if(greater-than(current-time get(hash(order-hash() "token-expiry"))) 
+:set("token-revert-100724"
+  if(greater-than(current-time get("token-revert-expiry-100724")) 
     0
-    get(hash(order-hash() "token-revert")))),
+    get("token-revert-100724"))),
 
 
 /*obtain context and direction*/
@@ -291,24 +290,24 @@ within-range:every(
 
 stablecondition: every(
   stable-outgoing
-  is-zero(get(hash(order-hash() "stable-revert")))
+  is-zero(get("stable-revert-100724"))
   within-range),
 
 stablerevertcondition:every(
   token-outgoing
-  get(hash(order-hash() "stable-revert"))
-  less-than(current-time get(hash(order-hash() "stable-expiry")))
+  get("stable-revert-100724")
+  less-than(current-time get("stable-expiry-100724"))
   within-range),
 
 tokencondition: every(
   token-outgoing
-  is-zero(get(hash(order-hash() "token-revert")))
+  is-zero(get("token-revert-100724")) 
   within-range),
 
 tokenrevertcondition: every(
   stable-outgoing
-  get(hash(order-hash() "token-revert"))
-  less-than(current-time get(hash(order-hash() "token-expiry")))
+  get("token-revert-100724")
+  less-than(current-time get("token-expiry-100724"))
   within-range),
 
 
@@ -319,7 +318,7 @@ stable-price: mul(price-average sub(1 stable-percent-decrease)),
 
 /*stable condition revert price*/
 stable-completed-price: any(
-  get(hash(order-hash() "stable-price"))
+  get("stable-price-100724")
   initial-price-complete),
 
 stablerevert-price: inv(mul(stable-completed-price add(1 stablerevert-percent-increase))),
@@ -328,7 +327,7 @@ stablerevert-price: inv(mul(stable-completed-price add(1 stablerevert-percent-in
 token-price: inv(mul(price-average add(1 token-percent-increase))),
 
 /*token condition revert price*/
-token-completed-price: get(hash(order-hash() "token-price")),
+token-completed-price: get("token-price-100724"),
 tokenrevert-price: mul(token-completed-price sub(1 tokenrevert-percent-decrease)),
 
   
@@ -338,62 +337,62 @@ tokenrevert-price: mul(token-completed-price sub(1 tokenrevert-percent-decrease)
 stable-amount: stable-outgoing-size,
 
 /*stable condition revert amount*/
-stablerevert-amount: get(hash(order-hash() "stable-output")),
+stablerevert-amount: get("stable-output-100724"),
 
 /*stable condition amount*/
 token-amount: mul(stable-outgoing-size inv(current-price)),
 
 /*stable condition revert amount*/
-tokenrevert-amount: get(hash(order-hash() "token-output")),
+tokenrevert-amount: get("token-output-100724"),
 
 /*SETS*/
 /*stable outgoing sets*/
-:set(hash(order-hash() "stable-price")
+:set("stable-price-100724"
   if(stablecondition 
     stable-price 
-    get(hash(order-hash() "stable-price")))),
-:set(hash(order-hash() "stable-output")
+    get("stable-price-100724"))),
+:set("stable-output-100724"
   if(stablecondition 
     mul(stable-price stable-amount)
-    get(hash(order-hash() "stable-output")))),
-:set(hash(order-hash() "stable-expiry")
+    get("stable-output-100724"))),
+:set("stable-expiry-100724"
   if(stablecondition 
     add(current-time time-expiry) 
-    get(hash(order-hash() "stable-expiry")))),
-:set(hash(order-hash() "stable-revert")
+    get("stable-expiry-100724"))),
+:set("stable-revert-100724"
   if(stablecondition 
     1 
-    get(hash(order-hash() "stable-revert")))),
+    get("stable-revert-100724"))),
 
 /*stable revert sets*/
-:set(hash(order-hash() "stable-revert")
+:set("stable-revert-100724"
   if(stablerevertcondition 
     0
-    get(hash(order-hash() "stable-revert")))),
+    get("stable-revert-100724"))),
 
 /*token outgoing sets*/
-:set(hash(order-hash() "token-price")
+:set("token-price-100724"
   if(tokencondition 
     token-price 
-    get(hash(order-hash() "token-price")))),
-:set(hash(order-hash() "token-output")
+    get("token-price-100724"))),
+:set("token-output-100724"
   if(tokencondition 
     mul(token-price token-amount)
-    get(hash(order-hash()"token-output")))),
-:set(hash(order-hash()"token-expiry")
+    get("token-output-100724"))),
+:set("token-expiry-100724"
   if(tokencondition 
     add(current-time time-expiry) 
-    get(hash(order-hash() "token-expiry")))),
-:set(hash(order-hash() "token-revert")
+    get("token-expiry-100724"))),
+:set("token-revert-100724"
   if(tokencondition 
     1 
-    get(hash(order-hash() "token-revert")))),
+    get("token-revert-100724"))),
 
 /*token revert sets*/
-:set(hash(order-hash() "token-revert")
+:set("token-revert-100724"
   if(tokenrevertcondition 
     0
-    get(hash(order-hash() "token-revert")))),
+    get("token-revert-100724"))),
 
 :call<'ensure-order-condition>(
   stablecondition
@@ -424,7 +423,7 @@ price:if(
 
 #handle-io
 :;
-
+  
 
   
   

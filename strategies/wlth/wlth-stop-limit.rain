@@ -8,7 +8,7 @@
 
 networks:
   base-community: 
-    rpc: https://rpc.ankr.com/base/8e4cac5728d95471ae55724953c7ae6f19a227ac05146276f09717692b732dae
+    rpc: https://mainnet.base.org
     chain-id: 8453 
     network-id: 8453 
     currency: ETH
@@ -133,44 +133,44 @@ charts:
     scenario: stop-limit-order.buy.metric
     metrics:
       - label: Stop Price
-        value: 0.5.2
+        value: 0.6.2
         unit-suffix: " WLTH/USDC"            
       - label: Price
-        value: 0.5.3
+        value: 0.6.3
         unit-suffix: " WLTH"            
-        description: 'Unit price, WLTH per USDC (stack item 0.5.3)'
+        description: 'Unit price, WLTH per USDC (stack item 0.6.3)'
       - label: Effective Price (as visible on dex tools)
-        value: 0.5.4
+        value: 0.6.4
         unit-suffix: " USDC"            
         description: 'Effective price in USDC denomination'     
       - label: Units
-        value: 0.5.5
+        value: 0.6.5
         unit-suffix: " USDC"            
-        description: 'Units purchased (stack item 0.5.5)'
+        description: 'Units purchased (stack item 0.6.5)'
       - label: Total Price
-        value: 0.5.6
+        value: 0.6.6
         unit-suffix: " WLTH"
         description: 'Amount of WLTH recevied.'
   Buy USDC, sell WLTH single limit order:
     scenario: stop-limit-order.sell.metric
     metrics:
       - label: Stop Price
-        value: 0.5.2
+        value: 0.6.2
         unit-suffix: " USDC/WLTH"   
       - label: Price
-        value: 0.5.3
+        value: 0.6.3
         unit-suffix: " USDC"            
-        description: 'Unit price, USDC per WLTH (stack item 0.5.3)'   
+        description: 'Unit price, USDC per WLTH (stack item 0.6.3)'   
       - label: Effective Price (as visible on dex tools)
-        value: 0.5.3
+        value: 0.6.3
         unit-suffix: " USDC"            
         description: 'Effective price in USDC denomination'   
       - label: Units
-        value: 0.5.4
+        value: 0.6.4
         unit-suffix: " WLTH"    
-        description: 'Units sold (stack item 0.5.4)'
+        description: 'Units sold (stack item 0.6.4)'
       - label: Total Price
-        value: 0.5.6
+        value: 0.6.6
         unit-suffix: " USDC"
         description: 'Amount of USDC recevied.'
 
@@ -219,13 +219,13 @@ deployments:
   trade-count: get(trade-count-key);
 
 #get-ratio-amount
-  trade-count: call<'get-trade-count>(),
-  ouput-amount: conditions(
-    equal-to(trade-count 0) ouptut-amount-1
+  count: ,
+  output-amount: conditions(
+    equal-to(count 0) ouptut-amount-1
     "Max order count"    
   ),
   io-ratio: conditions(
-    equal-to(trade-count 0) limit-ratio-1
+    equal-to(count 0) limit-ratio-1
     "Max order count"    
   );
 
@@ -259,8 +259,8 @@ deployments:
 
   orcale-price: call<'get-oracle-price>(),
   :call<'ensure-stop-loss>(orcale-price),
-  final-amount
-  final-ratio: call<'get-ratio-amount>(),
+  trade-count: call<'get-trade-count>(),
+  final-amount final-ratio: call<'get-ratio-amount>(trade-count),
   :call<'plottables>(final-amount final-ratio); 
 
 #handle-io

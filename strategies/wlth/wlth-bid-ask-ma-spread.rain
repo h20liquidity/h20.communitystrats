@@ -90,7 +90,7 @@ scenarios:
               token-percent-increase: 0.01
               tokenrevert-percent-decrease: 0.01
               time-expiry: 3000000
-              initial-price-complete: 0.001
+              initial-price-complete: 65
             scenarios:
               prod:
                 bindings:

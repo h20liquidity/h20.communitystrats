@@ -45,7 +45,7 @@ contract WlthLimitOrderMultipleTest is StrategyTests {
     using SafeERC20 for IERC20;
     using Strings for address;
 
-    uint256 constant FORK_BLOCK_NUMBER = 16913278;
+    uint256 constant FORK_BLOCK_NUMBER = 17119076;
     
     function selectFork() internal {
         uint256 fork = vm.createFork(vm.envString("RPC_URL_BASE"));
@@ -86,28 +86,58 @@ contract WlthLimitOrderMultipleTest is StrategyTests {
         outputVaults[1] = baseUsdcIo();
 
 
-        uint256 expectedRatio = 0.501038265021202985e18;
-        uint256 expectedAmount = 50e18;
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            getEncodedSellWlthRoute(address(ARB_INSTANCE)),
+            getEncodedBuyWlthRoute(address(ARB_INSTANCE)),
+            0,
+            1,
+            2000e6,
+            100000e18,
+            0,
+            0,
+            "strategies/wlth/wlth-bid-ask-ma-spread.rain",
+            "bid-ask-ma-spread.wlth.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+        OrderV2 memory order = addOrderDepositOutputTokens(strategy);
 
         {
-            LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
-                getEncodedSellWlthRoute(address(ARB_INSTANCE)),
-                getEncodedBuyWlthRoute(address(ARB_INSTANCE)),
-                0,
-                0,
-                2000e6,
-                100000e18,
-                expectedRatio,
-                expectedAmount,
-                "strategies/wlth/wlth-bid-ask-ma-spread.rain",
-                "bid-ask-ma-spread.wlth.prod",
-                "./lib/h20.test-std/lib/rain.orderbook",
-                "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
-                inputVaults,
-                outputVaults
-            );
+            {
+                vm.recordLogs();
 
-            OrderV2 memory order = addOrderDepositOutputTokens(strategy); 
+                // `arb()` called
+                takeArbOrder(order, strategy.takerRoute, 0, 1);
+
+                Vm.Log[] memory entries = vm.getRecordedLogs();
+                (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+                
+                assertEq(strategyAmount, 50e18);
+                assertEq(strategyRatio, 41.040557814201225728e18);
+            }
+        }
+        {
+            {
+                moveExternalPrice(
+                    strategy.inputVaults[1].token,
+                    strategy.outputVaults[0].token,
+                    5000e6,
+                    strategy.takerRoute
+                );
+            }
+            {
+                vm.recordLogs();
+                takeArbOrder(order, strategy.makerRoute, 1, 0);
+
+                Vm.Log[] memory entries = vm.getRecordedLogs();
+                (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+                
+                assertEq(strategyAmount, 2052.027890710061286400e18);
+                assertEq(strategyRatio, 0.024124891634839989e18);
+            }
         }
     }
 

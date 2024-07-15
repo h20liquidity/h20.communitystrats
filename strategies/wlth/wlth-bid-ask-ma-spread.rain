@@ -81,8 +81,8 @@ scenarios:
               token: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
               stable: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
               poolfee: "[uniswap-v3-fee-medium]"
-              tokenstable-range-ceiling: 2
-              tokenstable-range-floor: 0.01
+              tokenstable-range-ceiling: 100
+              tokenstable-range-floor: 0.5
               stable-outgoing-size: 50
               price-average-time: 600
               stable-percent-decrease: 0.01
@@ -262,15 +262,15 @@ current-price: uniswap-v3-twap-output-ratio(
 current-time: block-timestamp(),
 
 /*manage revert expirys, if expired reset*/
-:set("stable-revert-100724"
-  if(greater-than(current-time get("stable-revert-expiry-100724")) 
+:set(stable-revert-130724
+  if(greater-than(current-time get(stable-expiry-130724)) 
     0
-    get("stable-revert-100724"))),
+    get(stable-revert-130724))),
 
-:set("token-revert-100724"
-  if(greater-than(current-time get("token-revert-expiry-100724")) 
+:set(token-revert-130724
+  if(greater-than(current-time get(token-expiry-130724)) 
     0
-    get("token-revert-100724"))),
+    get(token-revert-130724))),
 
 
 /*obtain context and direction*/
@@ -290,24 +290,24 @@ within-range:every(
 
 stablecondition: every(
   stable-outgoing
-  is-zero(get("stable-revert-100724"))
+  is-zero(get(stable-revert-130724))
   within-range),
 
 stablerevertcondition:every(
   token-outgoing
-  get("stable-revert-100724")
-  less-than(current-time get("stable-expiry-100724"))
+  get(stable-revert-130724)
+  less-than(current-time get(stable-expiry-130724))
   within-range),
 
 tokencondition: every(
   token-outgoing
-  is-zero(get("token-revert-100724")) 
+  is-zero(get(token-revert-130724)) 
   within-range),
 
 tokenrevertcondition: every(
   stable-outgoing
-  get("token-revert-100724")
-  less-than(current-time get("token-expiry-100724"))
+  get(token-revert-130724)
+  less-than(current-time get(token-expiry-130724))
   within-range),
 
 
@@ -318,7 +318,7 @@ stable-price: mul(price-average sub(1 stable-percent-decrease)),
 
 /*stable condition revert price*/
 stable-completed-price: any(
-  get("stable-price-100724")
+  get(stable-price-130724)
   initial-price-complete),
 
 stablerevert-price: inv(mul(stable-completed-price add(1 stablerevert-percent-increase))),
@@ -327,7 +327,7 @@ stablerevert-price: inv(mul(stable-completed-price add(1 stablerevert-percent-in
 token-price: inv(mul(price-average add(1 token-percent-increase))),
 
 /*token condition revert price*/
-token-completed-price: get("token-price-100724"),
+token-completed-price: get(token-price-130724),
 tokenrevert-price: mul(token-completed-price sub(1 tokenrevert-percent-decrease)),
 
   
@@ -337,62 +337,62 @@ tokenrevert-price: mul(token-completed-price sub(1 tokenrevert-percent-decrease)
 stable-amount: stable-outgoing-size,
 
 /*stable condition revert amount*/
-stablerevert-amount: get("stable-output-100724"),
+stablerevert-amount: get(stable-output-130724),
 
-/*stable condition amount*/
-token-amount: mul(stable-outgoing-size inv(current-price)),
+/*token condition amount*/
+token-amount: mul(stable-outgoing-size current-price),
 
-/*stable condition revert amount*/
-tokenrevert-amount: get("token-output-100724"),
+/*token condition revert amount*/
+tokenrevert-amount: get(token-output-130724),
 
 /*SETS*/
 /*stable outgoing sets*/
-:set("stable-price-100724"
+:set(stable-price-130724
   if(stablecondition 
     stable-price 
-    get("stable-price-100724"))),
-:set("stable-output-100724"
+    get(stable-price-130724))),
+:set(stable-output-130724
   if(stablecondition 
     mul(stable-price stable-amount)
-    get("stable-output-100724"))),
-:set("stable-expiry-100724"
+    get(stable-output-130724))),
+:set(stable-expiry-130724
   if(stablecondition 
     add(current-time time-expiry) 
-    get("stable-expiry-100724"))),
-:set("stable-revert-100724"
+    get(stable-expiry-130724))),
+:set(stable-revert-130724
   if(stablecondition 
     1 
-    get("stable-revert-100724"))),
+    get(stable-revert-130724))),
 
 /*stable revert sets*/
-:set("stable-revert-100724"
+:set(stable-revert-130724
   if(stablerevertcondition 
     0
-    get("stable-revert-100724"))),
+    get(stable-revert-130724))),
 
 /*token outgoing sets*/
-:set("token-price-100724"
+:set(token-price-130724
   if(tokencondition 
     token-price 
-    get("token-price-100724"))),
-:set("token-output-100724"
+    get(token-price-130724))),
+:set(token-output-130724
   if(tokencondition 
     mul(token-price token-amount)
-    get("token-output-100724"))),
-:set("token-expiry-100724"
+    get(token-output-130724))),
+:set(token-expiry-130724
   if(tokencondition 
     add(current-time time-expiry) 
-    get("token-expiry-100724"))),
-:set("token-revert-100724"
+    get(token-expiry-130724))),
+:set(token-revert-130724
   if(tokencondition 
     1 
-    get("token-revert-100724"))),
+    get(token-revert-130724))),
 
 /*token revert sets*/
-:set("token-revert-100724"
+:set(token-revert-130724
   if(tokenrevertcondition 
     0
-    get("token-revert-100724"))),
+    get(token-revert-130724))),
 
 :call<'ensure-order-condition>(
   stablecondition

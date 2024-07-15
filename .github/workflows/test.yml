@@ -18,7 +18,7 @@ jobs:
       RPC_URL_FLARE: ${{ secrets.CI_DEPLOY_FLARE_RPC_URL || vars.CI_DEPLOY_FLARE_RPC_URL }}
       RPC_URL_POLYGON: ${{ secrets.CI_DEPLOY_POLYGON_RPC_URL || vars.CI_DEPLOY_POLYGON_RPC_URL }}
       RPC_URL_ETH: ${{ secrets.CI_DEPLOY_ETH_RPC_URL || vars.CI_DEPLOY_ETH_RPC_URL }}
-      RPC_URL_BSC: ${{ secrets.RPC_URL_BSC}}
+      RPC_URL_BSC: ${{ secrets.CI_DEPLOY_BSC_RPC_URL || vars.CI_DEPLOY_BSC_RPC_URL }}
 
 
     steps:

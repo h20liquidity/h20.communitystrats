@@ -82,7 +82,7 @@ scenarios:
 
             # io-ratio and amount for first limit order.
             limit-ratio-1: 46
-            ouptut-amount-1: 1
+            output-amount-1: 1
 
             # Binding to get current orcale price
             get-oracle-price: '''get-oracle-price-univ3'
@@ -110,7 +110,7 @@ scenarios:
 
             # io-ratio and amount for first order. 
             limit-ratio-1: 0.02
-            ouptut-amount-1: 50
+            output-amount-1: 50
 
             # Binding to get current orcale price
             get-oracle-price: '''get-oracle-price-univ3'
@@ -193,7 +193,7 @@ deployments:
 
 #stop-ratio !Ratio below which trade is active
 #limit-ratio-1 !IO ratio for first limit order.
-#ouptut-amount-1 !Output amount for first limit order.
+#output-amount-1 !Output amount for first limit order.
 
 #get-oracle-price !Binding to get currect price from orcale.
 #ensure-stop-loss !Binding to ensure stop loss.
@@ -211,8 +211,8 @@ deployments:
   _: stop-ratio,
   _: limit-ratio-1,
   effective-limit-ratio-1: inv(limit-ratio-1),
-  _: ouptut-amount-1,
-  input-amount-1: mul(limit-ratio-1 ouptut-amount-1);
+  _: output-amount-1,
+  input-amount-1: mul(limit-ratio-1 output-amount-1);
 
 #get-trade-count-prod
   trade-count-key: hash(order-hash() count-key), 
@@ -221,7 +221,7 @@ deployments:
 #get-ratio-amount
   count: ,
   output-amount: conditions(
-    equal-to(count 0) ouptut-amount-1
+    equal-to(count 0) output-amount-1
     "Max order count"    
   ),
   io-ratio: conditions(

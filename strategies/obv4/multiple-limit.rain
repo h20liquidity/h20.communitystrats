@@ -113,8 +113,8 @@ scenarios:
               blocks:
                 type: RangeWithInterval
                 value:
-                  range: [17245659..17257087]
-                  interval: 1000
+                range: [17245659..17257087]
+                interval: 1000
               bindings:
                 input-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
                 output-token: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
@@ -157,11 +157,11 @@ scenarios:
               blocks:
                 type: RangeWithInterval
                 value:
-                  range: [17245659..17257087]
-                  interval: 1000
+                range: [17245659..17257087]
+                interval: 1000
               bindings:
-                input-token: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
-                output-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+                input-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+                output-token: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
                 plottables: '''plottables-backtest'
                 get-trade-count: '''get-trade-count-chart'
         
@@ -282,87 +282,6 @@ charts:
               options:
                 x: 0.0
                 y: 0.3.0
-                
-  buy-limit-order-backtest:
-    scenario: limit-orders.buy.backtest
-    plots:
-      Limit Orders:
-        x:
-          label: 'Block Number'
-        y:
-          label: 'Order Ratio'
-        marks:
-          - type: line
-            options:
-              stroke: red
-              x: 0.3.8
-              y: 0.3.2
-          - type: line
-            options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.3
-          - type: line
-            options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.4
-          - type: line
-            options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.5
-          - type: line
-            options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.6
-          - type: line
-            options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.7
-
-  sell-limit-order-backtest:
-    scenario: limit-orders.sell.backtest
-    plots:
-      Limit Orders:
-        x:
-          label: 'Block Number'
-        y:
-          label: 'Order Ratio'
-        marks:
-          - type: line
-            options:
-              stroke: red
-              x: 0.3.8
-              y: 0.3.2
-          - type: line
-            options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.3
-          - type: line
-            options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.4
-          - type: line
-            options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.5
-          - type: line
-            options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.6
-          - type: line
-            options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.7
-          
 
 deployments:
   base-wlth-buy:

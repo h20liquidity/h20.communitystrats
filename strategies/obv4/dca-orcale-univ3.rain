@@ -171,7 +171,7 @@ scenarios:
                     blocks:
                       type: RangeWithInterval
                       value:
-                        range: [17245659..]
+                        range: [17245659..17257087]
                         interval: 1000
                     bindings:
                       enforce-twap-check: '''enforce-twap-check-chart'
@@ -266,7 +266,7 @@ scenarios:
                     blocks:
                       type: RangeWithInterval
                       value:
-                        range: [17245659..]
+                        range: [17245659..17257087]
                         interval: 1000
                     bindings:
                       enforce-twap-check: '''enforce-twap-check-chart'

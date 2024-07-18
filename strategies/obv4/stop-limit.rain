@@ -22,7 +22,7 @@ subgraphs:
   
 orderbooks:
   base-community:
-    address: 0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76
+    address: 0xA2f56F8F74B7d04d61f281BE6576b6155581dcBA
     network: base-community
     subgraph: base-community
 

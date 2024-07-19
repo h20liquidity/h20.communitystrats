@@ -4,6 +4,3 @@
 [submodule "lib/h20.test-std"]
 	path = lib/h20.test-std
 	url = https://github.com/h20liquidity/h20.test-std.git
-[submodule "lib/rain.orderbook.interface"]
-	path = lib/rain.orderbook.interface
-	url = https://github.com/rainlanguage/rain.orderbook.interface.git

@@ -4,21 +4,27 @@ import {console2, Test} from "forge-std/Test.sol";
 
 import {
     IOrderBookV3,
-    IO,
-    OrderV2,
-    OrderConfigV2,
-    TakeOrderConfigV2,
-    TakeOrdersConfigV2
+    IO
 } from "rain.orderbook.interface/interface/IOrderBookV3.sol";
-import {IOrderBookV3ArbOrderTaker} from "rain.orderbook.interface/interface/IOrderBookV3ArbOrderTaker.sol";
-import {IParserV1} from "rain.interpreter.interface/interface/IParserV1.sol";
+import {
+    IOrderBookV4,
+    OrderV3,
+    OrderConfigV3,
+    TakeOrderConfigV3,
+    TakeOrdersConfigV3,
+    ActionV1
+} from "rain.orderbook.interface/interface/unstable/IOrderBookV4.sol"; 
+
+import {IParserV2} from "rain.interpreter.interface/interface/unstable/IParserV2.sol";
+import {IOrderBookV4ArbOrderTaker} from "rain.orderbook.interface/interface/unstable/IOrderBookV4ArbOrderTaker.sol";
+
+// import {IOrderBookV3ArbOrderTaker} from "rain.orderbook.interface/interface/IOrderBookV3ArbOrderTaker.sol";
+// import {IParserV1} from "rain.interpreter.interface/interface/IParserV1.sol";
 import {IExpressionDeployerV3} from "rain.interpreter.interface/interface/IExpressionDeployerV3.sol";
-import { EvaluableConfigV3, SignedContextV1} from "rain.interpreter.interface/interface/IInterpreterCallerV2.sol";
-import {IInterpreterV2,SourceIndexV2} from "rain.interpreter.interface/interface/IInterpreterV2.sol";
+// import {IInterpreterV2} from "rain.interpreter.interface/interface/IInterpreterV2.sol";
+import {IInterpreterV3} from "rain.interpreter.interface/interface/unstable/IInterpreterV3.sol";
 import {IInterpreterStoreV2} from "rain.interpreter.interface/interface/IInterpreterStoreV2.sol";
-import {StrategyTests, IRouteProcessor, LibStrategyDeployment, LibComposeOrders} from "h20.test-std/StrategyTests.sol";
-import {LibEncodedDispatch} from "rain.interpreter.interface/lib/caller/LibEncodedDispatch.sol";
-import {StateNamespace, LibNamespace, FullyQualifiedNamespace} from "rain.interpreter.interface/lib/ns/LibNamespace.sol";
+import {StrategyTests, IRouteProcessor, LibStrategyDeployment, LibComposeOrders,IInterpreterV3} from "h20.test-std/StrategyTests.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {SafeERC20, IERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "h20.test-std/lib/LibProcessStream.sol";
@@ -45,7 +51,7 @@ contract StopLimitTest is StrategyTests {
     using SafeERC20 for IERC20;
     using Strings for address;
 
-    uint256 constant FORK_BLOCK_NUMBER = 17307588;
+    uint256 constant FORK_BLOCK_NUMBER = 17308087;
     
     function selectFork() internal {
         uint256 fork = vm.createFork(vm.envString("RPC_URL_BASE"));
@@ -53,27 +59,19 @@ contract StopLimitTest is StrategyTests {
         vm.rollFork(FORK_BLOCK_NUMBER);
     }
 
-    function getNamespace() public view returns (FullyQualifiedNamespace) {
-        return LibNamespace.qualifyNamespace(StateNamespace.wrap(0), address(this));
-    }
-
     function setUp() public {
         selectFork();
         
-        PARSER = IParserV1(0xF836f2746B407136a5bCB515495949B1edB75184);
+        PARSER = IParserV2(0x56394785a22b3BE25470a0e03eD9E0a939C47b9b);
         STORE = IInterpreterStoreV2(0x6E4b01603edBDa617002A077420E98C86595748E); 
-        INTERPRETER = IInterpreterV2(0x379b966DC6B117dD47b5Fc5308534256a4Ab1BCC); 
+        INTERPRETER = IInterpreterV3(0x379b966DC6B117dD47b5Fc5308534256a4Ab1BCC); 
         EXPRESSION_DEPLOYER = IExpressionDeployerV3(0x56394785a22b3BE25470a0e03eD9E0a939C47b9b); 
-        ORDERBOOK = IOrderBookV3(0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76);
-        ARB_INSTANCE = IOrderBookV3ArbOrderTaker(0x199b22ce0c9fD88476cCaA2d2aB253Af38BAE3Ae);
-        ROUTE_PROCESSOR = IRouteProcessor(address(0x83eC81Ae54dD8dca17C3Dd4703141599090751D1)); 
+        ORDERBOOK = IOrderBookV4(0xA2f56F8F74B7d04d61f281BE6576b6155581dcBA);
+        ARB_INSTANCE = IOrderBookV4ArbOrderTaker(0xF97A86C2Cb3e42f89AC5f5AA020E5c3505015a88);
+        ROUTE_PROCESSOR = IRouteProcessor(address(0x0389879e0156033202C44BF784ac18fC02edeE4f)); 
         EXTERNAL_EOA = address(0x654FEf5Fb8A1C91ad47Ba192F7AA81dd3C821427);
         APPROVED_EOA = address(0x669845c29D9B1A64FFF66a55aA13EB4adB889a88);
-        ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C); 
-
-        EXTERNAL_EOA = address(0x654FEf5Fb8A1C91ad47Ba192F7AA81dd3C821427);
-        APPROVED_EOA = address(0x669845c29D9B1A64FFF66a55aA13EB4adB889a88);
-        ORDER_OWNER = address(0x19f95a84aa1C48A2c6a7B2d5de164331c86D030C);
+        ORDER_OWNER = address(0x5e01e44aE1969e16B9160d903B6F2aa991a37B21); 
     }
 
     function testEnsureStopLimitSell() public {
@@ -85,15 +83,15 @@ contract StopLimitTest is StrategyTests {
         outputVaults[0] = baseWlthIo();
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
-            getEncodedBuyWlthRoute(address(ARB_INSTANCE)),
-            getEncodedSellWlthRoute(address(ARB_INSTANCE)),
+            getEncodedBuyWlthRoute(),
+            getEncodedSellWlthRoute(),
             0,
             0,
             10000e6,
             10000e18,
             0,
             0,
-            "strategies/wlth/wlth-stop-limit.rain",
+            "strategies/stop-limit.rain",
             "stop-limit-order.sell.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
@@ -101,7 +99,7 @@ contract StopLimitTest is StrategyTests {
             outputVaults
         );
 
-        OrderV2 memory order = addOrderDepositOutputTokens(strategy);
+        OrderV3 memory order = addOrderDepositOutputTokens(strategy);
 
         // Current Price is not below the market price.
         {
@@ -125,7 +123,7 @@ contract StopLimitTest is StrategyTests {
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
 
-            assertEq(strategyRatio, 0.02e18);
+            assertEq(strategyRatio, 0.0245e18);
             assertEq(strategyAmount, 50e18);
         
             vm.expectRevert("Max order count");
@@ -143,15 +141,15 @@ contract StopLimitTest is StrategyTests {
         outputVaults[0] = baseUsdcIo();
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
-            getEncodedSellWlthRoute(address(ARB_INSTANCE)),
-            getEncodedBuyWlthRoute(address(ARB_INSTANCE)),
+            getEncodedSellWlthRoute(),
+            getEncodedBuyWlthRoute(),
             0,
             0,
-            200000e18,
+            1000000e18,
             10000e6,
             0,
             0,
-            "strategies/wlth/wlth-stop-limit.rain",
+            "strategies/stop-limit.rain",
             "stop-limit-order.buy.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
@@ -159,7 +157,7 @@ contract StopLimitTest is StrategyTests {
             outputVaults
         );
 
-        OrderV2 memory order = addOrderDepositOutputTokens(strategy);
+        OrderV3 memory order = addOrderDepositOutputTokens(strategy);
 
         // Current Price is not above the market price.
         {
@@ -183,7 +181,7 @@ contract StopLimitTest is StrategyTests {
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
 
-            assertEq(strategyRatio, 46e18);
+            assertEq(strategyRatio, 40.25e18);
             assertEq(strategyAmount, 1e18);
     
             vm.expectRevert("Max order count");
@@ -191,18 +189,18 @@ contract StopLimitTest is StrategyTests {
         } 
     }
     
-    function getEncodedBuyWlthRoute(address toAddress) internal pure returns (bytes memory) {
-        bytes memory ROUTE_PRELUDE =
-            hex"02833589fCD6eDb6E08f4c7C32D4f71b54bdA0291301ffff011536EE1506e24e5A36Be99C73136cD82907A902E01";
+    function getEncodedBuyWlthRoute() internal pure returns (bytes memory) {
+        bytes memory BUY_WLTH_ROUTE =
+            hex"02833589fCD6eDb6E08f4c7C32D4f71b54bdA0291301ffff011536EE1506e24e5A36Be99C73136cD82907A902E01F97A86C2Cb3e42f89AC5f5AA020E5c3505015a88";
             
-        return abi.encode(bytes.concat(ROUTE_PRELUDE, abi.encodePacked(address(toAddress))));
+        return abi.encode(BUY_WLTH_ROUTE);
     }
 
-    function getEncodedSellWlthRoute(address toAddress) internal pure returns (bytes memory) {
-        bytes memory ROUTE_PRELUDE =
-            hex"0299b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D01ffff011536EE1506e24e5A36Be99C73136cD82907A902E00";
+    function getEncodedSellWlthRoute() internal pure returns (bytes memory) {
+        bytes memory SELL_WLTH_ROUTE =
+            hex"0299b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D01ffff011536EE1506e24e5A36Be99C73136cD82907A902E00F97A86C2Cb3e42f89AC5f5AA020E5c3505015a88";
             
-        return abi.encode(bytes.concat(ROUTE_PRELUDE, abi.encodePacked(address(toAddress))));
+        return abi.encode(SELL_WLTH_ROUTE);
     }
 
 }

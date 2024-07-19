@@ -1,25 +1,21 @@
-# Limit Order Strategy
-# 5 buy and sell targets
-# Each target you set buy price and amount and sell price and amount
-# Target Network: Base
-# Quote (Input / Incoming): USDC or WLTH
-# Base (Output / Outgoing): WLTH or USDC
-# Token contract: https://basescan.org/address/0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
-# Token github: NA
-# Liquidity protocol: Uniswap V3
-# Liquidity pool address: https://www.dextools.io/app/en/base/pair-explorer/0x1536ee1506e24e5a36be99c73136cd82907a902e?t=1717921711270
-# Liquidity pool fee: 0.3%
+# Stop Limit Orders.
+#
+# The stop price dictates the price whether the order is triggered, then the limit price dictates the price at which the order is filled.
+# Once the market price reaches below the stop price, the order becomes a limit order and then the limit price dictates the price at
+# which the order is filled.
+# The only difference between a stop-limit and limit order is that the order won't even be visible until the stop price is reached.
+# https://www.investopedia.com/terms/s/stop-limitorder.asp
 
 networks:
   base-community: 
-    rpc: https://rpc.ankr.com/base/8e4cac5728d95471ae55724953c7ae6f19a227ac05146276f09717692b732dae
+    rpc: https://mainnet.base.org
     chain-id: 8453 
     network-id: 8453 
     currency: ETH
 
 subgraphs:
   base-community: https://api.thegraph.com/subgraphs/name/h20liquidity/base-0x2aee87
-  
+
 orderbooks:
   base-community:
     address: 0xA2f56F8F74B7d04d61f281BE6576b6155581dcBA
@@ -45,21 +41,21 @@ orders:
     orderbook: base-community
     inputs:
       - token: base-usdc
-        vault-id: 0x4cdcdc67a7a737779706b4490be2bef03155001562525dbe78200bc0839f8c35
+        vault-id: 0xe8c8cd1fae13ab9fa00c611a0d57cbd9298e939e34f1a38361fd37f917d4b065
     outputs:
       - token: base-wlth
-        vault-id: 0x4cdcdc67a7a737779706b4490be2bef03155001562525dbe78200bc0839f8c35 
+        vault-id: 0xe8c8cd1fae13ab9fa00c611a0d57cbd9298e939e34f1a38361fd37f917d4b065 
   base-wlth-buy:
     orderbook: base-community
     inputs:
       - token: base-wlth
-        vault-id: 0x4cdcdc67a7a737779706b4490be2bef03155001562525dbe78200bc0839f8c35
+        vault-id: 0x4767d92a5f01500424d2a2dd88964314f8a98a6b66bcf1db362b0ad9006c93e8
     outputs:
       - token: base-usdc
-        vault-id: 0x4cdcdc67a7a737779706b4490be2bef03155001562525dbe78200bc0839f8c35
+        vault-id: 0x4767d92a5f01500424d2a2dd88964314f8a98a6b66bcf1db362b0ad9006c93e8
 
 scenarios:
-    limit-orders:
+    stop-limit-order:
       network: base-community
       deployer: base-community
       orderbook: base-community
@@ -74,40 +70,35 @@ scenarios:
 
         # Uniswap V3 pool fee
         pool-fee: '[uniswap-v3-fee-medium]'
-
       scenarios:
         buy:
           bindings:
-            # io-ratio and amount for first order. 
-            io-ratio-1: 35
-            ouptut-amount-1: 1
-            # io-ratio and amount for second order. 
-            io-ratio-2: 36
-            ouptut-amount-2: 1.5
-            # io-ratio and amount for third order. 
-            io-ratio-3: 37
-            ouptut-amount-3: 2
-            # io-ratio and amount for third order. 
-            io-ratio-4: 38
-            ouptut-amount-4: 2.5
-            # io-ratio and amount for third order. 
-            io-ratio-5: 39
-            ouptut-amount-5: 3
+            # Input and Output token from perspective of the order.
+            input-token-address: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+            output-token-address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+
+            # Stop ratio, once market price reaches below the stop price order will be active.
+            stop-ratio: 41
+
+            # io-ratio and amount for first limit order.
+            limit-ratio-1: 40.25
+            output-amount-1: 1
+
+            # Binding to get current orcale price
+            get-oracle-price: '''get-oracle-price-univ3'
+
           scenarios:
             prod:
               bindings:
                 plottables: '''plottables-prod'
                 get-trade-count: '''get-trade-count-prod'
+                ensure-stop-loss: '''ensure-stop-loss-increase'
             metric:
               runs: 1
               bindings:
                 plottables: '''plottables-metric'
                 get-trade-count: '''get-trade-count-prod'
-            chart:
-              runs: 1000
-              bindings:
-                plottables: '''plottables-chart'
-                get-trade-count: '''get-trade-count-chart'
+                ensure-stop-loss: '''ensure-stop-loss-metric'
             backtest:
               runs: 1
               blocks:
@@ -116,42 +107,37 @@ scenarios:
                   range: [17245659..17257087]
                   interval: 1000
               bindings:
-                input-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
-                output-token: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
                 plottables: '''plottables-backtest'
-                get-trade-count: '''get-trade-count-chart'
+                get-trade-count: '''get-trade-count-prod'
+                ensure-stop-loss: '''ensure-stop-loss-metric'
         sell:
           bindings:
+            # Input and Output token from perspective of the order.
+            input-token-address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+            output-token-address: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+
+            # Stop ratio, once market price reaches below the stop price order will be active.
+            stop-ratio: 0.027 
+
             # io-ratio and amount for first order. 
-            io-ratio-1: 0.02
-            ouptut-amount-1: 50
-            # io-ratio and amount for second order. 
-            io-ratio-2: 0.021
-            ouptut-amount-2: 75
-            # io-ratio and amount for third order. 
-            io-ratio-3: 0.022
-            ouptut-amount-3: 100
-            # io-ratio and amount for third order. 
-            io-ratio-4: 0.023
-            ouptut-amount-4: 125
-            # io-ratio and amount for third order. 
-            io-ratio-5: 0.024
-            ouptut-amount-5: 150
+            limit-ratio-1: 0.0245
+            output-amount-1: 50
+
+            # Binding to get current orcale price
+            get-oracle-price: '''get-oracle-price-univ3'
+
           scenarios:
             prod:
               bindings:
                 plottables: '''plottables-prod'
                 get-trade-count: '''get-trade-count-prod'
+                ensure-stop-loss: '''ensure-stop-loss-decrease'
             metric:
               runs: 1
               bindings:
                 plottables: '''plottables-metric'
                 get-trade-count: '''get-trade-count-prod'
-            chart:
-              runs: 1000
-              bindings:
-                plottables: '''plottables-chart'
-                get-trade-count: '''get-trade-count-chart'
+                ensure-stop-loss: '''ensure-stop-loss-metric'
             backtest:
               runs: 1
               blocks:
@@ -160,133 +146,38 @@ scenarios:
                   range: [17245659..17257087]
                   interval: 1000
               bindings:
-                input-token: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
-                output-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
                 plottables: '''plottables-backtest'
-                get-trade-count: '''get-trade-count-chart'
-        
+                get-trade-count: '''get-trade-count-prod'
+                ensure-stop-loss: '''ensure-stop-loss-metric'
 
 charts:
-  base-wlth-buy-metrics:
-    scenario: limit-orders.buy.metric
+  Buy WLTH, sell USDC single limit order:
+    scenario: stop-limit-order.buy.metric
     metrics:
-      - label: io-ratio-1
-        value: 0.3.2
-      - label: amount-1
-        value: 0.3.3
-      - label: io-ratio-2
-        value: 0.3.4
-      - label: amount-2
-        value: 0.3.5
-      - label: io-ratio-3
-        value: 0.3.6
-      - label: amount-3
-        value: 0.3.7
-      - label: io-ratio-4
-        value: 0.3.8
-      - label: amount-4
-        value: 0.3.9
-      - label: io-ratio-5
-        value: 0.3.10
-      - label: amount-5
-        value: 0.3.11
+      - label: Stop Price
+        value: 0.6.2
+        unit-suffix: " WLTH/USDC"            
+      - label: Price
+        value: 0.6.3
+        unit-suffix: " WLTH"            
+        description: 'Unit price, WLTH per USDC (stack item 0.6.3)'
+      - label: Effective Price (as visible on dex tools)
+        value: 0.6.4
+        unit-suffix: " USDC"            
+        description: 'Effective price in USDC denomination'     
+      - label: Units
+        value: 0.6.5
+        unit-suffix: " USDC"            
+        description: 'Units purchased (stack item 0.6.5)'
+      - label: Total Price
+        value: 0.6.6
+        unit-suffix: " WLTH"
+        description: 'Amount of WLTH recevied.'
 
-  base-wlth-sell-metrics:
-    scenario: limit-orders.sell.metric
-    metrics:
-      - label: io-ratio-1
-        value: 0.3.2
-      - label: amount-1
-        value: 0.3.3
-      - label: io-ratio-2
-        value: 0.3.4
-      - label: amount-2
-        value: 0.3.5
-      - label: io-ratio-3
-        value: 0.3.6
-      - label: amount-3
-        value: 0.3.7
-      - label: io-ratio-4
-        value: 0.3.8
-      - label: amount-4
-        value: 0.3.9
-      - label: io-ratio-5
-        value: 0.3.10
-      - label: amount-5
-        value: 0.3.11
-  
-  buy-limit-order-simulation:
-      scenario: limit-orders.buy.chart
-      plots:    
-        Limit order io-ratio:     
-          x:
-              label: 'Order Number'
-          y:
-              label: 'IO ratio'
-          marks:
-            - type: line
-              options:
-                x: 0.0
-                y: 0.3.1
-        Limit order effective io-ratio (as visible on dex tools):     
-          x:
-              label: 'Order Number'
-          y:
-              label: 'Effective io ratio'
-          marks:
-            - type: line
-              options:
-                x: 0.0
-                y: 0.3.2
-        Limit order amount:     
-          x:
-              label: 'Order Number'
-          y:
-              label: 'Order amount'
-          marks:
-            - type: line
-              options:
-                x: 0.0
-                y: 0.3.0
-
-  sell-limit-order-simulation:
-      scenario: limit-orders.sell.chart
-      plots:    
-        Limit order io-ratio:     
-          x:
-              label: 'Order Number'
-          y:
-              label: 'IO ratio'
-          marks:
-            - type: line
-              options:
-                x: 0.0
-                y: 0.3.1
-        Limit order effective io-ratio (as visible on dex tools):     
-          x:
-              label: 'Order Number'
-          y:
-              label: 'Effective io ratio'
-          marks:
-            - type: line
-              options:
-                x: 0.0
-                y: 0.3.1
-        Limit order amount:     
-          x:
-              label: 'Order Number'
-          y:
-              label: 'Order amount'
-          marks:
-            - type: line
-              options:
-                x: 0.0
-                y: 0.3.0
-                
-  buy-limit-order-backtest:
-    scenario: limit-orders.buy.backtest
+  Buy WLTH, sell USDC backtest:
+    scenario: stop-limit-order.buy.backtest
     plots:
-      Limit Orders:
+      Stop Limit:
         x:
           label: 'Block Number'
         y:
@@ -294,39 +185,47 @@ charts:
         marks:
           - type: line
             options:
+              stroke: blue
+              x: 0.6.5
+              y: 0.6.2
+          - type: line
+            options:
               stroke: red
-              x: 0.3.8
-              y: 0.3.2
+              x: 0.6.5
+              y: 0.6.3
           - type: line
             options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.3
-          - type: line
-            options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.4
-          - type: line
-            options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.5
-          - type: line
-            options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.6
-          - type: line
-            options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.7
+              stroke: green
+              x: 0.6.5
+              y: 0.6.4
 
-  sell-limit-order-backtest:
-    scenario: limit-orders.sell.backtest
+  Buy USDC, sell WLTH single limit order:
+    scenario: stop-limit-order.sell.metric
+    metrics:
+      - label: Stop Price
+        value: 0.6.2
+        unit-suffix: " USDC/WLTH"   
+      - label: Price
+        value: 0.6.3
+        unit-suffix: " USDC"            
+        description: 'Unit price, USDC per WLTH (stack item 0.6.3)'   
+      - label: Effective Price (as visible on dex tools)
+        value: 0.6.3
+        unit-suffix: " USDC"            
+        description: 'Effective price in USDC denomination'   
+      - label: Units
+        value: 0.6.4
+        unit-suffix: " WLTH"    
+        description: 'Units sold (stack item 0.6.4)'
+      - label: Total Price
+        value: 0.6.6
+        unit-suffix: " USDC"
+        description: 'Amount of USDC recevied.'
+
+  Buy USDC, sell WLTH single backtest:
+    scenario: stop-limit-order.sell.backtest
     plots:
-      Limit Orders:
+      Stop Limit:
         x:
           label: 'Block Number'
         y:
@@ -334,42 +233,26 @@ charts:
         marks:
           - type: line
             options:
+              stroke: blue
+              x: 0.6.5
+              y: 0.6.2
+          - type: line
+            options:
               stroke: red
-              x: 0.3.8
-              y: 0.3.2
+              x: 0.6.5
+              y: 0.6.3
           - type: line
             options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.3
-          - type: line
-            options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.4
-          - type: line
-            options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.5
-          - type: line
-            options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.6
-          - type: line
-            options:
-              stroke: blue
-              x: 0.3.8
-              y: 0.3.7
-          
+              stroke: green
+              x: 0.6.5
+              y: 0.6.4
 
 deployments:
   base-wlth-buy:
-    scenario: limit-orders.buy.prod
+    scenario: stop-limit-order.buy.prod
     order: base-wlth-buy
   base-wlth-sell:
-    scenario: limit-orders.sell.prod
+    scenario: stop-limit-order.sell.prod
     order: base-wlth-sell
 ---
 #uniswap-words !The subparser for the Uniswap words
@@ -378,23 +261,15 @@ deployments:
 #uniswap-v3-init-code !Uniswap v3 init code hash.
 #pool-fee !Uniswap v3 pool fees.
 
-#input-token !Address of the input token
-#output-token !Address of output token
+#input-token-address !Input token from the perspective of the order.
+#output-token-address !Output token from the perspective of the order.
 
-#io-ratio-1 !IO ratio for first order.
-#ouptut-amount-1 !Output amount for first order.
+#stop-ratio !Ratio below which trade is active
+#limit-ratio-1 !IO ratio for first limit order.
+#output-amount-1 !Output amount for first limit order.
 
-#io-ratio-2 !IO ratio for second order.
-#ouptut-amount-2 !Output amount for second order.
-
-#io-ratio-3 !IO ratio for third order.
-#ouptut-amount-3 !Output amount for third order.
-
-#io-ratio-4 !IO ratio for fourth order.
-#ouptut-amount-4 !Output amount for fourth order.
-
-#io-ratio-5 !IO ratio for fifth order.
-#ouptut-amount-5 !Output amount for fifth order.
+#get-oracle-price !Binding to get currect price from orcale.
+#ensure-stop-loss !Binding to ensure stop loss.
 
 #count-key "count-key"
 #plottables !Binding to plot values.
@@ -404,70 +279,73 @@ deployments:
 #plottables-prod
   _ _: ;
 
-#plottables-chart
-  amount io-ratio: ,
-  effective-io-ratio: inv(io-ratio);
-
-#plottables-metric
-  amount io-ratio: ,
-  _: io-ratio-1,
-  _: ouptut-amount-1,
-  _: io-ratio-2,
-  _: ouptut-amount-2,
-  _: io-ratio-3,
-  _: ouptut-amount-3,
-  _: io-ratio-4,
-  _: ouptut-amount-4,
-  _: io-ratio-5,
-  _: ouptut-amount-5;
-
 #plottables-backtest
-  _ _: ,
-  current-price: uniswap-v3-quote-exact-input(
-    input-token output-token
+ _ _: , 
+ current-price: uniswap-v3-quote-exact-input(
+    output-token-address input-token-address
     1
     uniswap-v3-factory uniswap-v3-init-code
     pool-fee
   ),
-  _: io-ratio-1,
-  _: io-ratio-2,
-  _: io-ratio-3,
-  _: io-ratio-4,
-  _: io-ratio-5,
+  _: stop-ratio,
+  _: limit-ratio-1,
   _: block-number();
-  
+
+#plottables-metric
+  amount io-ratio: ,
+  _: stop-ratio,
+  _: limit-ratio-1,
+  effective-limit-ratio-1: inv(limit-ratio-1),
+  _: output-amount-1,
+  input-amount-1: mul(limit-ratio-1 output-amount-1);
+
 #get-trade-count-prod
   trade-count-key: hash(order-hash() count-key), 
   trade-count: get(trade-count-key);
 
-#get-trade-count-chart
-  trade-count: floor(mod(test-trade-count 5));
-
 #get-ratio-amount
-  trade-count: call<'get-trade-count>(),
-  ouput-amount: conditions(
-    equal-to(trade-count 0) ouptut-amount-1
-    equal-to(trade-count 1) ouptut-amount-2
-    equal-to(trade-count 2) ouptut-amount-3
-    equal-to(trade-count 3) ouptut-amount-4
-    equal-to(trade-count 4) ouptut-amount-5
+  count: ,
+  output-amount: conditions(
+    equal-to(count 0) output-amount-1
     "Max order count"    
   ),
   io-ratio: conditions(
-    equal-to(trade-count 0) io-ratio-1
-    equal-to(trade-count 1) io-ratio-2
-    equal-to(trade-count 2) io-ratio-3
-    equal-to(trade-count 3) io-ratio-4
-    equal-to(trade-count 4) io-ratio-5
+    equal-to(count 0) limit-ratio-1
     "Max order count"    
   );
 
+#get-oracle-price-univ3
+ _: uniswap-v3-quote-exact-input(
+    output-token-address input-token-address
+    1
+    uniswap-v3-factory uniswap-v3-init-code
+    pool-fee
+  );
+
+#ensure-stop-loss-decrease
+  current-orcale-price: ,
+  :ensure(
+    less-than(current-orcale-price stop-ratio)
+    "Stop price."
+  );
+
+#ensure-stop-loss-increase
+  current-orcale-price: ,
+  :ensure(
+    greater-than(current-orcale-price stop-ratio)
+    "Stop price."
+  );
+
+#ensure-stop-loss-metric
+  _: ;
+
 #calculate-io
   using-words-from uniswap-words orderbook-subparser
-    
-  trade-count
-  final-amount
-  final-ratio: call<'get-ratio-amount>(),
+
+  orcale-price: call<'get-oracle-price>(),
+  :call<'ensure-stop-loss>(orcale-price),
+  trade-count: call<'get-trade-count>(),
+  final-amount final-ratio: call<'get-ratio-amount>(trade-count),
   :call<'plottables>(final-amount final-ratio); 
 
 #handle-io

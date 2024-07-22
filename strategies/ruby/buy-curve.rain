@@ -1,0 +1,78 @@
+networks:
+  base-community: 
+    rpc: https://mainnet.base.org 
+    chain-id: 8453 
+    network-id: 8453 
+    currency: ETH
+
+subgraphs:
+  base-community: https://api.thegraph.com/subgraphs/name/h20liquidity/base-0x2aee87
+  
+orderbooks:
+  base-community:
+    address: 0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76
+    network: base-community
+    subgraph: base-community
+
+deployers:
+  base-community:
+    address: 0x56394785a22b3BE25470a0e03eD9E0a939C47b9b
+    network: base-community
+
+tokens:
+  base-wlth:
+    network: base-community
+    address: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+  base-usdc:
+    network: base-community
+    address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+
+scenarios:
+   buy-curve:
+     network: base-community
+     deployer: base-community
+     orderbook: base-community
+     bindings:
+        # Ask for now, registry in future.
+        uniswap-words: 0xD6B34F97d4A8Cb38D0544dB241CB3f335866f490
+        orderbook-subparser: 0x8D96ea3EF24D7123882c51CE4325b89bc0d63f9e
+        scale-factor: 1.01
+---
+#orderbook-subparser !The address for uniswap subparser.
+#uniswap-words !The address for orderbook subparser. 
+#scale-factor !Scale factor for buy curve.
+
+#calculate-io
+ out-tkn-amount: get(0x469017709316f7f258096e4e2ac47b89e1a104ffa810dcd5c906f95726cdbf78),
+ in-tkn-amount: get(0x10b2c7dd2f0c383e8445066430f62720e189027b16a56ad4212eefac8e6c77ed),
+ buyback-tkn-amount: saturating-sub(out-tkn-amount in-tkn-amount),
+
+ in-reserve-amount: get(0x9ab12bc4bd54bd37acb958637d7fe14ddeef508ad5d626b50af490dad0dbf197),
+ out-reserve-amount: get(0xf1c2eb58238d7f8a14e41d826612621aace3c0329f0b1c963912f844470a44b4),
+ buyback-reserve-budget: saturating-sub(in-reserve-amount out-reserve-amount),
+
+ amount io-ratio: max-value() mul(
+   scale-factor
+   div(buyback-reserve-budget buyback-tkn-amount)
+ );
+
+#handle-io
+ normalised-out-reserve-amount: mul(
+   scale-factor
+   scale-18-dynamic<1 0>(output-token-decimals() uint256-output-vault-decrease())
+ ),
+ total-out-reserve-k: 0xf1c2eb58238d7f8a14e41d826612621aace3c0329f0b1c963912f844470a44b4,
+ :set(
+    total-out-reserve-k
+    add(get(total-out-reserve-k) normalised-out-reserve-amount)
+ ),
+
+ /* round down how much reserve we've received for conservative buy offers */
+ normalised-in-tkn-amount: scale-18-dynamic(input-token-decimals() uint256-input-vault-increase()),
+ total-in-tkn-k: 0x10b2c7dd2f0c383e8445066430f62720e189027b16a56ad4212eefac8e6c77ed,
+ :set(
+    total-in-tkn-k
+    add(
+      get(total-in-tkn-k)
+      normalised-in-tkn-amount)
+ );

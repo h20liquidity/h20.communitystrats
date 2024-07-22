@@ -1,0 +1,119 @@
+networks:
+  base-community: 
+    rpc: https://mainnet.base.org 
+    chain-id: 8453 
+    network-id: 8453 
+    currency: ETH
+
+subgraphs:
+  base-community: https://api.thegraph.com/subgraphs/name/h20liquidity/base-0x2aee87
+  
+orderbooks:
+  base-community:
+    address: 0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76
+    network: base-community
+    subgraph: base-community
+
+deployers:
+  base-community:
+    address: 0x56394785a22b3BE25470a0e03eD9E0a939C47b9b
+    network: base-community
+
+tokens:
+  base-wlth:
+    network: base-community
+    address: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+  base-usdc:
+    network: base-community
+    address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+
+scenarios:
+   sell-curve:
+     network: base-community
+     deployer: base-community
+     orderbook: base-community
+     bindings:
+        # Ask for now, registry in future.
+        uniswap-words: 0xD6B34F97d4A8Cb38D0544dB241CB3f335866f490
+        orderbook-subparser: 0x8D96ea3EF24D7123882c51CE4325b89bc0d63f9e
+
+        start-time: 1721638775
+        end-time: 1768942775
+        initial-tkn-amount: 100000000
+
+        sale-token-address: 0x07a1324b9d7d845f8fc143338e3f90e0808ab531
+        base-expenses: 5000000 
+
+
+
+---
+#orderbook-subparser !The address for uniswap subparser.
+#uniswap-words !The address for orderbook subparser. 
+#start-time !Start time for sale
+#end-time !End time for sale
+#initial-tkn-amount !Initial amout offered for sale
+#sale-token-address !Address of sale token
+#base-expenses !Base expense to reserve 
+
+#calculate-io 
+ using-words-from orderbook-subparser uniswap-words
+
+ :ensure(
+   greater-than(now() start-time)
+   "Sale start"
+ ),
+
+ completion: saturating-sub(
+    1
+    div(
+      saturating-sub(end-time now())
+      sub(end-time start-time)
+    )
+ ),
+
+  /* must match the buy side tracking */
+ normalised-in-tkn-amount: get(0x10b2c7dd2f0c383e8445066430f62720e189027b16a56ad4212eefac8e6c77ed),
+ total-tkn-amount: add(initial-tkn-amount normalised-in-tkn-amount),
+
+
+ start-mc: 30e24,
+ end-mc: 100e24,
+ current-mc: add(start-mc mul(completion sub(end-mc start-mc))),
+ sale-token-supply: erc-20-total-supply(sale-token-address),
+ 
+  max-amount: mul(completion total-tkn-amount),
+  io-ratio: div(current-mc sale-token-supply);
+
+#handle-io 
+
+ /* round up how much tkn we've sent out for conservative buy offers */
+ normalised-out-tkn-amount: scale-18-dynamic<1 0>(output-token-decimals() uint256-output-vault-decrease()),
+ total-out-token-k: 0x469017709316f7f258096e4e2ac47b89e1a104ffa810dcd5c906f95726cdbf78,
+ :set(
+   total-out-token-k
+   add(get(total-out-token-k) normalised-out-tkn-amount)
+ ),
+
+ /* round down how much reserve we've received for conservative buy offers */
+ normalised-in-reserve-amount: scale-18-dynamic(input-token-decimals() uint256-input-vault-increase()),
+ total-in-reserve-k: 0x9ab12bc4bd54bd37acb958637d7fe14ddeef508ad5d626b50af490dad0dbf197,
+ :set(
+   total-in-reserve-k
+   add(get(total-in-reserve-k) normalised-in-reserve-amount)
+ ),
+
+ /* base expenses needed for operations before buyback */
+ /* 5 mill */
+ /* @todo remove the tkn that was sold for base expenses from the amount that we're willing to buyback */
+ total-out-reserve-k: 0xf1c2eb58238d7f8a14e41d826612621aace3c0329f0b1c963912f844470a44b4,
+ total-out-reserve-amount: get(total-out-reserve-k),
+ :set(
+   total-out-reserve-k
+   max(
+      total-out-reserve-amount
+      min(
+       base-expenses
+       add(normalised-in-reserve-amount total-out-reserve-amount)
+      )
+    )
+ );

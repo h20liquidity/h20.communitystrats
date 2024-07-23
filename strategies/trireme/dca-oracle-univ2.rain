@@ -29,7 +29,7 @@ networks:
     currency: MATIC
 
 subgraphs:
-  polygon-h20liquidity: https://api.thegraph.com/subgraphs/name/h20liquidity/polygon-0xc95a5f8e
+  polygon-h20liquidity: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-polygon/0.1/gn
   
 orderbooks:
   polygon-h20liquidity:
@@ -52,7 +52,7 @@ tokens:
 
 orders:
   # vault-id generated with `openssl rand -hex 32`
-  polygon-h20liquidity-buy:
+  polygon-zerc-buy:
     orderbook: polygon-h20liquidity
     inputs:
       - token: polygon-zerc
@@ -60,6 +60,15 @@ orders:
     outputs:
       - token: polygon-usdc
         vault-id: 0xd302fedcbf6b3ea84812cde736439a97478b93fce4b546bc445f837f25589384
+
+  polygon-zerc-sell:
+    orderbook: polygon-h20liquidity
+    inputs:
+      - token: polygon-usdc
+        vault-id: 0xb5baee701c15eed1ce9807b4475a35a9c729f01d5d5e9aa17e84318db6ba476f
+    outputs:
+      - token: polygon-zerc
+        vault-id: 0xb5baee701c15eed1ce9807b4475a35a9c729f01d5d5e9aa17e84318db6ba476f
 
 
 scenarios:
@@ -76,110 +85,134 @@ scenarios:
           uniswap-v2-factory: 0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32
           uniswap-v2-init-code: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f
 
-          # Distribution token, i.e token that is bought or sold, for and against the stable token.
-          distribution-token: 0xE1b3eb06806601828976e491914e3De18B5d6b28
-          # Stable token, token with price pegged to one dollar.
-          stable-token: 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359 
-
-          # If the distribution token is paired with a stable token in a univ2 pool,
-          # then address for this binding is same as the stable token address.
-          # Eg: If the uniswap-v2 pair is ZERC-USDC, then reserve token address is same as USDC address.
-          #
-          # If the distribution token is paired with native wrapped token in a univ2 pool,
-          # then address for this binding is the address of the native wrapped token.
-          # Eg: If the uniswap-v2 pair is ZERC-WETH, then reserve token address is same as WETH address.
-          # This reserve token will be compared against stable token to calculate the dollar
-          # equivalent amount.
-          reserve-token: 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359
-
-          # IO multiplier binding
-          # Binding used to calculate multiplier for distribution token to get its dollor equivalent.
-          #
-          # If distribution token is paired with a stable token, the binding value is the stable multiplier.
-          # io-multiplier: '''io-multiplier-stable'
-          #
-          # If distribution token is paired with a reserve token, the binding value is the reserve multiplier
-          # io-multiplier: '''io-multiplier-reserve'
-          io-multiplier: '''io-multiplier-stable'
-          
           #Jittery binomial bits
           jittery-binomial-bits: 10
 
-          # Bounty amount offered for trade in dollar.
-          #
-          # Minimum amount of bounty offered for the trade, depending upon the network this value might change.
-          bounty-min: 0.3
-
-          # Maximum amount of bounty offered for the trade, this will also be the amount offered for the first trade.
-          bounty-max: 1.5 
-
-          # Bounty unit increase, amount by which to increase the bounty amount.
-          bounty-unit-increase: 0.01
-
-          # Bounty unit time in seconds, time in which bounty increased by `bounty-unit-increase`
-          # Eg: If `bounty-unit-increase` is 0.01 and `bounty-unit-time` is 60, then the bounty will increase linearly
-          # by `0.01` every 60 seconds.
-          bounty-unit-time: 60
-
         scenarios:
           buy:
-            bindings:
+            bindings: 
+              # Input token, this is the token being received.
+              input-token: 0xE1b3eb06806601828976e491914e3De18B5d6b28
+              
+              # Output token, this is the token that is being offered.
+              # Output token, mean amount 
+              # Amount of output tokens offered per trade.
+              # For gas expensive networks mean amount needs to be higher to compensate for gas fee and bounty.
+              mean-output-amount : 15
+
+              # Output token, this is the token being sold
+              output-token: 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359
+
+              # Reserve token, If the output token is paired with the input token on a uniswap v2,
+              # then the reserve is the input token. 
+              # If the output token is NOT paired with the input token on a uniswap v2 pool,
+              # then the reserve address is the token which the ouput token is paired with.
+              reserve-token: 0xE1b3eb06806601828976e491914e3De18B5d6b28
+
+              # Quote and Twap multiplier to get quote and 30min twap for input-output token pair.
+              # If the output token is paired with the input token on a uniswap v2,
+              # then set it to identity
+              # If the output token is NOT paired with the input token on a uniswap v2 pool,
+              # then set it to reserve
+              io-quote: '''io-quote-identity' 
+
+              # Params for bounty auction which is input token denominated. Min price, max price, time in seconds and unit increase
+              bounty-min: 2.3
+              bounty-max: 11
+              bounty-unit-increase: 0.08
+              bounty-unit-time: 60
+
               # Cooldown between two trades in seconds.
               cooldown-time: 60
-              # Mean amount of USDC offered per trade.
-              # For gas expensive networks mean amount needs to be higher to compensate
-              # for gas fee and bounty.
-              mean-usd-amount: 15 
-              calculate-exact-quote: '''calculate-exact-buy-quote'
-              calculate-io-ratio: '''calculate-io-ratio-buy'
+
+              # Minimum io-ratio for the order. 
+              # Strategy will not buy output token with input token for a lower ratio.
+              min-ratio: 7.130229831180446958
             scenarios:
               prod:
                 bindings:
+                  ensure-min-ratio: '''ensure-min-ratio-prod'
                   ensure-cooldown: '''ensure-cooldown-prod'
                   plottables: '''plottables-prod'
               chart:
                 runs: 1000
                 bindings:
+                  ensure-min-ratio: '''ensure-min-ratio-chart'
                   ensure-cooldown: '''ensure-cooldown-chart'
                   plottables: '''plottables-chart'
               metric:
                 runs: 1
                 bindings:
+                  ensure-min-ratio: '''ensure-min-ratio-chart'
                   ensure-cooldown: '''ensure-cooldown-metric'
                   plottables: '''plottables-chart'
               test:
                 runs: 1
                 bindings:
+                  ensure-min-ratio: '''ensure-min-ratio-chart'
                   ensure-cooldown: '''ensure-cooldown-metric'
                   plottables: '''plottables-prod'
           sell:
             bindings:
+              # Input token, this is the token being received.
+              input-token: 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359 
+              
+              # Output token, this is the token that is being offered.
+              # Output token, mean amount 
+              # Amount of output tokens offered per trade.
+              # For gas expensive networks mean amount needs to be higher to compensate for gas fee and bounty.
+              mean-output-amount : 120
+
+              # Output token, this is the token being sold
+              output-token: 0xE1b3eb06806601828976e491914e3De18B5d6b28
+
+              # Reserve token, If the output token is paired with the input token on a uniswap v2,
+              # then the reserve is the input token. 
+              # If the output token is NOT paired with the input token on a uniswap v2 pool,
+              # then the reserve address is the token which the ouput token is paired with.
+              reserve-token: 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359
+
+              # Quote and Twap multiplier to get quote and 30min twap for input-output token pair.
+              # If the output token is paired with the input token on a uniswap v2,
+              # then set it to identity
+              # If the output token is NOT paired with the input token on a uniswap v2 pool,
+              # then set it to reserve
+              io-quote: '''io-quote-identity' 
+
+              # Params for bounty auction which is input token denominated. Min price, max price, time in seconds and unit increase
+              bounty-min: 0.3
+              bounty-max: 1.5
+              bounty-unit-increase: 0.01
+              bounty-unit-time: 60
+
               # Cooldown between two trades in seconds.
               cooldown-time: 60
-              # Mean amount of USDC offered per trade.
-              # For gas expensive networks mean amount needs to be higher to compensate
-              # for gas fee and bounty.
-              mean-usd-amount: 15 
-              calculate-exact-quote: '''calculate-exact-sell-quote'
-              calculate-io-ratio: '''calculate-io-ratio-sell'
+
+              # Minimum io-ratio for the order. 
+              # Strategy will not buy output token with input token for a lower ratio.
+              min-ratio: 0.05
             scenarios:
               prod:
                 bindings:
+                  ensure-min-ratio: '''ensure-min-ratio-prod'
                   ensure-cooldown: '''ensure-cooldown-prod'
                   plottables: '''plottables-prod'
               chart:
                 runs: 1000
                 bindings:
+                  ensure-min-ratio: '''ensure-min-ratio-chart'
                   ensure-cooldown: '''ensure-cooldown-chart'
                   plottables: '''plottables-chart'
               metric:
                 runs: 1
                 bindings:
+                  ensure-min-ratio: '''ensure-min-ratio-chart'
                   ensure-cooldown: '''ensure-cooldown-metric'
                   plottables: '''plottables-chart'
               test:
                 runs: 1
                 bindings:
+                  ensure-min-ratio: '''ensure-min-ratio-chart'
                   ensure-cooldown: '''ensure-cooldown-metric'
                   plottables: '''plottables-prod'
                         
@@ -189,19 +222,19 @@ charts:
     metrics:
       
       - label: Amount of USDC offered for first trade.
-        value: 0.4
+        value: 0.3
         description: Amount of USDC offered for the current block.
       - label: Amount of ZERC received for frist trade.
-        value: 0.5
+        value: 0.4
         description: Amount of ZERC received for USDC offered.
       - label: io-ratio ZERC/USDC
-        value: 0.7
+        value: 0.6
         description: Ratio offered by the order for the current block accounting for bounty.
-      - label: Minimum Bounty amount
+      - label: Minimum ZERC Bounty amount
         value: 0.7.4
         unit-prefix: $        
         description: Minimum bounty offered
-      - label: Maximum Bounty amount
+      - label: Maximum ZERC Bounty amount
         value: 0.7.5
         unit-prefix: $        
         description: Maximum bounty offered
@@ -236,26 +269,26 @@ charts:
         unit-prefix: $ 
         description: Cummulative dollar equivalent amount of ZERC tokens sold in a month.  
 
-    D. ZERC Sell Deployment Planning: 
+  D. ZERC Sell Deployment Planning: 
     scenario: polygon-h20liquidity-oracle-dca.sell.metric
     metrics:
-      - label: Amount of USDC offered for first trade.
+      - label: Amount of ZERC offered for first trade.
+        value: 0.3
+        description: Amount of ZERC offered for the current block.
+      - label: Amount of USDC received for frist trade.
         value: 0.4
-        description: Amount of USDC offered for the current block.
-      - label: Amount of ZERC received for frist trade.
-        value: 0.5
-        description: Amount of ZERC received for USDC offered.
+        description: Amount of USDC received for USDC offered.
       - label: io-ratio USDC/ZERC
-        value: 0.7
+        value: 0.6
         description: Ratio offered by the order for the current block accounting for bounty.
       - label: Minimum Bounty amount
         value: 0.7.4
         unit-prefix: $        
-        description: Minimum bounty offered
+        description: Minimum USDC bounty offered 
       - label: Maximum Bounty amount
         value: 0.7.5
         unit-prefix: $        
-        description: Maximum bounty offered
+        description: Maximum USDC bounty offered
       - label: Bounty increase per minute
         value: 0.7.7
         unit-prefix: $   
@@ -267,7 +300,7 @@ charts:
       - label: Mean amount
         value: 0.7.3
         unit-prefix: $        
-        description: Mean amount of USDC sold 
+        description: Mean amount of ZERC sold 
       - label: Cooldown in minutes
         value: 0.7.8        
         description: Number of minutes between strategy running
@@ -289,7 +322,7 @@ charts:
 
     plots:
 
-  A. ZERC Trading Simulation:
+  A. ZERC Buy Simulation:
     scenario: polygon-h20liquidity-oracle-dca.buy.chart
     plots:
       Mean amount of USDC offered:
@@ -302,7 +335,7 @@ charts:
                   outputs:
                     y: "count"
                   options:
-                    x: "0.4"
+                    x: "0.3"
                     thresholds: 25
                     
       Mean amount of ZERC received:
@@ -315,24 +348,11 @@ charts:
                   outputs:
                     y: "count"
                   options: 
-                    x: "0.5"
+                    x: "0.4"
                     thresholds: 25
   C. ZERC Sell Simulation:
     scenario: polygon-h20liquidity-oracle-dca.sell.chart
     plots:
-      Mean amount of USDC received:
-        marks:
-          - type: recty
-            options:
-              transform:
-                type: binx
-                content:
-                  outputs:
-                    y: "count"
-                  options:
-                    x: "0.4"
-                    thresholds: 25
-                    
       Mean amount of ZERC offered:
         marks:
           - type: recty
@@ -342,14 +362,31 @@ charts:
                 content:
                   outputs:
                     y: "count"
+                  options:
+                    x: "0.3"
+                    thresholds: 25
+                    
+      Mean amount of USDC received:
+        marks:
+          - type: recty
+            options:
+              transform:
+                type: binx
+                content:
+                  outputs:
+                    y: "count"
                   options: 
-                    x: "0.5"
+                    x: "0.4"
                     thresholds: 25 
 
 deployments:
-  polygon-h20liquidity-buy:
+  polygon-zerc-buy:
     scenario: polygon-h20liquidity-oracle-dca.buy.prod
-    order: polygon-h20liquidity-buy
+    order: polygon-zerc-buy
+  
+  polygon-zerc-sell:
+    scenario: polygon-h20liquidity-oracle-dca.sell.prod
+    order: polygon-zerc-sell
 ---
 #cooldown-time !The minimum amount of seconds that must elapse between trades.
 #bounty-min !Minimum bounty to offer for each trade in USD.
@@ -357,20 +394,20 @@ deployments:
 #bounty-unit-time !Unit of time to increase the bounty.
 #bounty-max !Maximum bounty that can be offered. 
 
-#distribution-token !The distribution token, the token that is bought and sold against the stable token.
-#stable-token !The stable token that is used as a reference for the dollar equivalent conversions.
-#reserve-token !The token that will be used to compare against the stable token to calculate the dollar equivalent amount.
+#input-token !Input token from the perspective of the order.
+#output-token !Ouput token from the perspective of the order.
+#reserve-token !Token which is paired with the ouput token on uniswap-v2 pool.
+#io-quote !Binding to get the quote for input output token pair.
 
-#mean-usd-amount !Mean dollar denominated amount of stable tokens traded.
+#min-ratio !Minimum io-ratio for the order.
+#mean-output-amount !Mean dollar denominated amount of stable tokens traded.
 #jittery-binomial-bits !Number of bits for jittery binomial to calculate random amount of stable token traded per trade.
 
 #test-current-time !Test current time for plotting.
 #test-last-time !Test last time for plotting.
 
 #ensure-cooldown !Binding to enforce cooldown check.
-#calculate-exact-quote !Binding to calculate exact amount of distribution tokens required for buys and sells.
-#calculate-io-ratio !Binding to calculate io-ratio for the order.
-#io-multiplier !Binding to get the ratio multiplier for distribution token.
+#ensure-min-ratio !Binding to enforce price remains between minimum and maximum price set.
 #plottables !The binding for additional things we want to plot during testing.
 
 #uniswap-words !The subparser for the Uniswap words
@@ -419,66 +456,59 @@ deployments:
  ),
  :set(hash(order-hash() cooldown-key) current-time);
 
+#ensure-min-ratio-chart
+  _: ;
+  
+#ensure-min-ratio-prod
+  order-io-ratio: ,
+  :ensure(
+    greater-than(order-io-ratio min-ratio)
+    "min ratio"
+  );
 
-#calculate-io-ratio-buy
-  usd-amount18
-  token-amount18
+#calculate-io-ratio
+  output-amount
+  input-amount
   time-since-cooldown: ,
-  io-ratio: div(token-amount18 add(usd-amount18 call<'bounty-auction>(time-since-cooldown))),
+  io-ratio: div(saturating-sub(input-amount call<'bounty-auction>(time-since-cooldown)) output-amount),
   /* Add io-ratio and max-op on stack*/
-  _: usd-amount18,
+  _: output-amount,
   _: io-ratio;
 
-#calculate-io-ratio-sell
-  usd-amount18
-  token-amount18
-  time-since-cooldown: ,
-  io-ratio: div(saturating-sub(usd-amount18 call<'bounty-auction>(time-since-cooldown)) token-amount18),
-  /* Add io-ratio and max-op on stack*/
-  _: token-amount18,
-  _: io-ratio;
-
-#calculate-exact-buy-quote
-  amount-usd18 ratio-multiplier: ,
-  token-amount18 last-price-timestamp: uniswap-v2-quote-exact-input<1>(
-    reserve-token distribution-token
-    mul(amount-usd18 ratio-multiplier)
-    uniswap-v2-factory uniswap-v2-init-code
-  ),
-  :ensure(less-than(last-price-timestamp now()) "Buy price change."),
-  _: token-amount18;
-
-
-#calculate-exact-sell-quote
-  amount-usd18 ratio-multiplier: ,
-  token-amount18 last-price-timestamp: uniswap-v2-quote-exact-output<1>(
-    distribution-token reserve-token
-    mul(amount-usd18 ratio-multiplier)
-    uniswap-v2-factory uniswap-v2-init-code
-  ),
-  :ensure(less-than(last-price-timestamp now()) "Sell price change."),
-  _: token-amount18;
-
-#io-multiplier-reserve
-  _: uniswap-v2-current-output-ratio(
-    stable-token reserve-token
+#io-quote-reserve
+  reserve-amount: ,
+  _: output-token reserve-token(
+    reserve-token input-token
+    reserve-amount
     uniswap-v2-factory uniswap-v2-init-code
   );
 
-#io-multiplier-stable
-  _: 1;
+#io-quote-identity
+  _: ;
+
+#calculate-exact-quote
+  output-amount: ,
+  output-to-reserve last-price-timestamp: uniswap-v2-quote-exact-input<1>(
+    output-token reserve-token
+    output-amount
+    uniswap-v2-factory uniswap-v2-init-code
+  ),
+  :ensure(less-than(last-price-timestamp now()) "Price change."),
+  reserve-to-input: call<'io-quote>(output-to-reserve);
+
+
 
 #plottables-chart
   max-output-amount io-ratio: ,
   _: cooldown-time,
-  _: mean-usd-amount,
+  _: mean-output-amount,
   _: bounty-min,
   _: bounty-max,
-  max-bounty-ratio: mul(div(bounty-max mean-usd-amount) 100),
+  max-bounty-ratio: mul(div(bounty-max mean-output-amount) 100),
   bounty-increase-per-minute: mul(div(bounty-unit-increase bounty-unit-time) 60),
   cooldown-in-minutes: div(cooldown-time 60),
   cooldown-in-hours: div(60 cooldown-in-minutes),
-  total-amount-daily: mul(cooldown-in-hours mean-usd-amount 24),
+  total-amount-daily: mul(cooldown-in-hours mean-output-amount 24),
   total-amount-weekly: mul(total-amount-daily 7),
   total-amount-montly: mul(total-amount-daily 30);
 
@@ -489,19 +519,19 @@ deployments:
 #calculate-io
   using-words-from uniswap-words orderbook-subparser
 
-  io-ratio-multiplier: call<'io-multiplier>(),
   current-time last-time: call<'ensure-cooldown>(),
   random-multiplier18: call<'jittery-binomial>(last-time), 
-  jittered-amount-usd18: mul(
-    mul(mean-usd-amount 2)
+  jittered-output-amount: mul(
+    mul(mean-output-amount 2)
     random-multiplier18
   ), 
-  token-amount-output18: call<'calculate-exact-quote>(jittered-amount-usd18 io-ratio-multiplier),
+  quote-input-amount: call<'calculate-exact-quote>(jittered-output-amount),
   max-output final-io-ratio: call<'calculate-io-ratio>(
-    jittered-amount-usd18
-    token-amount-output18
+    jittered-output-amount
+    quote-input-amount
     saturating-sub(current-time add(last-time cooldown-time))
   ),
+  :call<'ensure-min-ratio>(final-io-ratio),
   :call<'plottables>(max-output final-io-ratio); 
 
 #handle-io

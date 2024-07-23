@@ -73,8 +73,8 @@ scenarios:
           orderbook-subparser: 0x8f037f2a3fF2dee510486D9C63A47A245991a4C1
 
           # Uniswap V3 factory addresses and init code
-          uniswap-v2-factory: '[uniswap-v2-factory]'
-          uniswap-v2-init-code: '[uniswap-v2-init-code]' 
+          uniswap-v2-factory: 0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32
+          uniswap-v2-init-code: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f
 
           # Distribution token, i.e token that is bought or sold, for and against the stable token.
           distribution-token: 0xE1b3eb06806601828976e491914e3De18B5d6b28
@@ -90,7 +90,7 @@ scenarios:
           # Eg: If the uniswap-v2 pair is ZERC-WETH, then reserve token address is same as WETH address.
           # This reserve token will be compared against stable token to calculate the dollar
           # equivalent amount.
-          reserve-token: 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270
+          reserve-token: 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359
 
           # IO multiplier binding
           # Binding used to calculate multiplier for distribution token to get its dollor equivalent.
@@ -103,7 +103,7 @@ scenarios:
           io-multiplier: '''io-multiplier-stable'
           
           #Jittery binomial bits
-          jittery-binomial-bits: 20
+          jittery-binomial-bits: 10
 
           # Bounty amount offered for trade in dollar.
           #
@@ -151,15 +151,43 @@ scenarios:
                 runs: 1
                 bindings:
                   ensure-cooldown: '''ensure-cooldown-metric'
-                  plottables: '''plottables-prod'              
+                  plottables: '''plottables-prod'
+          sell:
+            bindings:
+              # Cooldown between two trades in seconds.
+              cooldown-time: 60
+              # Mean amount of USDC offered per trade.
+              # For gas expensive networks mean amount needs to be higher to compensate
+              # for gas fee and bounty.
+              mean-usd-amount: 15 
+              calculate-exact-quote: '''calculate-exact-sell-quote'
+              calculate-io-ratio: '''calculate-io-ratio-sell'
+            scenarios:
+              prod:
+                bindings:
+                  ensure-cooldown: '''ensure-cooldown-prod'
+                  plottables: '''plottables-prod'
+              chart:
+                runs: 1000
+                bindings:
+                  ensure-cooldown: '''ensure-cooldown-chart'
+                  plottables: '''plottables-chart'
+              metric:
+                runs: 1
+                bindings:
+                  ensure-cooldown: '''ensure-cooldown-metric'
+                  plottables: '''plottables-chart'
+              test:
+                runs: 1
+                bindings:
+                  ensure-cooldown: '''ensure-cooldown-metric'
+                  plottables: '''plottables-prod'
+                        
 charts:
-  B. ZERC Deployment Planning: 
+  B. ZERC Buy Deployment Planning: 
     scenario: polygon-h20liquidity-oracle-dca.buy.metric
     metrics:
-      - label: Current ZERC price.
-        value: 0.3.3
-        unit-prefix: $
-        description: Price of ZERC at current block.
+      
       - label: Amount of USDC offered for first trade.
         value: 0.4
         description: Amount of USDC offered for the current block.
@@ -170,41 +198,92 @@ charts:
         value: 0.7
         description: Ratio offered by the order for the current block accounting for bounty.
       - label: Minimum Bounty amount
-        value: 0.8.4
+        value: 0.7.4
         unit-prefix: $        
         description: Minimum bounty offered
       - label: Maximum Bounty amount
-        value: 0.8.5
+        value: 0.7.5
         unit-prefix: $        
         description: Maximum bounty offered
       - label: Bounty increase per minute
-        value: 0.8.7
+        value: 0.7.7
         unit-prefix: $   
         description: Amount by which bounty increases every minute after cooldown.
       - label: Max Bounty ratio
-        value: 0.8.6
+        value: 0.7.6
         unit-suffix: '%'   
         description: Ratio of max bounty amount to order amount
       - label: Mean amount
-        value: 0.8.3
+        value: 0.7.3
         unit-prefix: $        
         description: Mean amount of USDC sold 
       - label: Cooldown in minutes
-        value: 0.8.8        
+        value: 0.7.8        
         description: Number of minutes between strategy running
       - label: Trades per hour
-        value: 0.8.9       
+        value: 0.7.9       
         description: Number of trades per hour
       - label: Cummulative amount traded daily
-        value: 0.8.10     
+        value: 0.7.10     
         unit-prefix: $ 
         description: Cummulative dollar equivalent amount of ZERC tokens sold in a day.
       - label: Cummulative amount traded weekly
-        value: 0.8.11     
+        value: 0.7.11     
         unit-prefix: $ 
         description: Cummulative dollar equivalent amount of ZERC tokens sold in a week.
       - label: Cummulative amount traded montly
-        value: 0.8.12     
+        value: 0.7.12     
+        unit-prefix: $ 
+        description: Cummulative dollar equivalent amount of ZERC tokens sold in a month.  
+
+    D. ZERC Sell Deployment Planning: 
+    scenario: polygon-h20liquidity-oracle-dca.sell.metric
+    metrics:
+      - label: Amount of USDC offered for first trade.
+        value: 0.4
+        description: Amount of USDC offered for the current block.
+      - label: Amount of ZERC received for frist trade.
+        value: 0.5
+        description: Amount of ZERC received for USDC offered.
+      - label: io-ratio USDC/ZERC
+        value: 0.7
+        description: Ratio offered by the order for the current block accounting for bounty.
+      - label: Minimum Bounty amount
+        value: 0.7.4
+        unit-prefix: $        
+        description: Minimum bounty offered
+      - label: Maximum Bounty amount
+        value: 0.7.5
+        unit-prefix: $        
+        description: Maximum bounty offered
+      - label: Bounty increase per minute
+        value: 0.7.7
+        unit-prefix: $   
+        description: Amount by which bounty increases every minute after cooldown.
+      - label: Max Bounty ratio
+        value: 0.7.6
+        unit-suffix: '%'   
+        description: Ratio of max bounty amount to order amount
+      - label: Mean amount
+        value: 0.7.3
+        unit-prefix: $        
+        description: Mean amount of USDC sold 
+      - label: Cooldown in minutes
+        value: 0.7.8        
+        description: Number of minutes between strategy running
+      - label: Trades per hour
+        value: 0.7.9       
+        description: Number of trades per hour
+      - label: Cummulative amount traded daily
+        value: 0.7.10     
+        unit-prefix: $ 
+        description: Cummulative dollar equivalent amount of ZERC tokens sold in a day.
+      - label: Cummulative amount traded weekly
+        value: 0.7.11     
+        unit-prefix: $ 
+        description: Cummulative dollar equivalent amount of ZERC tokens sold in a week.
+      - label: Cummulative amount traded montly
+        value: 0.7.12     
         unit-prefix: $ 
         description: Cummulative dollar equivalent amount of ZERC tokens sold in a month.    
 
@@ -235,9 +314,37 @@ charts:
                 content:
                   outputs:
                     y: "count"
-                  options:
+                  options: 
                     x: "0.5"
                     thresholds: 25
+  C. ZERC Sell Simulation:
+    scenario: polygon-h20liquidity-oracle-dca.sell.chart
+    plots:
+      Mean amount of USDC received:
+        marks:
+          - type: recty
+            options:
+              transform:
+                type: binx
+                content:
+                  outputs:
+                    y: "count"
+                  options:
+                    x: "0.4"
+                    thresholds: 25
+                    
+      Mean amount of ZERC offered:
+        marks:
+          - type: recty
+            options:
+              transform:
+                type: binx
+                content:
+                  outputs:
+                    y: "count"
+                  options: 
+                    x: "0.5"
+                    thresholds: 25 
 
 deployments:
   polygon-h20liquidity-buy:

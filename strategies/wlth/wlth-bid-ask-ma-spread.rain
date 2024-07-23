@@ -91,6 +91,7 @@ scenarios:
               tokenrevert-percent-decrease: 0.01
               time-expiry: 3000000
               initial-price-complete: 65
+              initial-price-complete2: 0.00001
             scenarios:
               prod:
                 bindings:
@@ -134,22 +135,22 @@ charts:
         value: 0.3.5
         description: the percent for price to decrease for stable outgoing from the completed token outgoing
       - label: Price required for stable outgoing 
-        value: 0.13
+        value: 0.9
         description: Price required for stable outgoing 
       - label: Completed price of stable outgoing 
-        value: 0.14
+        value: 0.10
         description: Completed price of stable outgoing (if there is no completed price this will be inaccurate)
       - label: Price required for stablerevert
-        value: 0.15
+        value: 0.11
         description: Price required for stablerevert, meaning token is outgoing (if there is no completed price this will be inaccurate)
       - label: Price required for token outgoing
-        value: 0.16
+        value: 0.12
         description: Price required for token outgoing
       - label: Completed price of token outgoing 
-        value: 0.17
+        value: 0.13
         description: Completed price of token outgoing (if there is no completed price this will be inaccurate)
       - label: Price required for tokenrevert
-        value: 0.18
+        value: 0.14
         description: Price required for tokenrevert, meaning stable is outgoing (if there is no completed price this will be inaccurate)
       - label: Stable outgoing amount 
         value: 0.19
@@ -170,8 +171,6 @@ charts:
         value: 0.3.1
         description: tokenstable range floor
 
-
-      
       
 deployments:
   wmatic-consolidated-ma:
@@ -197,16 +196,17 @@ deployments:
 #uniswap-v3-init-code !Uniswap v3 factory init code.
 #plottables !Binding for charting metrics.
 #initial-price-complete !Initial price complete to stop inv() on 0 error.
+#initial-price-complete2 !Initial price complete to stop inv() on 0 error.
 #ensure-order-condition !Condition to check order validity.
 
-#stable-price-130724 "stable-price-130724"
-#token-price-130724 "token-price-130724"
-#stable-revert-130724 "stable-revert-130724"
-#stable-expiry-130724 "stable-expiry-130724"
-#token-revert-130724 "token-revert-130724"
-#token-expiry-130724 "token-expiry-130724"
-#stable-output-130724 "stable-output-130724"
-#token-output-130724 "token-output-130724"
+#stable-price-220724 "stable-price-220724"
+#token-price-220724 "token-price-220724"
+#stable-revert-220724 "stable-revert-220724"
+#stable-expiry-220724 "stable-expiry-220724"
+#token-revert-220724 "token-revert-220724"
+#token-expiry-220724 "token-expiry-220724"
+#stable-output-220724 "stable-output-220724"
+#token-output-220724 "token-output-220724"
 
 #plottables-plot
   _: tokenstable-range-ceiling,
@@ -262,15 +262,15 @@ current-price: uniswap-v3-twap-output-ratio(
 current-time: block-timestamp(),
 
 /*manage revert expirys, if expired reset*/
-:set(stable-revert-130724
-  if(greater-than(current-time get(stable-expiry-130724)) 
+:set(stable-revert-220724
+  if(greater-than(current-time get(stable-expiry-220724)) 
     0
-    get(stable-revert-130724))),
+    get(stable-revert-220724))),
 
-:set(token-revert-130724
-  if(greater-than(current-time get(token-expiry-130724)) 
+:set(token-revert-220724
+  if(greater-than(current-time get(token-expiry-220724)) 
     0
-    get(token-revert-130724))),
+    get(token-revert-220724))),
 
 
 /*obtain context and direction*/
@@ -286,113 +286,117 @@ within-range:every(
   less-than(current-price tokenstable-range-ceiling)
 ),
 
-/*set conditions*/
+/*obtain prices for the different scenarios*/
+/*stable condition price*/
+stable-price: mul(price-average add(1 stable-percent-decrease)),
 
+/*stable condition revert price*/
+stable-completed-price: any(
+  get(stable-price-220724)
+  initial-price-complete2),
+
+stablerevert-price: inv(mul(stable-completed-price sub(1 stablerevert-percent-increase))),
+
+/*token condition price*/
+token-price: inv(mul(price-average sub(1 token-percent-increase))),
+
+/*token condition revert price*/
+token-completed-price: any(
+  get(token-price-220724)
+  initial-price-complete),
+tokenrevert-price: mul(token-completed-price add(1 tokenrevert-percent-decrease)),
+
+
+/*set conditions*/
 stablecondition: every(
+  greater-than(current-price stable-price)
   stable-outgoing
-  is-zero(get(stable-revert-130724))
+  is-zero(get(stable-revert-220724))
   within-range),
 
 stablerevertcondition:every(
   token-outgoing
-  get(stable-revert-130724)
-  less-than(current-time get(stable-expiry-130724))
+  less-than(current-price stablerevert-price)
+  get(stable-revert-220724)
+  less-than(current-time get(stable-expiry-220724))
   within-range),
 
 tokencondition: every(
   token-outgoing
-  is-zero(get(token-revert-130724)) 
+  less-than(current-price token-price)
+  is-zero(get(token-revert-220724)) 
   within-range),
 
 tokenrevertcondition: every(
   stable-outgoing
-  get(token-revert-130724)
-  less-than(current-time get(token-expiry-130724))
+  greater-than(current-price tokenrevert-price)
+  get(token-revert-220724)
+  less-than(current-time get(token-expiry-220724))
   within-range),
 
 
-/*obtain prices for the different scenarios*/
-
-/*stable condition price*/
-stable-price: mul(price-average sub(1 stable-percent-decrease)),
-
-/*stable condition revert price*/
-stable-completed-price: any(
-  get(stable-price-130724)
-  initial-price-complete),
-
-stablerevert-price: inv(mul(stable-completed-price add(1 stablerevert-percent-increase))),
-
-/*token condition price*/
-token-price: inv(mul(price-average add(1 token-percent-increase))),
-
-/*token condition revert price*/
-token-completed-price: get(token-price-130724),
-tokenrevert-price: mul(token-completed-price sub(1 tokenrevert-percent-decrease)),
-
-  
 /*obtain amounts*/
-
 /*stable condition amount*/
 stable-amount: stable-outgoing-size,
 
 /*stable condition revert amount*/
-stablerevert-amount: get(stable-output-130724),
+stablerevert-amount: get(stable-output-220724),
 
 /*token condition amount*/
 token-amount: mul(stable-outgoing-size current-price),
 
 /*token condition revert amount*/
-tokenrevert-amount: get(token-output-130724),
+tokenrevert-amount: get(token-output-220724),
+
 
 /*SETS*/
 /*stable outgoing sets*/
-:set(stable-price-130724
+:set(stable-price-220724
   if(stablecondition 
     stable-price 
-    get(stable-price-130724))),
-:set(stable-output-130724
+    get(stable-price-220724))),
+:set(stable-output-220724
   if(stablecondition 
     mul(stable-price stable-amount)
-    get(stable-output-130724))),
-:set(stable-expiry-130724
+    get(stable-output-220724))),
+:set(stable-expiry-220724
   if(stablecondition 
     add(current-time time-expiry) 
-    get(stable-expiry-130724))),
-:set(stable-revert-130724
+    get(stable-expiry-220724))),
+:set(stable-revert-220724
   if(stablecondition 
     1 
-    get(stable-revert-130724))),
+    get(stable-revert-220724))),
 
 /*stable revert sets*/
-:set(stable-revert-130724
+:set(stable-revert-220724
   if(stablerevertcondition 
     0
-    get(stable-revert-130724))),
+    get(stable-revert-220724))),
 
 /*token outgoing sets*/
-:set(token-price-130724
+:set(token-price-220724
   if(tokencondition 
     token-price 
-    get(token-price-130724))),
-:set(token-output-130724
+    get(token-price-220724))),
+:set(token-output-220724
   if(tokencondition 
     mul(token-price token-amount)
-    get(token-output-130724))),
-:set(token-expiry-130724
+    get(token-output-220724))),
+:set(token-expiry-220724
   if(tokencondition 
     add(current-time time-expiry) 
-    get(token-expiry-130724))),
-:set(token-revert-130724
+    get(token-expiry-220724))),
+:set(token-revert-220724
   if(tokencondition 
     1 
-    get(token-revert-130724))),
+    get(token-revert-220724))),
 
 /*token revert sets*/
-:set(token-revert-130724
+:set(token-revert-220724
   if(tokenrevertcondition 
     0
-    get(token-revert-130724))),
+    get(token-revert-220724))),
 
 :call<'ensure-order-condition>(
   stablecondition
@@ -402,28 +406,33 @@ tokenrevert-amount: get(token-output-130724),
 ),
 
 :call<'plottables-plot>(),
-  
-amount:if(
-  stablecondition stable-amount
-  if(stablerevertcondition stablerevert-amount
-    if(tokencondition token-amount
-      if(tokenrevertcondition tokenrevert-amount max-value())
-    )
-  )
-),
 
-price:if(
-  stablecondition stable-price
-  if(stablerevertcondition stablerevert-price
-    if(tokencondition token-price
-      if(tokenrevertcondition tokenrevert-price max-value())
-    )
-  )
-);
+mul1: mul(inv(current-price) 0.995),
+mul2: mul(current-price 0.995),
+  
+amount:conditions(
+  stablerevertcondition stablerevert-amount
+  tokenrevertcondition tokenrevert-amount
+  stablecondition stable-amount
+  tokencondition token-amount
+  "default" max-value()),
+
+price: conditions(
+  stablerevertcondition mul1
+  tokenrevertcondition mul2
+  stablecondition mul2
+  tokencondition mul1
+  "default" max-value()); 
 
 #handle-io
 :;
   
+
+  
+
+  
+  
+
 
   
   

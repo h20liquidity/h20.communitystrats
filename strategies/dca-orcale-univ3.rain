@@ -90,7 +90,7 @@ scenarios:
           # Jittery binomial bits for randomness.
           # If the number of bits are more, the randomess is centered towards mean.
           # If the number of bits are less, the randomess is more spread out.
-          jittery-binomial-bits: 10
+          jittery-binomial-bits: 20
 
         scenarios:
           buy:
@@ -677,11 +677,11 @@ deployments:
   using-words-from uniswap-words orderbook-subparser
 
   current-time last-time: call<'ensure-cooldown>(),
-  random-multiplier18: call<'jittery-binomial>(last-time), 
+  random-multiplier18: call<'jittery-binomial>(last-time),
   jittered-output-amount: mul(
     mul(mean-output-amount 2)
     random-multiplier18
-  ), 
+  ),
   quote-input-amount: call<'calculate-exact-quote>(jittered-output-amount),
   twap-ratio max-output final-io-ratio: call<'calculate-io-ratio>(
     jittered-output-amount

@@ -406,24 +406,23 @@ tokenrevert-amount: get(token-output-220724),
 ),
 
 :call<'plottables-plot>(),
-  
-amount:if(
-  stablerevertcondition stablerevert-amount
-  if(tokenrevertcondition tokenrevert-amount
-    if(stablecondition stable-amount
-      if(tokencondition token-amount max-value())
-    )
-  )
-),
 
-price:if(
-  stablerevertcondition mul(current-price 0.995)
-  if(tokenrevertcondition mul(current-price 1.005)
-    if(stablecondition mul(current-price 1.005)
-      if(tokencondition mul(current-price 0.995) max-value())
-    )
-  )
-);
+mul1: inv(mul(current-price 0.995)),
+mul2: mul(current-price 1.005),
+  
+amount:conditions(
+  stablerevertcondition stablerevert-amount
+  tokenrevertcondition tokenrevert-amount
+  stablecondition stable-amount
+  tokencondition token-amount
+  "conditions not met"),
+
+price: conditions(
+  stablerevertcondition mul1
+  tokenrevertcondition mul2
+  stablecondition mul2
+  tokencondition mul1
+  "conditions not met"); 
 
 #handle-io
 :;

@@ -1,4 +1,4 @@
-# Strategy: Oracle based DCA
+# Strategy: Zerc Oracle based DCA
 #
 # High level, this strategy buys USDC denominated ZERC tokens at the end of every cooldown period
 # provided that current calculated USDC denominated price of ZERC falls within the price gird.
@@ -65,10 +65,10 @@ orders:
     orderbook: polygon-h20liquidity
     inputs:
       - token: polygon-usdc
-        vault-id: 0xb5baee701c15eed1ce9807b4475a35a9c729f01d5d5e9aa17e84318db6ba476f
+        vault-id: 0xd302fedcbf6b3ea84812cde736439a97478b93fce4b546bc445f837f25589384
     outputs:
       - token: polygon-zerc
-        vault-id: 0xb5baee701c15eed1ce9807b4475a35a9c729f01d5d5e9aa17e84318db6ba476f
+        vault-id: 0xd302fedcbf6b3ea84812cde736439a97478b93fce4b546bc445f837f25589384
 
 
 scenarios:
@@ -98,7 +98,7 @@ scenarios:
               # Output token, mean amount 
               # Amount of output tokens offered per trade.
               # For gas expensive networks mean amount needs to be higher to compensate for gas fee and bounty.
-              mean-output-amount : 15
+              mean-output-amount : 1
 
               # Output token, this is the token being sold
               output-token: 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359
@@ -117,41 +117,58 @@ scenarios:
               io-quote: '''io-quote-identity' 
 
               # Params for bounty auction which is input token denominated. Min price, max price, time in seconds and unit increase
-              bounty-min: 2.3
-              bounty-max: 11
-              bounty-unit-increase: 0.08
-              bounty-unit-time: 60
+              bounty-min: 0.02
+              bounty-max: 1
+              bounty-unit-increase: 0.02
+              bounty-unit-time: 10
 
               # Cooldown between two trades in seconds.
               cooldown-time: 60
 
               # Minimum io-ratio for the order. 
-              # Strategy will not buy output token with input token for a lower ratio.
-              min-ratio: 7.130229831180446958
+              # Strategy will not buy output token (ZERC) with input token (USDC) for a lower ratio.
+              # Order will clear if price is above 1
+              min-ratio: 1
             scenarios:
               prod:
                 bindings:
                   ensure-min-ratio: '''ensure-min-ratio-prod'
                   ensure-cooldown: '''ensure-cooldown-prod'
                   plottables: '''plottables-prod'
+                  cardano-check: '''cardano-check-prod'
               chart:
                 runs: 1000
                 bindings:
                   ensure-min-ratio: '''ensure-min-ratio-chart'
                   ensure-cooldown: '''ensure-cooldown-chart'
                   plottables: '''plottables-chart'
+                  cardano-check: '''cardano-check-chart'
               metric:
                 runs: 1
                 bindings:
                   ensure-min-ratio: '''ensure-min-ratio-chart'
                   ensure-cooldown: '''ensure-cooldown-metric'
                   plottables: '''plottables-chart'
+                  cardano-check: '''cardano-check-chart'
               test:
                 runs: 1
                 bindings:
                   ensure-min-ratio: '''ensure-min-ratio-chart'
                   ensure-cooldown: '''ensure-cooldown-metric'
                   plottables: '''plottables-prod'
+                  cardano-check: '''cardano-check-chart'
+              backtest:
+                runs: 1
+                blocks:
+                  type: RangeWithInterval
+                  value:
+                    range: [59743161..]
+                    interval: 1000
+                bindings:
+                  plottables: '''plottables-backtest'
+                  ensure-min-ratio: '''ensure-min-ratio-chart'
+                  ensure-cooldown: '''ensure-cooldown-metric'
+                  cardano-check: '''cardano-check-chart'
           sell:
             bindings:
               # Input token, this is the token being received.
@@ -161,7 +178,7 @@ scenarios:
               # Output token, mean amount 
               # Amount of output tokens offered per trade.
               # For gas expensive networks mean amount needs to be higher to compensate for gas fee and bounty.
-              mean-output-amount : 120
+              mean-output-amount : 8
 
               # Output token, this is the token being sold
               output-token: 0xE1b3eb06806601828976e491914e3De18B5d6b28
@@ -180,16 +197,17 @@ scenarios:
               io-quote: '''io-quote-identity' 
 
               # Params for bounty auction which is input token denominated. Min price, max price, time in seconds and unit increase
-              bounty-min: 0.3
-              bounty-max: 1.5
-              bounty-unit-increase: 0.01
-              bounty-unit-time: 60
+              bounty-min: 0.01
+              bounty-max: 0.15
+              bounty-unit-increase: 0.02
+              bounty-unit-time: 10
 
               # Cooldown between two trades in seconds.
               cooldown-time: 60
 
               # Minimum io-ratio for the order. 
               # Strategy will not buy output token with input token for a lower ratio.
+              # If sell price is above 0.05 the order will go through
               min-ratio: 0.05
             scenarios:
               prod:
@@ -197,24 +215,40 @@ scenarios:
                   ensure-min-ratio: '''ensure-min-ratio-prod'
                   ensure-cooldown: '''ensure-cooldown-prod'
                   plottables: '''plottables-prod'
+                  cardano-check: '''cardano-check-prod'                  
               chart:
                 runs: 1000
                 bindings:
                   ensure-min-ratio: '''ensure-min-ratio-chart'
                   ensure-cooldown: '''ensure-cooldown-chart'
                   plottables: '''plottables-chart'
+                  cardano-check: '''cardano-check-chart'
               metric:
                 runs: 1
                 bindings:
                   ensure-min-ratio: '''ensure-min-ratio-chart'
                   ensure-cooldown: '''ensure-cooldown-metric'
                   plottables: '''plottables-chart'
+                  cardano-check: '''cardano-check-chart'                  
               test:
                 runs: 1
                 bindings:
                   ensure-min-ratio: '''ensure-min-ratio-chart'
                   ensure-cooldown: '''ensure-cooldown-metric'
                   plottables: '''plottables-prod'
+                  cardano-check: '''cardano-check-chart'
+              backtest:
+                runs: 1
+                blocks:
+                  type: RangeWithInterval
+                  value:
+                    range: [59743161..]
+                    interval: 1000
+                bindings:
+                  plottables: '''plottables-backtest'
+                  ensure-min-ratio: '''ensure-min-ratio-chart'
+                  ensure-cooldown: '''ensure-cooldown-metric'
+                  cardano-check: '''cardano-check-chart'
                         
 charts:
   B. ZERC Buy Deployment Planning: 
@@ -350,6 +384,28 @@ charts:
                   options: 
                     x: "0.4"
                     thresholds: 25
+
+  E. ZERC Buy Backtest:
+    scenario: polygon-h20liquidity-oracle-dca.buy.backtest
+    plots:
+      Stop Limit:
+        x:
+          label: 'Block Number'
+        y:
+          label: 'ZERC/USDC Ratio'
+        marks:
+          - type: line
+            options:
+              stroke: blue
+              x: 0.7.4
+              y: 0.7.2
+          - type: line
+            options:
+              stroke: red
+              x: 0.7.4
+              y: 0.7.3
+          
+                    
   C. ZERC Sell Simulation:
     scenario: polygon-h20liquidity-oracle-dca.sell.chart
     plots:
@@ -377,7 +433,27 @@ charts:
                     y: "count"
                   options: 
                     x: "0.4"
-                    thresholds: 25 
+                    thresholds: 25
+
+  F. ZERC Sell Backtest:
+    scenario: polygon-h20liquidity-oracle-dca.sell.backtest
+    plots:
+      Stop Limit:
+        x:
+          label: 'Block Number'
+        y:
+          label: 'USDC/ZERC Ratio'
+        marks:
+          - type: line
+            options:
+              stroke: blue
+              x: 0.7.4
+              y: 0.7.2
+          - type: line
+            options:
+              stroke: red
+              x: 0.7.4
+              y: 0.7.3
 
 deployments:
   polygon-zerc-buy:
@@ -409,6 +485,7 @@ deployments:
 #ensure-cooldown !Binding to enforce cooldown check.
 #ensure-min-ratio !Binding to enforce price remains between minimum and maximum price set.
 #plottables !The binding for additional things we want to plot during testing.
+#cardano-check !Cardano check to ensure price change within the block.
 
 #uniswap-words !The subparser for the Uniswap words
 #uniswap-v2-factory !Uniswap v3 factory address.
@@ -486,6 +563,13 @@ deployments:
 #io-quote-identity
   _: ;
 
+#cardano-check-chart
+  _: ;
+
+#cardano-check-prod
+  last-time: ,
+  :ensure(less-than(last-time now()) "Price change.");
+
 #calculate-exact-quote
   output-amount: ,
   output-to-reserve last-price-timestamp: uniswap-v2-quote-exact-input<1>(
@@ -493,7 +577,7 @@ deployments:
     output-amount
     uniswap-v2-factory uniswap-v2-init-code
   ),
-  :ensure(less-than(last-price-timestamp now()) "Price change."),
+  :call<'cardano-check>(last-price-timestamp),
   reserve-to-input: call<'io-quote>(output-to-reserve);
 
 
@@ -515,6 +599,16 @@ deployments:
 
 #plottables-prod
   _ _: ;
+
+#plottables-backtest
+  _ _: ,
+  current-price: call<'io-quote>(uniswap-v2-quote-exact-input(
+    output-token reserve-token
+    1
+    uniswap-v2-factory uniswap-v2-init-code
+  )),
+  _: min-ratio,
+  _: block-number();
 
 #calculate-io
   using-words-from uniswap-words orderbook-subparser

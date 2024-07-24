@@ -76,8 +76,8 @@ contract DcaUniV2Test is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = polygonUsdcIo();
 
-        uint256 expectedRatio = 7.130229831180446959e18;
-        uint256 expectedAmount = 16.279555611016865760e18;
+        uint256 expectedRatio = 6.886614745212946563e18;
+        uint256 expectedAmount = 1.085303707401124384e18;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
             getEncodedSellZercRoute(),
@@ -120,8 +120,8 @@ contract DcaUniV2Test is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = polygonZercIo();
 
-        uint256 expectedRatio = 0.115748767658302132e18;
-        uint256 expectedAmount = 130.236444888134926080e18;
+        uint256 expectedRatio = 0.110024847593989053e18;
+        uint256 expectedAmount = 8.682429659208995072e18;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
             getEncodedBuyZercRoute(),
@@ -266,7 +266,7 @@ contract DcaUniV2Test is StrategyTests {
             hex"02E1b3eb06806601828976e491914e3De18B5d6b2801ffff00514480cF3eD104B5c34A17A15859a190E38E97AF00582d9e838FE6cD9F8147C66A8f56A3FBE513a6A2000bb8";
             
         return abi.encode(SELL_ZERC_ROUTE);
-    }
+    } 
 
 
 } 

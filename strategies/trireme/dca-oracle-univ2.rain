@@ -86,7 +86,9 @@ scenarios:
           uniswap-v2-init-code: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f
 
           #Jittery binomial bits
-          jittery-binomial-bits: 20
+          jittery-binomial-bits: 10
+          jittery-binomial-min: 0.25
+          jittery-binomial-max: 1
 
         scenarios:
           buy:
@@ -478,6 +480,8 @@ deployments:
 #min-ratio !Minimum io-ratio for the order.
 #mean-output-amount !Mean dollar denominated amount of stable tokens traded.
 #jittery-binomial-bits !Number of bits for jittery binomial to calculate random amount of stable token traded per trade.
+#jittery-binomial-min !Minimum value of the random multiplier produced by jittery binomial.
+#jittery-binomial-max !Maximum value of the random multiplier produced by jittery binomial.
 
 #test-current-time !Test current time for plotting.
 #test-last-time !Test last time for plotting.
@@ -493,10 +497,47 @@ deployments:
 #orderbook-subparser !The subparser for the Orderbook words
 #cooldown-key "cooldown-key"
 
+#jittery-binomial-rolls
+  seed: ,
+  roll-0: call<'jittery-binomial>(seed 0),
+  roll-1: call<'jittery-binomial>(seed 1),
+  roll-2: call<'jittery-binomial>(seed 2),
+  roll-3: call<'jittery-binomial>(seed 3),
+  roll-4: call<'jittery-binomial>(seed 4),
+
+  random-multiplier: conditions(
+    every(
+      greater-than-or-equal-to(roll-0 jittery-binomial-min)
+      less-than-or-equal-to(roll-0 jittery-binomial-max)
+    )
+    roll-0
+    every(
+      greater-than-or-equal-to(roll-1 jittery-binomial-min)
+      less-than-or-equal-to(roll-1 jittery-binomial-max)
+    )
+    roll-1
+    every(
+      greater-than-or-equal-to(roll-2 jittery-binomial-min)
+      less-than-or-equal-to(roll-2 jittery-binomial-max)
+    )
+    roll-2
+    every(
+      greater-than-or-equal-to(roll-3 jittery-binomial-min)
+      less-than-or-equal-to(roll-3 jittery-binomial-max)
+    )
+    roll-3
+    every(
+      greater-than-or-equal-to(roll-4 jittery-binomial-min)
+      less-than-or-equal-to(roll-4 jittery-binomial-max)
+    )
+    roll-4
+    "default" 0.5
+  );
+
 #jittery-binomial
-  seed:,
+  seed roll-index:,
   binomial18-10:
-    bitwise-count-ones(bitwise-decode<0 jittery-binomial-bits>(hash(seed))),
+    bitwise-count-ones(bitwise-decode<0 jittery-binomial-bits>(hash(seed roll-index))),
   noise18-1:
     mod(hash(seed 0) 1),
   jittery-combined:
@@ -614,7 +655,7 @@ deployments:
   using-words-from uniswap-words orderbook-subparser
 
   current-time last-time: call<'ensure-cooldown>(),
-  random-multiplier18: call<'jittery-binomial>(current-time), 
+  random-multiplier18: call<'jittery-binomial-rolls>(last-time), 
   jittered-output-amount: mul(
     mul(mean-output-amount 2)
     random-multiplier18

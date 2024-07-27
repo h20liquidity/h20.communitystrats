@@ -76,8 +76,8 @@ contract DcaUniV2Test is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = polygonUsdcIo();
 
-        uint256 expectedRatio = 6.874849629490542569e18;
-        uint256 expectedAmount = 0.734166703889249086e18;
+        uint256 expectedRatio = 7.546679062155744054e18;
+        uint256 expectedAmount = 1.448940071037488020e18;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
             getEncodedSellZercRoute(),
@@ -120,8 +120,8 @@ contract DcaUniV2Test is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = polygonZercIo();
 
-        uint256 expectedRatio = 0.095134558173229603e18;
-        uint256 expectedAmount = 5.873333631113992688e18;
+        uint256 expectedRatio = 0.107731681330498142e18;
+        uint256 expectedAmount = 11.591520568299904160e18;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
             getEncodedBuyZercRoute(),

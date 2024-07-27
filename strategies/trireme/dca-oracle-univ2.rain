@@ -86,7 +86,7 @@ scenarios:
           uniswap-v2-init-code: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f
 
           #Jittery binomial bits
-          jittery-binomial-bits: 10
+          jittery-binomial-bits: 20
 
         scenarios:
           buy:
@@ -162,7 +162,7 @@ scenarios:
                 blocks:
                   type: RangeWithInterval
                   value:
-                    range: [59743161..]
+                    range: [59857426..]
                     interval: 1000
                 bindings:
                   plottables: '''plottables-backtest'
@@ -242,7 +242,7 @@ scenarios:
                 blocks:
                   type: RangeWithInterval
                   value:
-                    range: [59743161..]
+                    range: [59857426..]
                     interval: 1000
                 bindings:
                   plottables: '''plottables-backtest'
@@ -614,7 +614,7 @@ deployments:
   using-words-from uniswap-words orderbook-subparser
 
   current-time last-time: call<'ensure-cooldown>(),
-  random-multiplier18: call<'jittery-binomial>(last-time), 
+  random-multiplier18: call<'jittery-binomial>(current-time), 
   jittered-output-amount: mul(
     mul(mean-output-amount 2)
     random-multiplier18

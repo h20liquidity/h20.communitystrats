@@ -45,7 +45,7 @@ contract DcaUniV2Test is StrategyTests {
     using SafeERC20 for IERC20;
     using Strings for address;
 
-    uint256 constant FORK_BLOCK_NUMBER = 59722565;
+    uint256 constant FORK_BLOCK_NUMBER = 59867552;
     
     function selectFork() internal {
         uint256 fork = vm.createFork(vm.envString("RPC_URL_POLYGON"));
@@ -76,8 +76,8 @@ contract DcaUniV2Test is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = polygonUsdcIo();
 
-        uint256 expectedRatio = 6.886614745212946563e18;
-        uint256 expectedAmount = 1.085303707401124384e18;
+        uint256 expectedRatio = 6.874849629490542569e18;
+        uint256 expectedAmount = 0.734166703889249086e18;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
             getEncodedSellZercRoute(),
@@ -120,8 +120,8 @@ contract DcaUniV2Test is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = polygonZercIo();
 
-        uint256 expectedRatio = 0.110024847593989053e18;
-        uint256 expectedAmount = 8.682429659208995072e18;
+        uint256 expectedRatio = 0.095134558173229603e18;
+        uint256 expectedAmount = 5.873333631113992688e18;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
             getEncodedBuyZercRoute(),

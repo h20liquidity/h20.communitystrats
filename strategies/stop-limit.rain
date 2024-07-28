@@ -15,10 +15,10 @@ networks:
 
 subgraphs:
   base-community: https://api.thegraph.com/subgraphs/name/h20liquidity/base-0x2aee87
-  
+
 orderbooks:
   base-community:
-    address: 0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76
+    address: 0xA2f56F8F74B7d04d61f281BE6576b6155581dcBA
     network: base-community
     subgraph: base-community
 
@@ -78,10 +78,10 @@ scenarios:
             output-token-address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
             # Stop ratio, once market price reaches below the stop price order will be active.
-            stop-ratio: 45
+            stop-ratio: 41
 
             # io-ratio and amount for first limit order.
-            limit-ratio-1: 46
+            limit-ratio-1: 40.25
             output-amount-1: 1
 
             # Binding to get current orcale price
@@ -99,6 +99,17 @@ scenarios:
                 plottables: '''plottables-metric'
                 get-trade-count: '''get-trade-count-prod'
                 ensure-stop-loss: '''ensure-stop-loss-metric'
+            backtest:
+              runs: 1
+              blocks:
+                type: RangeWithInterval
+                value:
+                  range: [17245659..17257087]
+                  interval: 1000
+              bindings:
+                plottables: '''plottables-backtest'
+                get-trade-count: '''get-trade-count-prod'
+                ensure-stop-loss: '''ensure-stop-loss-metric'
         sell:
           bindings:
             # Input and Output token from perspective of the order.
@@ -106,10 +117,10 @@ scenarios:
             output-token-address: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
 
             # Stop ratio, once market price reaches below the stop price order will be active.
-            stop-ratio: 0.022 
+            stop-ratio: 0.027 
 
             # io-ratio and amount for first order. 
-            limit-ratio-1: 0.02
+            limit-ratio-1: 0.0245
             output-amount-1: 50
 
             # Binding to get current orcale price
@@ -125,6 +136,17 @@ scenarios:
               runs: 1
               bindings:
                 plottables: '''plottables-metric'
+                get-trade-count: '''get-trade-count-prod'
+                ensure-stop-loss: '''ensure-stop-loss-metric'
+            backtest:
+              runs: 1
+              blocks:
+                type: RangeWithInterval
+                value:
+                  range: [17245659..17257087]
+                  interval: 1000
+              bindings:
+                plottables: '''plottables-backtest'
                 get-trade-count: '''get-trade-count-prod'
                 ensure-stop-loss: '''ensure-stop-loss-metric'
 
@@ -151,6 +173,32 @@ charts:
         value: 0.6.6
         unit-suffix: " WLTH"
         description: 'Amount of WLTH recevied.'
+
+  Buy WLTH, sell USDC backtest:
+    scenario: stop-limit-order.buy.backtest
+    plots:
+      Stop Limit:
+        x:
+          label: 'Block Number'
+        y:
+          label: 'Order Ratio'
+        marks:
+          - type: line
+            options:
+              stroke: blue
+              x: 0.6.5
+              y: 0.6.2
+          - type: line
+            options:
+              stroke: red
+              x: 0.6.5
+              y: 0.6.3
+          - type: line
+            options:
+              stroke: green
+              x: 0.6.5
+              y: 0.6.4
+
   Buy USDC, sell WLTH single limit order:
     scenario: stop-limit-order.sell.metric
     metrics:
@@ -173,6 +221,31 @@ charts:
         value: 0.6.6
         unit-suffix: " USDC"
         description: 'Amount of USDC recevied.'
+
+  Buy USDC, sell WLTH single backtest:
+    scenario: stop-limit-order.sell.backtest
+    plots:
+      Stop Limit:
+        x:
+          label: 'Block Number'
+        y:
+          label: 'Order Ratio'
+        marks:
+          - type: line
+            options:
+              stroke: blue
+              x: 0.6.5
+              y: 0.6.2
+          - type: line
+            options:
+              stroke: red
+              x: 0.6.5
+              y: 0.6.3
+          - type: line
+            options:
+              stroke: green
+              x: 0.6.5
+              y: 0.6.4
 
 deployments:
   base-wlth-buy:
@@ -205,6 +278,18 @@ deployments:
 
 #plottables-prod
   _ _: ;
+
+#plottables-backtest
+ _ _: , 
+ current-price: uniswap-v3-quote-exact-input(
+    output-token-address input-token-address
+    1
+    uniswap-v3-factory uniswap-v3-init-code
+    pool-fee
+  ),
+  _: stop-ratio,
+  _: limit-ratio-1,
+  _: block-number();
 
 #plottables-metric
   amount io-ratio: ,

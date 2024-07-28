@@ -56,13 +56,13 @@ contract DcaUniV2Test is StrategyTests {
     function setUp() public {
         selectFork();
         
-        PARSER = IParserV2(0xF14E09601A47552De6aBd3A0B165607FaFd2B5Ba);
-        STORE = IInterpreterStoreV2(0xde38AD4b13D5258a5653E530EcDF0cA71B4E8a51); 
-        INTERPRETER = IInterpreterV3(0x6352593F4018C99dF731DE789e2a147C7FB29370); 
-        EXPRESSION_DEPLOYER = IExpressionDeployerV3(0xF14E09601A47552De6aBd3A0B165607FaFd2B5Ba); 
-        ORDERBOOK = IOrderBookV4(0x2f209e5b67A33B8fE96E28f24628dF6Da301c8eB);
-        ARB_INSTANCE = IOrderBookV4ArbOrderTaker(0x582d9e838FE6cD9F8147C66A8f56A3FBE513a6A2);
-        ROUTE_PROCESSOR = IRouteProcessor(address(0x46B3fDF7b5CDe91Ac049936bF0bDb12c5d22202e)); 
+        iParser = IParserV2(0xF14E09601A47552De6aBd3A0B165607FaFd2B5Ba);
+        iStore = IInterpreterStoreV2(0xde38AD4b13D5258a5653E530EcDF0cA71B4E8a51); 
+        iInterpreter = IInterpreterV3(0x6352593F4018C99dF731DE789e2a147C7FB29370); 
+        iExpressionDeployer = IExpressionDeployerV3(0xF14E09601A47552De6aBd3A0B165607FaFd2B5Ba); 
+        iOrderBook = IOrderBookV4(0x2f209e5b67A33B8fE96E28f24628dF6Da301c8eB);
+        iArbInstance = IOrderBookV4ArbOrderTaker(0x582d9e838FE6cD9F8147C66A8f56A3FBE513a6A2);
+        iRouteProcessor = IRouteProcessor(address(0x46B3fDF7b5CDe91Ac049936bF0bDb12c5d22202e)); 
         EXTERNAL_EOA = address(0x654FEf5Fb8A1C91ad47Ba192F7AA81dd3C821427);
         APPROVED_EOA = address(0x669845c29D9B1A64FFF66a55aA13EB4adB889a88);
         ORDER_OWNER = address(0x5e01e44aE1969e16B9160d903B6F2aa991a37B21); 

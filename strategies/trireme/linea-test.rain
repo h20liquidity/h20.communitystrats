@@ -1,0 +1,136 @@
+#Linea Test Network
+
+networks:
+  linea-community: 
+    rpc: https://rpc.linea.build
+    chain-id: 59144 
+    network-id: 59144 
+    currency: ETH
+
+subgraphs:
+  linea-community: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-polygon-test/0.91/gn
+  
+orderbooks:
+  linea-community:
+    address: 0xF97DE1c2d864d90851aDBcbEe0A38260440B8D90
+    network: linea-community
+    subgraph: linea-community
+
+deployers:
+  linea-community:
+    address: 0xe54FB432e1bFECDaD15b901206061336EE1d60EA
+    network: linea-community
+
+tokens:
+  linea-weth:
+    network: linea-community
+    address: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+  linea-usdc:
+    network: linea-community
+    address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+
+orders:
+  linea-weth-buy:
+    orderbook: linea-community
+    inputs:
+      - token: linea-weth
+        vault-id: 0xaa376e00ebecd7042fccde4feb69390a78001ecea37352f1dab8b3d9023f54f7
+    outputs:
+      - token: linea-usdc
+        vault-id: 0xaa376e00ebecd7042fccde4feb69390a78001ecea37352f1dab8b3d9023f54f7
+
+scenarios:
+    limit-orders:
+      network: linea-community
+      deployer: linea-community
+      orderbook: linea-community
+      bindings:
+        # Ask for now, registry in future.
+        orderbook-subparser: 0x0d474EfdE8E258Be16Dd64F4A8B736023b708Cdd
+      scenarios:
+        buy:
+          bindings:
+            # io-ratio and amount for first order. 
+            io-ratio-1: 0.00025
+            ouptut-amount-1: 10
+          scenarios:
+            prod:
+              bindings:
+                plottables: '''plottables-prod'
+                get-trade-count: '''get-trade-count-prod'
+            metric:
+              runs: 1
+              bindings:
+                plottables: '''plottables-metric'
+                get-trade-count: '''get-trade-count-prod'
+charts:
+  Buy WETH, sell USDC single limit order:
+    scenario: limit-orders.buy.metric
+    metrics:
+      - label: Price
+        value: 0.3.2
+        unit-suffix: " WETH"            
+        description: 'Unit price, WETH per USDC (stack item 0.3.2)'
+      - label: Effective Price (as visible on dex tools)
+        value: 0.3.3
+        unit-suffix: " USDC"            
+        description: 'Effective price in USDC denomination'     
+      - label: Units
+        value: 0.3.4
+        unit-suffix: " USDC"            
+        description: 'Units purchased (stack item 0.3.3)'
+      - label: Total Price
+        value: 0.3.5
+        unit-suffix: " WETH"
+        description: 'Amount of WETH recevied.'
+deployments:
+  linea-weth-buy:
+    scenario: limit-orders.buy.prod
+    order: linea-weth-buy
+---
+#orderbook-subparser !The subparser for the Orderbook words
+#io-ratio-1 !IO ratio for first order.
+#ouptut-amount-1 !Output amount for first order.
+
+#count-key "count-key"
+#plottables !Binding to plot values.
+#get-trade-count !Binding to get trade count.
+#test-trade-count !Test trade count for plotting.
+
+#plottables-prod
+  _ _: ;
+
+#plottables-metric
+  amount io-ratio: ,
+  _: io-ratio-1,
+  effective-ratio-1: inv(io-ratio-1),
+  _: ouptut-amount-1,
+  input-amount-1: mul(io-ratio-1 ouptut-amount-1);
+
+#get-trade-count-prod
+  trade-count-key: hash(order-hash() count-key), 
+  trade-count: get(trade-count-key);
+
+#get-ratio-amount
+  trade-count: call<'get-trade-count>(),
+  ouput-amount: conditions(
+    equal-to(trade-count 0) ouptut-amount-1
+    "Max order count"    
+  ),
+  io-ratio: conditions(
+    equal-to(trade-count 0) io-ratio-1
+    "Max order count"    
+  );
+
+#calculate-io
+  using-words-from orderbook-subparser
+    
+  trade-count
+  final-amount
+  final-ratio: call<'get-ratio-amount>(),
+  :call<'plottables>(final-amount final-ratio); 
+
+#handle-io
+  trade-count-key: hash(order-hash() count-key), 
+  trade-count: get(trade-count-key), 
+  :set(trade-count-key add(trade-count 1));

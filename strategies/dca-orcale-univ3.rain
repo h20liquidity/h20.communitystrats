@@ -21,7 +21,7 @@ subgraphs:
   
 orderbooks:
   base-community:
-    address: 0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76
+    address: 0xA2f56F8F74B7d04d61f281BE6576b6155581dcBA
     network: base-community
     subgraph: base-community
 
@@ -90,7 +90,7 @@ scenarios:
           # Jittery binomial bits for randomness.
           # If the number of bits are more, the randomess is centered towards mean.
           # If the number of bits are less, the randomess is more spread out.
-          jittery-binomial-bits: 10
+          jittery-binomial-bits: 20
 
         scenarios:
           buy:
@@ -140,7 +140,7 @@ scenarios:
                   # the network gas fee is high, then deviation needs to be a higher value.
                   # - For 1% deviation, binding value is 0.01
                   # - For 10% deviation, binding value is 0.1
-                  twap-deviation: 0.1
+                  twap-deviation: 0.065
 
                   # Minimum io-ratio for the order. 
                   # Strategy will not buy output token with input token for a lower ratio.
@@ -166,6 +166,18 @@ scenarios:
                       ensure-min-ratio: '''ensure-min-ratio-chart'
                       ensure-cooldown: '''ensure-cooldown-metric'
                       plottables: '''plottables-chart'
+                  backtest:
+                    runs: 1
+                    blocks:
+                      type: RangeWithInterval
+                      value:
+                        range: [17245659..17257087]
+                        interval: 1000
+                    bindings:
+                      enforce-twap-check: '''enforce-twap-check-chart'
+                      ensure-min-ratio: '''ensure-min-ratio-chart'
+                      ensure-cooldown: '''ensure-cooldown-metric'
+                      plottables: '''plottables-backtest'
               test:
                 bindings:
                   min-ratio: 80
@@ -222,7 +234,7 @@ scenarios:
                   # - For 1% deviation, binding value is 0.01
                   # - For 5% deviation, binding value is 0.05
                   # - For 10% deviation, binding value is 0.1
-                  twap-deviation: 0.1
+                  twap-deviation: 0.01
 
                   # Minimum io-ratio for the order. 
                   # Strategy will not buy input token with output token for a higher ratio.
@@ -249,6 +261,18 @@ scenarios:
                       ensure-min-ratio: '''ensure-min-ratio-chart'
                       ensure-cooldown: '''ensure-cooldown-metric'
                       plottables: '''plottables-chart'
+                  backtest:
+                    runs: 1
+                    blocks:
+                      type: RangeWithInterval
+                      value:
+                        range: [17245659..17257087]
+                        interval: 1000
+                    bindings:
+                      enforce-twap-check: '''enforce-twap-check-chart'
+                      ensure-min-ratio: '''ensure-min-ratio-chart'
+                      ensure-cooldown: '''ensure-cooldown-metric'
+                      plottables: '''plottables-backtest'
               test:
                 bindings:
                   min-ratio: 0.02
@@ -318,6 +342,7 @@ charts:
         marks:
           - type: recty
             options:
+              stroke: yellow
               transform:
                 type: binx
                 content:
@@ -331,6 +356,7 @@ charts:
         marks:
           - type: recty
             options:
+              stroke: blue
               transform:
                 type: binx
                 content:
@@ -339,7 +365,27 @@ charts:
                   options:
                     x: "0.4"
                     thresholds: 25
-  
+
+  buy-backtest:
+    scenario: base-wlth-dca-univ3.buy.deviation.backtest
+    plots:
+      Strategy Twap Deviation VS Threshold:
+        x:
+          label: 'Block Number'
+        y:
+          label: 'Twap Deviation'
+        marks:
+          - type: line
+            options:
+              stroke: red
+              x: 0.7.5
+              y: 0.7.3
+          - type: line
+            options:
+              stroke: blue
+              x: 0.7.5
+              y: 0.7.4  
+
   wlth-sell-dca-univ3: 
     scenario: base-wlth-dca-univ3.sell.deviation.metric
     metrics:
@@ -397,6 +443,7 @@ charts:
         marks:
           - type: recty
             options:
+              stroke: yellow
               transform:
                 type: binx
                 content:
@@ -410,6 +457,7 @@ charts:
         marks:
           - type: recty
             options:
+              stroke: blue
               transform:
                 type: binx
                 content:
@@ -418,6 +466,26 @@ charts:
                   options:
                     x: "0.4"
                     thresholds: 25
+
+  sell-backtest:
+    scenario: base-wlth-dca-univ3.sell.deviation.backtest
+    plots:
+      Strategy Twap Deviation VS Threshold:
+        x:
+          label: 'Block Number'
+        y:
+          label: 'Twap Deviation'
+        marks:
+          - type: line
+            options:
+              stroke: green
+              x: 0.7.5
+              y: 0.7.3
+          - type: line
+            options:
+              stroke: blue
+              x: 0.7.5
+              y: 0.7.4  
 
 deployments:
   h20-wlth-sell:
@@ -515,7 +583,7 @@ deployments:
  _ _: now() 0;
 
 #ensure-cooldown-chart
- current-time: test-current-time,
+ current-time: mod(test-current-time 11e17),
  last-time: sub(current-time mod(current-time 86400));
  
 #ensure-cooldown-prod
@@ -591,6 +659,16 @@ deployments:
   total-amount-weekly: mul(total-amount-daily 7),
   total-amount-montly: mul(total-amount-daily 30);
 
+#plottables-backtest
+  _ _ twap-ratio: ,
+  current-twap-deviation: if(
+    greater-than(1 twap-ratio)
+    mul(saturating-sub(1 twap-ratio) 100)
+    mul(saturating-sub(twap-ratio 1) 100)
+  ),
+  _: mul(twap-deviation 100),
+  _: block-number();
+
 
 #plottables-prod
   _ _ _: ;
@@ -599,11 +677,11 @@ deployments:
   using-words-from uniswap-words orderbook-subparser
 
   current-time last-time: call<'ensure-cooldown>(),
-  random-multiplier18: call<'jittery-binomial>(last-time), 
+  random-multiplier18: call<'jittery-binomial>(last-time),
   jittered-output-amount: mul(
     mul(mean-output-amount 2)
     random-multiplier18
-  ), 
+  ),
   quote-input-amount: call<'calculate-exact-quote>(jittered-output-amount),
   twap-ratio max-output final-io-ratio: call<'calculate-io-ratio>(
     jittered-output-amount

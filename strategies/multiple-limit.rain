@@ -22,7 +22,7 @@ subgraphs:
   
 orderbooks:
   base-community:
-    address: 0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76
+    address: 0xA2f56F8F74B7d04d61f281BE6576b6155581dcBA
     network: base-community
     subgraph: base-community
 
@@ -67,6 +67,14 @@ scenarios:
         # Ask for now, registry in future.
         uniswap-words: 0xD6B34F97d4A8Cb38D0544dB241CB3f335866f490
         orderbook-subparser: 0x8D96ea3EF24D7123882c51CE4325b89bc0d63f9e
+
+        # Uniswap V3 factory addresses and init code
+        uniswap-v3-factory: 0x33128a8fC17869897dcE68Ed026d694621f6FDfD
+        uniswap-v3-init-code: '[uniswap-v3-init-code]'
+
+        # Uniswap V3 pool fee
+        pool-fee: '[uniswap-v3-fee-medium]'
+
       scenarios:
         buy:
           bindings:
@@ -100,6 +108,18 @@ scenarios:
               bindings:
                 plottables: '''plottables-chart'
                 get-trade-count: '''get-trade-count-chart'
+            backtest:
+              runs: 1
+              blocks:
+                type: RangeWithInterval
+                value:
+                range: [17245659..17257087]
+                interval: 1000
+              bindings:
+                input-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+                output-token: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+                plottables: '''plottables-backtest'
+                get-trade-count: '''get-trade-count-chart'
         sell:
           bindings:
             # io-ratio and amount for first order. 
@@ -131,6 +151,18 @@ scenarios:
               runs: 1000
               bindings:
                 plottables: '''plottables-chart'
+                get-trade-count: '''get-trade-count-chart'
+            backtest:
+              runs: 1
+              blocks:
+                type: RangeWithInterval
+                value:
+                range: [17245659..17257087]
+                interval: 1000
+              bindings:
+                input-token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+                output-token: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+                plottables: '''plottables-backtest'
                 get-trade-count: '''get-trade-count-chart'
         
 
@@ -261,6 +293,12 @@ deployments:
 ---
 #uniswap-words !The subparser for the Uniswap words
 #orderbook-subparser !The subparser for the Orderbook words
+#uniswap-v3-factory !Uniswap v3 factory address.
+#uniswap-v3-init-code !Uniswap v3 init code hash.
+#pool-fee !Uniswap v3 pool fees.
+
+#input-token !Address of the input token
+#output-token !Address of output token
 
 #io-ratio-1 !IO ratio for first order.
 #ouptut-amount-1 !Output amount for first order.
@@ -301,6 +339,21 @@ deployments:
   _: ouptut-amount-4,
   _: io-ratio-5,
   _: ouptut-amount-5;
+
+#plottables-backtest
+  _ _: ,
+  current-price: uniswap-v3-quote-exact-input(
+    input-token output-token
+    1
+    uniswap-v3-factory uniswap-v3-init-code
+    pool-fee
+  ),
+  _: io-ratio-1,
+  _: io-ratio-2,
+  _: io-ratio-3,
+  _: io-ratio-4,
+  _: io-ratio-5,
+  _: block-number();
 
 #get-trade-count-prod
   trade-count-key: hash(order-hash() count-key), 

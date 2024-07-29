@@ -19,17 +19,17 @@
 
 networks:
   base-community: 
-    rpc: https://mainnet.base.org 
+    rpc: https://base-mainnet.g.alchemy.com/v2/zv_qezhqKEtY-ZRKRUbDHD2VqlPYASBK
     chain-id: 8453 
     network-id: 8453 
     currency: ETH
 
 subgraphs:
-  base-community: https://api.thegraph.com/subgraphs/name/h20liquidity/base-0x2aee87
+  base-community: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-base/0.1/gn
   
 orderbooks:
   base-community:
-    address: 0x2AeE87D75CD000583DAEC7A28db103B1c0c18b76
+    address: 0xA2f56F8F74B7d04d61f281BE6576b6155581dcBA
     network: base-community
     subgraph: base-community
 
@@ -85,10 +85,10 @@ scenarios:
               tokenstable-range-floor: 0.5
               stable-outgoing-size: 50
               price-average-time: 600
-              stable-percent-decrease: 0.01
-              stablerevert-percent-increase: 0.01
-              token-percent-increase: 0.01
-              tokenrevert-percent-decrease: 0.01
+              stable-percent-decrease: 0.03
+              stablerevert-percent-increase: 0.015
+              token-percent-increase: 0.03
+              tokenrevert-percent-decrease: 0.015
               time-expiry: 3000000
               initial-price-complete: 65
               initial-price-complete2: 0.00001
@@ -101,6 +101,16 @@ scenarios:
                 runs: 1
                 bindings:
                   plottables: '''plottables-plot'
+                  ensure-order-condition: '''ensure-order-condition-chart'
+              backtest:
+                runs: 1
+                blocks:
+                  type: RangeWithInterval
+                  value:
+                    range: [17438120..17448120]
+                    interval: 100
+                bindings:
+                  plottables: '''plottables-backtest'
                   ensure-order-condition: '''ensure-order-condition-chart'
 
 charts:
@@ -171,6 +181,36 @@ charts:
         value: 0.3.1
         description: tokenstable range floor
 
+  Test backtest:
+    scenario: bid-ask-ma-spread.wlth.backtest
+    plots:
+      bid-ask-spread:
+        x:
+          label: 'Block Number'
+        y:
+          label: 'Order Ratio'
+        marks:
+          - type: line
+            options:
+              stroke: blue
+              x: 0.3.4
+              y: 0.3.0
+          - type: line
+            options:
+              stroke: yellow
+              x: 0.3.4
+              y: 0.3.1
+          - type: line
+            options:
+              stroke: red
+              x: 0.3.4
+              y: 0.3.2
+          - type: line
+            options:
+              stroke: green
+              x: 0.3.4
+              y: 0.3.3
+
       
 deployments:
   wmatic-consolidated-ma:
@@ -217,9 +257,25 @@ deployments:
   _: tokenrevert-percent-decrease,
   _: time-expiry;
 
+#plottables-backtest
+ price-average: uniswap-v3-twap-output-ratio(
+    token stable 
+    600 0
+    uniswap-v3-factory uniswap-v3-init-code
+    poolfee
+  ),
+current-price: uniswap-v3-twap-output-ratio(
+    token stable
+    0 0
+    uniswap-v3-factory uniswap-v3-init-code
+    poolfee
+  ),
+stable-outgoing: mul(price-average 0.96),
+token-outgoing: mul(price-average 1.04),
+  _: block-number();
 
 #plottables-prod
- :;
+:;
 
 #ensure-order-condition-prod
   stablecondition
@@ -405,9 +461,9 @@ tokenrevert-amount: get(token-output-220724),
   tokenrevertcondition
 ),
 
-:call<'plottables-plot>(),
+:call<'plottables>(),
 
-mul1: mul(inv(current-price) 0.995),
+mul1: inv(mul(current-price 0.995)),
 mul2: mul(current-price 0.995),
   
 amount:conditions(
@@ -426,6 +482,13 @@ price: conditions(
 
 #handle-io
 :;
+  
+
+  
+  
+
+
+  
   
 
   

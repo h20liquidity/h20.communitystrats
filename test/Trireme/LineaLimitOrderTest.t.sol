@@ -40,7 +40,7 @@ function lineaUsdcIo() pure returns (IO memory) {
     return IO(address(LINEA_USDC), 6, VAULT_ID);
 } 
 
-contract DcaUniV2Test is StrategyTests {
+contract LineaLimitOrderTest is StrategyTests {
 
     using SafeERC20 for IERC20;
     using Strings for address;
@@ -89,7 +89,7 @@ contract DcaUniV2Test is StrategyTests {
             10000e6,
             expectedRatio,
             expectedAmount,
-            "strategies/trireme/linea-test.rain",
+            "strategies/trireme/linea-limit-order.rain",
             "limit-orders.buy.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
@@ -133,7 +133,7 @@ contract DcaUniV2Test is StrategyTests {
             10000e6,
             expectedRatio,
             expectedAmount,
-            "strategies/trireme/linea-test.rain",
+            "strategies/trireme/linea-limit-order.rain",
             "limit-orders.buy.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
@@ -177,7 +177,7 @@ contract DcaUniV2Test is StrategyTests {
             10000e6,
             expectedRatio,
             expectedAmount,
-            "strategies/trireme/linea-test.rain",
+            "strategies/trireme/linea-limit-order.rain",
             "limit-orders.buy.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",

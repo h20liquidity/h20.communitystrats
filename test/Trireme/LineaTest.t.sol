@@ -69,7 +69,7 @@ contract DcaUniV2Test is StrategyTests {
         ORDER_OWNER = address(0x5e01e44aE1969e16B9160d903B6F2aa991a37B21); 
     }
 
-    function testLineaBuyLimit() public {
+    function testLineaBuyRouteUniswapV3() public {
 
         IO[] memory inputVaults = new IO[](1);
         inputVaults[0] = lineaWethIo();
@@ -82,7 +82,7 @@ contract DcaUniV2Test is StrategyTests {
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
             "",
-            getLineaBuyWethRoute(),
+            "",
             0,
             0,
             1e18,
@@ -102,7 +102,51 @@ contract DcaUniV2Test is StrategyTests {
         {
             vm.recordLogs();
 
-            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            takeArbOrder(order, getLineaBuyWethUniV3Route(), strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            assertEq(strategyRatio, strategy.expectedRatio);
+            assertEq(strategyAmount, strategy.expectedAmount);
+        }
+        
+    }
+
+    function testLineaBuyRouteLynexV2() public {
+
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = lineaWethIo();
+
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = lineaUsdcIo();
+
+        uint256 expectedRatio = 0.00025e18;
+        uint256 expectedAmount = 10e18;
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            "",
+            "",
+            0,
+            0,
+            1e18,
+            10000e6,
+            expectedRatio,
+            expectedAmount,
+            "strategies/trireme/linea-test.rain",
+            "limit-orders.buy.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+        OrderV3 memory order = addOrderDepositOutputTokens(strategy);
+
+        {
+            vm.recordLogs();
+
+            takeArbOrder(order, getLineaBuyWethLynexV2Route(), strategy.inputTokenIndex, strategy.outputTokenIndex);
 
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
@@ -113,9 +157,67 @@ contract DcaUniV2Test is StrategyTests {
 
     }
 
-    function getLineaBuyWethRoute() internal pure returns (bytes memory) {
+    function testLineaBuyRouteLynexV1() public {
+
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = lineaWethIo();
+
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = lineaUsdcIo();
+
+        uint256 expectedRatio = 0.00025e18;
+        uint256 expectedAmount = 10e18;
+
+        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+            "",
+            "",
+            0,
+            0,
+            1e18,
+            10000e6,
+            expectedRatio,
+            expectedAmount,
+            "strategies/trireme/linea-test.rain",
+            "limit-orders.buy.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults
+        );
+
+        OrderV3 memory order = addOrderDepositOutputTokens(strategy);
+
+        {
+            vm.recordLogs();
+
+            takeArbOrder(order, getLineaBuyWethLynexV1Route(), strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            assertEq(strategyRatio, strategy.expectedRatio);
+            assertEq(strategyAmount, strategy.expectedAmount);
+        }
+
+    }
+
+    function getLineaBuyWethUniV3Route() internal pure returns (bytes memory) {
         bytes memory BUY_USDC_ROUTE =
             hex"02176211869cA2b568f2A7D4EE941E073a821EE1ff01ffff01416e3B622867aa4af98FcF0E0b871a47A80A7d7E016EAE39ea6c38207C337b3a083c33d7D5700904bc";
+            
+        return abi.encode(BUY_USDC_ROUTE);
+    }
+
+    function getLineaBuyWethLynexV2Route() internal pure returns (bytes memory) {
+        bytes memory BUY_USDC_ROUTE =
+            hex"02176211869cA2b568f2A7D4EE941E073a821EE1ff01ffff013Cb104f044dB23d6513F2A6100a1997Fa5e3F587016EAE39ea6c38207C337b3a083c33d7D5700904bc";
+            
+        return abi.encode(BUY_USDC_ROUTE);
+    }
+
+    function getLineaBuyWethLynexV1Route() internal pure returns (bytes memory) {
+        bytes memory BUY_USDC_ROUTE =
+            hex"02176211869cA2b568f2A7D4EE941E073a821EE1ff01ffff006FB44889a9aA69F7290258D3716BfFcB33CdE184016EAE39ea6c38207C337b3a083c33d7D5700904bc000bb8";
             
         return abi.encode(BUY_USDC_ROUTE);
     }

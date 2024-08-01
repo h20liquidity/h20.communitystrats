@@ -138,10 +138,10 @@ deployments:
 #ensure-sale-start !Binding to ensure sale has began.
 #test-now !Binding to simulate current time.
 
-#in-token-key 0x10b2c7dd2f0c383e8445066430f62720e189027b16a56ad4212eefac8e6c77ed
-#out-token-key 0x469017709316f7f258096e4e2ac47b89e1a104ffa810dcd5c906f95726cdbf78
-#in-reserve-key 0x9ab12bc4bd54bd37acb958637d7fe14ddeef508ad5d626b50af490dad0dbf197
-#out-reserve-key 0xf1c2eb58238d7f8a14e41d826612621aace3c0329f0b1c963912f844470a44b4
+#in-token-key "in-token-key"
+#out-token-key "out-token-key"
+#in-reserve-key "in-reserve-key"
+#out-reserve-key "out-reserve-key"
 
 #plottables-prod
   :;

@@ -1,0 +1,119 @@
+# Ruby Buy Strategy
+
+networks:
+  base-community: 
+    rpc: https://mainnet.base.org 
+    chain-id: 8453 
+    network-id: 8453 
+    currency: ETH
+
+subgraphs:
+  base-community: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-base/0.1/gn
+  
+orderbooks:
+  base-community:
+    address: 0xA2f56F8F74B7d04d61f281BE6576b6155581dcBA
+    network: base-community
+    subgraph: base-community
+
+deployers:
+  base-community:
+    address: 0x56394785a22b3BE25470a0e03eD9E0a939C47b9b
+    network: base-community
+
+tokens:
+  base-red:
+    network: base-community
+    address: 0x222789334D44bB5b2364939477E15A6c981Ca165
+  base-blue:
+    network: base-community
+    address: 0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe
+
+orders:
+  # vault-id generated with `openssl rand -hex 32`
+  base-ruby-buy:
+    orderbook: base-community
+    inputs:
+      - token: base-red
+        vault-id: 0xe8c8cd1fae13ab9fa00c611a0d57cbd9298e939e34f1a38361fd37f917d4b065
+    outputs:
+      - token: base-blue
+        vault-id: 0xe8c8cd1fae13ab9fa00c611a0d57cbd9298e939e34f1a38361fd37f917d4b065 
+
+scenarios:
+   buy-curve:
+     network: base-community
+     deployer: base-community
+     orderbook: base-community
+     bindings:
+        # Ask for now, registry in future.
+        uniswap-words: 0xD6B34F97d4A8Cb38D0544dB241CB3f335866f490
+        orderbook-subparser: 0x8D96ea3EF24D7123882c51CE4325b89bc0d63f9e
+
+        # Scale factor to ramp up the buy curve.
+        scale-factor: 1.01
+     scenarios:
+        prod:
+          bindings:
+            plottables: '''plottables-prod'
+        metric:
+          bindings:
+            plottables: '''plottables-chart'    
+
+deployments:
+  h20-ruby-buy:
+    scenario: buy-curve.prod
+    order: base-ruby-buy     
+---
+#orderbook-subparser !The address for uniswap subparser.
+#uniswap-words !The address for orderbook subparser. 
+#scale-factor !Scale factor for buy curve.
+
+#in-token-key "in-token-key"
+#out-token-key "out-token-key"
+#in-reserve-key "in-reserve-key"
+#out-reserve-key "out-reserve-key"
+
+#plottables !Bindings for the plottable source. 
+
+#plottables-prod
+  :;
+
+#plottables-chart
+  _: scale-factor;
+
+#calculate-io
+ using-words-from orderbook-subparser uniswap-words
+
+ out-tkn-amount: get(out-token-key),
+ in-tkn-amount: get(in-token-key),
+ buyback-tkn-amount: saturating-sub(out-tkn-amount in-tkn-amount),
+
+ in-reserve-amount: get(in-reserve-key),
+ out-reserve-amount: get(out-reserve-key),
+ buyback-reserve-budget: saturating-sub(in-reserve-amount out-reserve-amount),
+
+ amount io-ratio: max-value() mul(
+   scale-factor
+   div(buyback-tkn-amount buyback-reserve-budget)
+ ),
+ :call<'plottables>();
+
+#handle-io
+ normalised-out-reserve-amount: mul(
+   scale-factor
+   scale-18-dynamic<1 0>(output-token-decimals() uint256-output-vault-decrease())
+ ),
+ :set(
+    out-reserve-key
+    add(get(out-reserve-key) normalised-out-reserve-amount)
+ ),
+
+ /* round down how much reserve we've received for conservative buy offers */
+ normalised-in-tkn-amount: scale-18-dynamic(input-token-decimals() uint256-input-vault-increase()),
+ :set(
+    in-token-key
+    add(
+      get(in-token-key)
+      normalised-in-tkn-amount)
+ );

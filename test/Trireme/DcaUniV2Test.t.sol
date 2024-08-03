@@ -79,7 +79,7 @@ contract DcaUniV2Test is StrategyTests {
         uint256 expectedRatio = 7.546679062155744054e18;
         uint256 expectedAmount = 1.448940071037488020e18;
 
-        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+        LibStrategyDeployment.StrategyDeploymentV3 memory strategy = LibStrategyDeployment.StrategyDeploymentV3(
             getEncodedSellZercRoute(),
             getEncodedBuyZercRoute(),
             0,
@@ -93,7 +93,8 @@ contract DcaUniV2Test is StrategyTests {
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
-            outputVaults
+            outputVaults,
+            new ActionV1[](0)
         );
 
         OrderV3 memory order = addOrderDepositOutputTokens(strategy);
@@ -123,7 +124,7 @@ contract DcaUniV2Test is StrategyTests {
         uint256 expectedRatio = 0.107731681330498142e18;
         uint256 expectedAmount = 11.591520568299904160e18;
 
-        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+        LibStrategyDeployment.StrategyDeploymentV3 memory strategy = LibStrategyDeployment.StrategyDeploymentV3(
             getEncodedBuyZercRoute(),
             getEncodedSellZercRoute(),
             0,
@@ -137,7 +138,8 @@ contract DcaUniV2Test is StrategyTests {
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
-            outputVaults
+            outputVaults,
+            new ActionV1[](0)
         );
 
         OrderV3 memory order = addOrderDepositOutputTokens(strategy);
@@ -163,7 +165,7 @@ contract DcaUniV2Test is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = polygonUsdcIo();
 
-        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+        LibStrategyDeployment.StrategyDeploymentV3 memory strategy = LibStrategyDeployment.StrategyDeploymentV3(
             getEncodedSellZercRoute(),
             getEncodedBuyZercRoute(),
             0,
@@ -177,7 +179,8 @@ contract DcaUniV2Test is StrategyTests {
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
-            outputVaults
+            outputVaults,
+            new ActionV1[](0)
         );
 
         OrderV3 memory order = addOrderDepositOutputTokens(strategy);
@@ -211,7 +214,7 @@ contract DcaUniV2Test is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = polygonUsdcIo();
 
-        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+        LibStrategyDeployment.StrategyDeploymentV3 memory strategy = LibStrategyDeployment.StrategyDeploymentV3(
             getEncodedSellZercRoute(),
             getEncodedBuyZercRoute(),
             0,
@@ -225,7 +228,8 @@ contract DcaUniV2Test is StrategyTests {
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
-            outputVaults
+            outputVaults,
+            new ActionV1[](0)
         );
 
         OrderV3 memory order = addOrderDepositOutputTokens(strategy);

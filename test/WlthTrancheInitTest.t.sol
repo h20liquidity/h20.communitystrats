@@ -12,16 +12,13 @@ import {
     OrderConfigV3,
     TakeOrderConfigV3,
     TakeOrdersConfigV3,
-    ActionV1
-} from "rain.orderbook.interface/interface/unstable/IOrderBookV4.sol"; 
-
+    ActionV1,
+    EvaluableV3,
+    SignedContextV1
+} from "rain.orderbook.interface/interface/unstable/IOrderBookV4.sol";
 import {IParserV2} from "rain.interpreter.interface/interface/unstable/IParserV2.sol";
 import {IOrderBookV4ArbOrderTaker} from "rain.orderbook.interface/interface/unstable/IOrderBookV4ArbOrderTaker.sol";
-
-// import {IOrderBookV3ArbOrderTaker} from "rain.orderbook.interface/interface/IOrderBookV3ArbOrderTaker.sol";
-// import {IParserV1} from "rain.interpreter.interface/interface/IParserV1.sol";
 import {IExpressionDeployerV3} from "rain.interpreter.interface/interface/IExpressionDeployerV3.sol";
-// import {IInterpreterV2} from "rain.interpreter.interface/interface/IInterpreterV2.sol";
 import {IInterpreterV3} from "rain.interpreter.interface/interface/unstable/IInterpreterV3.sol";
 import {IInterpreterStoreV2} from "rain.interpreter.interface/interface/IInterpreterStoreV2.sol";
 import {StrategyTests, IRouteProcessor, LibStrategyDeployment, LibComposeOrders,IInterpreterV3} from "h20.test-std/StrategyTests.sol";
@@ -51,7 +48,7 @@ contract StopLimitTest is StrategyTests {
     using SafeERC20 for IERC20;
     using Strings for address;
 
-    uint256 constant FORK_BLOCK_NUMBER = 17308087;
+    uint256 constant FORK_BLOCK_NUMBER = 17914079;
     
     function selectFork() internal {
         uint256 fork = vm.createFork(vm.envString("RPC_URL_BASE"));
@@ -74,66 +71,7 @@ contract StopLimitTest is StrategyTests {
         ORDER_OWNER = address(0x5e01e44aE1969e16B9160d903B6F2aa991a37B21); 
     }
 
-    function testEnsureStopLimitSell() public {
-
-        IO[] memory inputVaults = new IO[](1);
-        inputVaults[0] = baseUsdcIo();
-
-        IO[] memory outputVaults = new IO[](1);
-        outputVaults[0] = baseWlthIo();
-
-        LibStrategyDeployment.StrategyDeploymentV3 memory strategy = LibStrategyDeployment.StrategyDeploymentV3(
-            getEncodedBuyWlthRoute(),
-            getEncodedSellWlthRoute(),
-            0,
-            0,
-            10000e6,
-            10000e18,
-            0,
-            0,
-            "strategies/stop-limit.rain",
-            "stop-limit-order.sell.prod",
-            "./lib/h20.test-std/lib/rain.orderbook",
-            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
-            inputVaults,
-            outputVaults,
-            new ActionV1[](0)
-        );
-
-        OrderV3 memory order = addOrderDepositOutputTokens(strategy);
-
-        // Current Price is not below the market price.
-        {
-            vm.expectRevert("Stop price.");
-            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
-        }
-
-        // When current price goes below the market price the order suceeds.
-        {
-            moveExternalPrice(
-                strategy.outputVaults[strategy.outputTokenIndex].token,
-                strategy.inputVaults[strategy.inputTokenIndex].token,
-                200000e18,
-                strategy.takerRoute
-            );
-            
-            vm.recordLogs();
-            // `arb()` called
-            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
-
-            Vm.Log[] memory entries = vm.getRecordedLogs();
-            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
-
-            assertEq(strategyRatio, 0.0245e18);
-            assertEq(strategyAmount, 50e18);
-        
-            vm.expectRevert("Max order count");
-            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
-             
-        }
-    }
-
-    function testEnsureStopLimitBuy() public {
+    function testWlthTrancheInitBuy() public {
 
         IO[] memory inputVaults = new IO[](1);
         inputVaults[0] = baseWlthIo();
@@ -141,6 +79,8 @@ contract StopLimitTest is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = baseUsdcIo();
 
+        
+        
         LibStrategyDeployment.StrategyDeploymentV3 memory strategy = LibStrategyDeployment.StrategyDeploymentV3(
             getEncodedSellWlthRoute(),
             getEncodedBuyWlthRoute(),
@@ -150,30 +90,31 @@ contract StopLimitTest is StrategyTests {
             10000e6,
             0,
             0,
-            "strategies/stop-limit.rain",
-            "stop-limit-order.buy.prod",
+            "strategies/wlth-tranche-init.rain",
+            "wlth-tranches.buy.initialized.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
             outputVaults,
             new ActionV1[](0)
         );
-
-        OrderV3 memory order = addOrderDepositOutputTokens(strategy);
-
-        // Current Price is not above the market price.
+        ActionV1[] memory postOrderActions;
         {
-            vm.expectRevert("Stop price.");
-            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            bytes memory postOrderCompose = iParser.parse2(
+                LibComposeOrders.getComposedPostAddOrder(
+                    vm, strategy.strategyFile, strategy.strategyScenario, strategy.buildPath, strategy.manifestPath
+                )
+            )
+            ;
+            EvaluableV3 memory postOrderEvaluable = EvaluableV3(iInterpreter, iStore, postOrderCompose);
+
+            ActionV1 memory postOrderAction = ActionV1(postOrderEvaluable,new SignedContextV1[](0));
+            postOrderActions = new ActionV1[](1);
+            postOrderActions[0] = postOrderAction;
         }
-        {
-            moveExternalPrice(
-                strategy.inputVaults[strategy.inputTokenIndex].token,
-                strategy.outputVaults[strategy.outputTokenIndex].token,
-                strategy.makerAmount,
-                strategy.makerRoute
-            );
-        }
+        strategy.postActions = postOrderActions;
+
+        OrderV3 memory order = addOrderDepositOutputTokens(strategy); 
 
         {
             vm.recordLogs();
@@ -183,14 +124,14 @@ contract StopLimitTest is StrategyTests {
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
 
-            assertEq(strategyRatio, 40.25e18);
-            assertEq(strategyAmount, 1e18);
-    
-            vm.expectRevert("Max order count");
-            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+            console2.log("strategyAmount : ",strategyAmount);
+            console2.log("strategyRatio : ",strategyRatio);
         } 
+
     }
+
     
+
     function getEncodedBuyWlthRoute() internal pure returns (bytes memory) {
         bytes memory BUY_WLTH_ROUTE =
             hex"02833589fCD6eDb6E08f4c7C32D4f71b54bdA0291301ffff011536EE1506e24e5A36Be99C73136cD82907A902E01F97A86C2Cb3e42f89AC5f5AA020E5c3505015a88";
@@ -206,5 +147,3 @@ contract StopLimitTest is StrategyTests {
     }
 
 }
-
-

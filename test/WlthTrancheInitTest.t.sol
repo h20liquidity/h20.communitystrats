@@ -12,16 +12,13 @@ import {
     OrderConfigV3,
     TakeOrderConfigV3,
     TakeOrdersConfigV3,
-    ActionV1
-} from "rain.orderbook.interface/interface/unstable/IOrderBookV4.sol"; 
-
+    ActionV1,
+    EvaluableV3,
+    SignedContextV1
+} from "rain.orderbook.interface/interface/unstable/IOrderBookV4.sol";
 import {IParserV2} from "rain.interpreter.interface/interface/unstable/IParserV2.sol";
 import {IOrderBookV4ArbOrderTaker} from "rain.orderbook.interface/interface/unstable/IOrderBookV4ArbOrderTaker.sol";
-
-// import {IOrderBookV3ArbOrderTaker} from "rain.orderbook.interface/interface/IOrderBookV3ArbOrderTaker.sol";
-// import {IParserV1} from "rain.interpreter.interface/interface/IParserV1.sol";
 import {IExpressionDeployerV3} from "rain.interpreter.interface/interface/IExpressionDeployerV3.sol";
-// import {IInterpreterV2} from "rain.interpreter.interface/interface/IInterpreterV2.sol";
 import {IInterpreterV3} from "rain.interpreter.interface/interface/unstable/IInterpreterV3.sol";
 import {IInterpreterStoreV2} from "rain.interpreter.interface/interface/IInterpreterStoreV2.sol";
 import {StrategyTests, IRouteProcessor, LibStrategyDeployment, LibComposeOrders,IInterpreterV3} from "h20.test-std/StrategyTests.sol";
@@ -82,7 +79,9 @@ contract StopLimitTest is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = baseUsdcIo();
 
-        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+        
+        
+        LibStrategyDeployment.StrategyDeploymentV3 memory strategy = LibStrategyDeployment.StrategyDeploymentV3(
             getEncodedSellWlthRoute(),
             getEncodedBuyWlthRoute(),
             0,
@@ -96,12 +95,42 @@ contract StopLimitTest is StrategyTests {
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
-            outputVaults
+            outputVaults,
+            new ActionV1[](0)
         );
+        ActionV1[] memory postOrderActions;
+        {
+            bytes memory postOrderCompose = iParser.parse2(
+                LibComposeOrders.getComposedPostAddOrder(
+                    vm, strategy.strategyFile, strategy.strategyScenario, strategy.buildPath, strategy.manifestPath
+                )
+            )
+            ;
+            EvaluableV3 memory postOrderEvaluable = EvaluableV3(iInterpreter, iStore, postOrderCompose);
 
-        OrderV3 memory order = addOrderDepositOutputTokens(strategy);
+            ActionV1 memory postOrderAction = ActionV1(postOrderEvaluable,new SignedContextV1[](0));
+            postOrderActions = new ActionV1[](1);
+            postOrderActions[0] = postOrderAction;
+        }
+        strategy.postActions = postOrderActions;
+
+        OrderV3 memory order = addOrderDepositOutputTokens(strategy); 
+
+        {
+            vm.recordLogs();
+            // `arb()` called
+            takeArbOrder(order, strategy.takerRoute, strategy.inputTokenIndex, strategy.outputTokenIndex);
+
+            Vm.Log[] memory entries = vm.getRecordedLogs();
+            (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
+
+            console2.log("strategyAmount : ",strategyAmount);
+            console2.log("strategyRatio : ",strategyRatio);
+        } 
 
     }
+
+    
 
     function getEncodedBuyWlthRoute() internal pure returns (bytes memory) {
         bytes memory BUY_WLTH_ROUTE =

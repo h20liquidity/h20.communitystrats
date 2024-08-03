@@ -89,8 +89,16 @@ scenarios:
           # Uniswap v3 factory contract address and corresponding init code hash.
           # If the factory address and the init code aren't available as a literals
           # then non-literal address and hash value can be given as bindings.
-          uniswap-v3-factory: '[uniswap-v3-factory]'
+          uniswap-v3-factory: 0x33128a8fC17869897dcE68Ed026d694621f6FDfD
           uniswap-v3-init-code: '[uniswap-v3-init-code]'
+
+          # Uniswap v3 fee tier and twap duration
+          twap-fee: '[uniswap-v3-fee-medium]'
+          twap-duration: 0
+
+          # Reference token addresses
+          reference-token: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
+          reference-stable: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
           orderbook-subparser: 0x8D96ea3EF24D7123882c51CE4325b89bc0d63f9e
 
@@ -218,6 +226,7 @@ scenarios:
                   # tranche that won't immediately dump into the market.
                   # If the market is outside the chart then set this to 0.
                   initial-tranche-space: 0
+                  post-action: '''post-action-sell'
                 scenarios:
                   prod:
                     bindings:
@@ -400,6 +409,7 @@ deployments:
 #io-ratio-base !The base IO ratio, as a decimal 18 fixed point number. This is the IO ratio at tranche space 0 and grows according to the growth factor per tranche.
 #io-ratio-growth !The exponential growth factor of the IO ratio. E.g. 0.01 is 1% io-ratio growth per tranche.
 
+#reference-token !Strategy token for which the budget is written.
 #reference-stable !The stable token that is used as a reference for the TWAP to offer dollar equivalent conversions.
 #reference-stable-decimals !The number of decimals of the reference stable token.
 #reference-reserve !The token that will be used to compare against the reference stable token to calculate the TWAP for dollar equivalent conversions.

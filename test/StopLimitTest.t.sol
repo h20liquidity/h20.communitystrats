@@ -82,7 +82,7 @@ contract StopLimitTest is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = baseWlthIo();
 
-        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+        LibStrategyDeployment.StrategyDeploymentV3 memory strategy = LibStrategyDeployment.StrategyDeploymentV3(
             getEncodedBuyWlthRoute(),
             getEncodedSellWlthRoute(),
             0,
@@ -96,7 +96,8 @@ contract StopLimitTest is StrategyTests {
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
-            outputVaults
+            outputVaults,
+            new ActionV1[](0)
         );
 
         OrderV3 memory order = addOrderDepositOutputTokens(strategy);
@@ -140,7 +141,7 @@ contract StopLimitTest is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = baseUsdcIo();
 
-        LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
+        LibStrategyDeployment.StrategyDeploymentV3 memory strategy = LibStrategyDeployment.StrategyDeploymentV3(
             getEncodedSellWlthRoute(),
             getEncodedBuyWlthRoute(),
             0,
@@ -154,7 +155,8 @@ contract StopLimitTest is StrategyTests {
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
-            outputVaults
+            outputVaults,
+            new ActionV1[](0)
         );
 
         OrderV3 memory order = addOrderDepositOutputTokens(strategy);

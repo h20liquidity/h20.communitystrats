@@ -85,10 +85,10 @@ scenarios:
               tokenstable-range-floor: 0.5
               stable-outgoing-size: 50
               price-average-time: 600
-              stable-percent-decrease: 0.03
-              stablerevert-percent-increase: 0.015
-              token-percent-increase: 0.03
-              tokenrevert-percent-decrease: 0.015
+              stable-percent-decrease: 0.01
+              stablerevert-percent-increase: 0.01
+              token-percent-increase: 0.01
+              tokenrevert-percent-decrease: 0.01
               time-expiry: 3000000
               initial-price-complete: 65
               initial-price-complete2: 0.00001
@@ -484,6 +484,7 @@ price: conditions(
 :;
   
 
+  
   
   
 

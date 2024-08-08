@@ -31,9 +31,9 @@ deployers:
     network: flare-community
     
 tokens:
-  flare-eusdt:
+  flare-usdc:
     network: flare-community
-    address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
+    address: 0xFbDa5F676cB37624f28265A144A48B0d6e87d3b6
     decimals: 6
   flare-wflr:
     network: flare-community
@@ -49,17 +49,18 @@ scenarios:
           # Ask for now, registry in future.
           uniswap-words: 0xAFF83Dd453f9EE510d6F623d09322A68E8ee29A3
           orderbook-subparser: 0x77991674ca8887D4ee1b583DB7324B41d5f894c4
+          flare-subparser: 0x57c613381deadaE520eC33556C1d51c9Dcb0adb3
 
           # Uniswap V3 factory addresses and init code
-          uniswap-v2-factory: 0x28b70f6Ed97429E40FE9a9CD3EB8E86BCBA11dd4
-          uniswap-v2-init-code: 0xa1ab3f6a293fb82d68afb63ad2a5352fc49d5f3dfa28b151a85c382a91dd574b
+          uniswap-v2-factory: 0x440602f459D7Dd500a74528003e6A20A46d6e2A6
+          uniswap-v2-init-code: 0xbf4c1c435583a2bb8d763765a34a46e376071c3b3d80e5bbac0950aeecdf31cb
 
         scenarios:
           buy-wflr:
             bindings:
               # Input and Output token addresses from perspective of order
               input-token-address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
-              output-token-address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
+              output-token-address: 0xFbDa5F676cB37624f28265A144A48B0d6e87d3b6
 
               # If the order's input-output tokens are NOT paired on the uniswap v3 pool,
               # then the reserve token address is the address of the token which is paired with order's output token on uniswapv3 pool.
@@ -79,7 +80,7 @@ scenarios:
               # Unix timestamp for strating of the strategy.
               # Ideally set it 15 minutes ahead of the whatever the timestamp is while you're deploying the order.
               # https://www.epochconverter.com/
-              strat-start-time: 1723131051
+              strat-start-time: 1723114226
 
               # Bounty amount denominated in input tokens
               #
@@ -183,6 +184,7 @@ charts:
 
 #uniswap-words !The subparser for the Uniswap words
 #orderbook-subparser !The subparser for the Orderbook words
+#flare-subparser !The subparser for flare ftso words.
 #uniswap-v3-factory !Uniswap v3 factory.
 #uniswap-v3-init-code !Uniswap v3 factory init code.
 #uniswap-v2-factory !Uniswap v2 factory.
@@ -223,10 +225,9 @@ charts:
 
 #calculate-budget-input
   current-budget: ,
-  output-to-reserve: uniswap-v2-quote-exact-input(
-    output-token-address input-token-address
+  output-to-reserve: mul(
+    inv(ftso-current-price-usd("FLR" 1))
     current-budget
-    uniswap-v2-factory uniswap-v2-init-code
   ),
   output-to-input: call<'quote-multiplier>(output-to-reserve);
 
@@ -267,7 +268,7 @@ charts:
   );
 
 #calculate-io
-  using-words-from uniswap-words orderbook-subparser
+  using-words-from uniswap-words orderbook-subparser flare-subparser
   
   current-time last-time: call<'get-last-time>(), 
   elapsed-time: saturating-sub(current-time last-time),

@@ -28,15 +28,15 @@ uint256 constant VAULT_ID = uint256(keccak256("vault"));
 /// @dev https://flarescan.com/token/0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
 IERC20 constant FLARE_WFLR= IERC20(0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d); 
 
-/// @dev https://flarescan.com/address/0x96B41289D90444B8adD57e6F265DB5aE8651DF29
-IERC20 constant FLARE_EUSDT = IERC20(0x96B41289D90444B8adD57e6F265DB5aE8651DF29);
+/// @dev https://flarescan.com/address/0xFbDa5F676cB37624f28265A144A48B0d6e87d3b6
+IERC20 constant FLARE_USDC = IERC20(0xFbDa5F676cB37624f28265A144A48B0d6e87d3b6);
 
 function flareWflrIo() pure returns (IO memory) {
     return IO(address(FLARE_WFLR), 18, VAULT_ID);
 }
 
-function flareEusdtIo() pure returns (IO memory) {
-    return IO(address(FLARE_EUSDT), 6, VAULT_ID);
+function flareUsdcIo() pure returns (IO memory) {
+    return IO(address(FLARE_USDC), 6, VAULT_ID);
 } 
 
 contract FlrStreamingTest is StrategyTests {
@@ -75,9 +75,9 @@ contract FlrStreamingTest is StrategyTests {
         inputVaults[0] = flareWflrIo();
 
         IO[] memory outputVaults = new IO[](1);
-        outputVaults[0] = flareEusdtIo();
+        outputVaults[0] = flareUsdcIo();
 
-        uint256 expectedRatio = 60.098521370017216084e18;
+        uint256 expectedRatio = 61.628395061728395059e18;
         uint256 expectedAmount = 4999999999999999920;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
@@ -96,7 +96,7 @@ contract FlrStreamingTest is StrategyTests {
             inputVaults,
             outputVaults
         );
-
+        
         OrderV3 memory order = addOrderDepositOutputTokens(strategy);
 
         vm.warp(block.timestamp + 3600);
@@ -116,7 +116,7 @@ contract FlrStreamingTest is StrategyTests {
 
     function getEncodedBuyWflrRoute() internal pure returns (bytes memory) {
         bytes memory BUY_WFLR_ROUTE =
-            hex"0296B41289D90444B8adD57e6F265DB5aE8651DF2901ffff007520005032F43229F606d3ACeae97045b9D6F7ea00C1A14cE2fd58A3A2f99deCb8eDd866204eE07f8D000bb8";
+            hex"02FbDa5F676cB37624f28265A144A48B0d6e87d3b601ffff00B1eC7ef55fa2E84eb6fF9FF0fa1e33387f892f6800C1A14cE2fd58A3A2f99deCb8eDd866204eE07f8D000bb8";
             
         return abi.encode(BUY_WFLR_ROUTE);
     }

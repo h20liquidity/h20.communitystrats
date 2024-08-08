@@ -73,15 +73,13 @@ scenarios:
               # If the order's input-output token are NOT paired on the uniswap v3 pool, then set to reserve.
               quote-multiplier: '''quote-multiplier-identity'
     
-              # Number of output tokens offered per second.
-              # Total number of output tokens offered / Total time duration.
-              # Eg : 100 tokens cost averaged in 1 hours: 100/3600 = 0.027777777777777778  
-              per-second-rate: 0.01
+              # Number of output tokens offered per day.
+              per-day-output: 120
     
               # Unix timestamp for strating of the strategy.
               # Ideally set it 15 minutes ahead of the whatever the timestamp is while you're deploying the order.
               # https://www.epochconverter.com/
-              strat-start-time: 1723114226
+              strat-start-time: 1723131051
 
               # Bounty amount denominated in input tokens
               #
@@ -122,9 +120,6 @@ charts:
   buy-streaming-dca:
     scenario: streaming-dca.buy-wflr.chart
     metrics:
-      - label: USDT Per second rate
-        value: 0.6.0
-        description: Amount of USDT tokens sold per second.
       - label: USDT sold per hour
         value: 0.6.1
         description: Amount of USDT tokens sold per hour.
@@ -178,7 +173,7 @@ charts:
 #bounty-min !Minimum bounty to offer for each trade in USD.
 #bounty-max !Maximum bounty that can be offered. 
 
-#per-second-rate !The rate of stable denominated distributed tokens distributed per second.
+#per-day-output !The rate of stable denominated distributed tokens distributed per second.
 #strat-start-time !Strategy start timestamp
 #get-last-time !Binding to get last time and current time
 #plottables !Binding for charting metrics.
@@ -236,9 +231,9 @@ charts:
   output-to-input: call<'quote-multiplier>(output-to-reserve);
 
 #plottables-plot
-  _: per-second-rate,
-  tokens-per-hour: mul(per-second-rate 3600),
-  tokens-per-day: mul(per-second-rate 86400),
+  _: per-day-output,
+  tokens-per-hour: div(mul(per-day-output 3600) 86400),
+  tokens-per-day: per-day-output,
   _: bounty-min,
   _: bounty-max,
   _: auction-start-time,
@@ -276,7 +271,7 @@ charts:
   
   current-time last-time: call<'get-last-time>(), 
   elapsed-time: saturating-sub(current-time last-time),
-  current-budget: mul(per-second-rate elapsed-time),
+  current-budget: mul(per-day-output div(elapsed-time 86400)),
   bounty-amount: call<'bounty-auction>(current-time last-time),
   input-amount: call<'calculate-budget-input>(current-budget),
   max-amount: current-budget,

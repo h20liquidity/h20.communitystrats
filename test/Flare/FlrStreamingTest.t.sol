@@ -77,8 +77,8 @@ contract FlrStreamingTest is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = flareEusdtIo();
 
-        uint256 expectedRatio = 60.176793418949736058e18;
-        uint256 expectedAmount = 9e18;
+        uint256 expectedRatio = 60.098521370017216084e18;
+        uint256 expectedAmount = 4999999999999999920;
 
         LibStrategyDeployment.StrategyDeployment memory strategy = LibStrategyDeployment.StrategyDeployment(
             "",
@@ -99,7 +99,7 @@ contract FlrStreamingTest is StrategyTests {
 
         OrderV3 memory order = addOrderDepositOutputTokens(strategy);
 
-        vm.warp(block.timestamp + 900);
+        vm.warp(block.timestamp + 3600);
         
         {
             vm.recordLogs();

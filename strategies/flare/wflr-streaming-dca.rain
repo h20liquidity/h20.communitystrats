@@ -1,0 +1,289 @@
+# Strategy: Streaming DCA
+# Strategy cost averages output token against the input token for an input-ouput token pair,
+# buy offering tokens at a fixed rate per unit time which can be provided in the bindings, along with a minimum 
+# io-ratio for the order.
+# Bounty auction to pay for gas denominated in input token terms, with a min and max bounty offered for the trade.
+# Since the strategy has a per-second budget, any external order taker can offer any amount of input token and
+# take the output tokens from the orderbook provided the trade pays for the gas as well. So even if multiple order 
+# takers come in and try to take the order, the strategy just cost averages the tokens for a taker and 
+# calculates the budget amount for next. This prevents external takers to DDos the order as ouput amount is calculated
+# for each taker individually.
+
+networks:
+  flare-community: 
+    rpc: https://rpc.ankr.com/flare/8e4cac5728d95471ae55724953c7ae6f19a227ac05146276f09717692b732dae
+    chain-id: 14 
+    network-id: 14 
+    currency: FLR
+
+subgraphs:
+  flare-community: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-flare/0.1/gn
+  
+orderbooks:
+  flare-community:
+    address: 0xb06202aA3Fe7d85171fB7aA5f17011d17E63f382
+    network: flare-community
+    subgraph: flare-community
+
+deployers:
+  flare-community:
+    address: 0xEBe394cff4980992B826Ec70ef0a9ec8b5D4C640
+    network: flare-community
+    
+tokens:
+  flare-eusdt:
+    network: flare-community
+    address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
+    decimals: 6
+  flare-wflr:
+    network: flare-community
+    address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+    decimals: 18
+
+scenarios:
+    streaming-dca:
+        network: flare-community
+        deployer: flare-community
+        orderbook: flare-community
+        bindings:
+          # Ask for now, registry in future.
+          uniswap-words: 0xAFF83Dd453f9EE510d6F623d09322A68E8ee29A3
+          orderbook-subparser: 0x77991674ca8887D4ee1b583DB7324B41d5f894c4
+
+          # Uniswap V3 factory addresses and init code
+          uniswap-v2-factory: 0x28b70f6Ed97429E40FE9a9CD3EB8E86BCBA11dd4
+          uniswap-v2-init-code: 0xa1ab3f6a293fb82d68afb63ad2a5352fc49d5f3dfa28b151a85c382a91dd574b
+
+        scenarios:
+          buy-wflr:
+            bindings:
+              # Input and Output token addresses from perspective of order
+              input-token-address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+              output-token-address: 0x96B41289D90444B8adD57e6F265DB5aE8651DF29
+
+              # If the order's input-output tokens are NOT paired on the uniswap v3 pool,
+              # then the reserve token address is the address of the token which is paired with order's output token on uniswapv3 pool.
+              # Eg: If WFLR is paired with WETH on the uniswap v3 pool for a USDT-WFLR order, reserve token address is the WETH address.
+              # If the order's input-output tokens are paired on the uniswap v3 pool, then reserve token address is same as the input token address.
+              # Eg: For WFLR/USDT pair where USDT is also the order's input token, reserve token address is same as the input token address.
+              reserve-token-address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+
+              # Ratio multiplier for calculating the io-ratio.
+              # If the order's input-output token are paired on the uniswap v3 pool, then set to identity
+              # If the order's input-output token are NOT paired on the uniswap v3 pool, then set to reserve.
+              quote-multiplier: '''quote-multiplier-identity'
+    
+              # Number of output tokens offered per second.
+              # Total number of output tokens offered / Total time duration.
+              # Eg : 100 tokens cost averaged in 1 hours: 100/3600 = 0.027777777777777778  
+              per-second-rate: 0.01
+    
+              # Unix timestamp for strating of the strategy.
+              # Ideally set it 15 minutes ahead of the whatever the timestamp is while you're deploying the order.
+              # https://www.epochconverter.com/
+              strat-start-time: 1723114226
+
+              # Bounty amount denominated in input tokens
+              #
+              # Minimum bounty offered in input token denominations. 
+              bounty-min: 0.02
+              # Maximum bounty offered in input token denominations.
+              bounty-max: 0.5
+              # Number of seconds after which the bounty auction starts once the order is evaling.
+              auction-start-time: 300
+              # Number of seconds for which bounty auction will last.
+              auction-duration: 1800
+
+
+            scenarios:
+              prod:
+                bindings:
+                  # Minimum input/output token ratio
+                  # Eg: For buy WFLR, min-ratio is the minimum WFLR/USDT value to buy above.
+                  min-ratio: 10
+                  plottables: '''plottables-prod'
+                  get-last-time: '''get-last-time-prod'
+                  ensure-ratio: '''ensure-ratio-prod'
+              chart:
+                runs: 1000
+                bindings:
+                  min-ratio: 10
+                  plottables: '''plottables-plot'
+                  get-last-time: '''get-last-time-plot'
+                  ensure-ratio: '''ensure-ratio-plot'  
+              test:
+                bindings:
+                  min-ratio: 100
+                  plottables: '''plottables-prod'
+                  get-last-time: '''get-last-time-prod'
+                  ensure-ratio: '''ensure-ratio-prod'              
+
+charts:
+  buy-streaming-dca:
+    scenario: streaming-dca.buy-wflr.chart
+    metrics:
+      - label: USDT Per second rate
+        value: 0.6.0
+        description: Amount of USDT tokens sold per second.
+      - label: USDT sold per hour
+        value: 0.6.1
+        description: Amount of USDT tokens sold per hour.
+      - label: USDT sold per day
+        value: 0.6.2
+        description: Amount of USDT tokens sold per day.
+      - label: Minimum bounty
+        value: 0.6.3
+        description: Minimum bounty offered in WFLR tokens.
+      - label: Maximum bounty
+        value: 0.6.4
+        description: Maximum bounty offered in WFLR tokens.
+      - label: Bounty auction start
+        value: 0.6.5
+        description: Number of seconds after which the bounty auction strats after order evals.
+      - label: Bounty duration
+        value: 0.6.6
+        description: Duration for which the bounty lasts
+      - label: Minimum ratio
+        value: 0.6.7
+      - label: Strategy start unix timestamp
+        value: 0.6.8
+
+  buy-dca-simulation:
+        scenario: streaming-dca.buy-wflr.chart
+        plots:
+          Number of USDT tokens sold vs time difference:
+            marks:
+              - type: line
+                options:
+                  x: 0.2
+                  y: 0.3
+          Bounty offered vs time difference:
+            marks:
+              - type: line
+                options:
+                  x: 0.2
+                  y: 0.4
+        
+---
+#input-token-address !Order input token address.
+#output-token-address !Order output token address.
+#reserve-token-address !Reserve token address.
+
+#twap-io-fee !Twap fee for the distribution token pool, paired with either stable token.
+#twap-multiplier-fee !Twap fee for io-ratio mulitplier for the pool which distribution token is paired with.
+#min-ratio !Minimum input ouput ratio for the order.
+
+#auction-start-time !Minimum time elapsed before the auction begans.
+#auction-duration !Total time for which the auction lasts.
+#bounty-min !Minimum bounty to offer for each trade in USD.
+#bounty-max !Maximum bounty that can be offered. 
+
+#per-second-rate !The rate of stable denominated distributed tokens distributed per second.
+#strat-start-time !Strategy start timestamp
+#get-last-time !Binding to get last time and current time
+#plottables !Binding for charting metrics.
+#ensure-ratio !Binding to enfore minimum io-ratio check.
+#quote-multiplier !Binding to calculate multiplier for io-ratio.
+#test-current-time !Binding to have test current time.
+
+#uniswap-words !The subparser for the Uniswap words
+#orderbook-subparser !The subparser for the Orderbook words
+#uniswap-v3-factory !Uniswap v3 factory.
+#uniswap-v3-init-code !Uniswap v3 factory init code.
+#uniswap-v2-factory !Uniswap v2 factory.
+#uniswap-v2-init-code !Uniswap v2 factory init code.
+
+#last-time-key "last-time-key"
+
+#bounty-auction
+  current-time last-time: ,
+  time-since-start: saturating-sub(current-time add(last-time auction-start-time)),
+  growth-index: if(
+          greater-than(current-time add(last-time auction-start-time))
+          min(
+            div(time-since-start auction-duration)
+            1
+          )
+          0
+        ),
+  bounty: min(
+    linear-growth(
+      bounty-min
+      saturating-sub(bounty-max bounty-min)
+      growth-index
+    )
+    bounty-max
+  );
+
+#get-last-time-plot
+ current-time: test-current-time,
+ last-time: sub(current-time mod(current-time 86400));
+
+#get-last-time-prod
+ current-time: now(),
+ last-time: any(
+    get(hash(order-hash() last-time-key))
+    strat-start-time
+  );
+
+#calculate-budget-input
+  current-budget: ,
+  output-to-reserve: uniswap-v2-quote-exact-input(
+    output-token-address input-token-address
+    current-budget
+    uniswap-v2-factory uniswap-v2-init-code
+  ),
+  output-to-input: call<'quote-multiplier>(output-to-reserve);
+
+#plottables-plot
+  _: per-second-rate,
+  tokens-per-hour: mul(per-second-rate 3600),
+  tokens-per-day: mul(per-second-rate 86400),
+  _: bounty-min,
+  _: bounty-max,
+  _: auction-start-time,
+  _: auction-duration,
+  _: min-ratio,
+  _: strat-start-time;
+
+#plottables-prod
+ :;
+
+#ensure-ratio-prod
+  io-ratio: ,
+  :ensure(
+    greater-than-or-equal-to(io-ratio min-ratio)
+    "min ratio"
+  );
+
+#ensure-ratio-plot
+  io-ratio: ;
+
+#quote-multiplier-identity
+  _: ;
+
+#quote-multiplier-reserve
+  reserve-amount: ,
+  reserve-to-input: uniswap-v3-quote-exact-input(
+    reserve-token-address input-token-address 
+    reserve-amount
+    uniswap-v3-factory uniswap-v3-init-code
+    twap-multiplier-fee
+  );
+
+#calculate-io
+  using-words-from uniswap-words orderbook-subparser
+  
+  current-time last-time: call<'get-last-time>(), 
+  elapsed-time: saturating-sub(current-time last-time),
+  current-budget: mul(per-second-rate elapsed-time),
+  bounty-amount: call<'bounty-auction>(current-time last-time),
+  input-amount: call<'calculate-budget-input>(current-budget),
+  max-amount: current-budget,
+  io-ratio: div(saturating-sub(input-amount bounty-amount) current-budget),
+  :call<'ensure-ratio>(io-ratio),
+  :call<'plottables>();
+  
+
+#handle-io
+ :;

@@ -40,6 +40,17 @@ tokens:
     address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
     decimals: 18
 
+orders:
+  # vault-id generated with `openssl rand -hex 32`
+  flare-wflr-buy:
+    orderbook: flare-community
+    inputs:
+      - token: flare-wflr
+        vault-id: 0x653455b2594761c14979e694b92c26a9a196230d66496d337aabdbad8a185c96
+    outputs:
+      - token: flare-usdc
+        vault-id: 0x653455b2594761c14979e694b92c26a9a196230d66496d337aabdbad8a185c96
+
 scenarios:
     streaming-dca:
         network: flare-community
@@ -160,6 +171,10 @@ charts:
                   x: 0.2
                   y: 0.4
         
+deployments:
+  flare-wflr-buy:
+    scenario: streaming-dca.buy-wflr.prod
+    order: flare-wflr-buy   
 ---
 #input-token-address !Order input token address.
 #output-token-address !Order output token address.

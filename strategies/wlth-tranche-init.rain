@@ -161,7 +161,7 @@ scenarios:
                 # buying WLTH with it, then the amount is the OUTPUT.
                 amount-is-output: 1
                 io-ratio-expr: '''linear-growth'
-                io-ratio-base: 15
+                io-ratio-base: 19
                 io-ratio-growth: 0.5
                 tranche-size-expr: '''linear-growth'
                 tranche-size-base: 5
@@ -547,8 +547,9 @@ deployments:
   tranche-total-size: call<'calculate-tranche>(),
   tranche-amount-diff: if(
     amount-is-output
-    scale-18-dynamic(output-token-decimals() uint256-output-vault-decrease())
-    scale-18-dynamic(input-token-decimals() uint256-input-vault-increase())),
+    output-vault-decrease()
+    input-vault-increase()
+  ),
   tranche-space-diff: div(tranche-amount-diff tranche-total-size),
   tranche-space-after: add(tranche-space-before tranche-space-diff),
   /* Snap tranche space to the nearest tranche to avoid dust issues at the edges */
@@ -577,6 +578,7 @@ deployments:
   _: io-ratio-current;
 
 #post-add-order
+  using-words-from uniswap-words orderbook-subparser
   current-ratio: call<'post-action>(),
   tranche-0-ratio: call<'io-ratio-expr>(io-ratio-base io-ratio-growth 0),
   tranche-1-ratio: call<'io-ratio-expr>(io-ratio-base io-ratio-growth 1),
@@ -595,4 +597,5 @@ deployments:
     "default" initial-tranche-space
   ),
   :set(hash(order-hash() init-key) 1),
-  :set(hash(order-hash() tranche-space-key) init-tranche);
+  :set(hash(order-hash() tranche-space-key) init-tranche),
+  :set(hash(order-hash() update-time-key) now());

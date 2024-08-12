@@ -67,7 +67,7 @@ contract DcaUniV2Test is StrategyTests {
         APPROVED_EOA = address(0x669845c29D9B1A64FFF66a55aA13EB4adB889a88);
         ORDER_OWNER = address(0x5e01e44aE1969e16B9160d903B6F2aa991a37B21); 
     }
-
+    
     function testDcaBuyUniV2() public {
 
         IO[] memory inputVaults = new IO[](1);

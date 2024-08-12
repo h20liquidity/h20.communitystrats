@@ -162,10 +162,8 @@ scenarios:
               backtest:
                 runs: 1
                 blocks:
-                  type: RangeWithInterval
-                  value:
-                    range: [59857426..]
-                    interval: 1000
+                  range: [59857426..]
+                  interval: 1000
                 bindings:
                   plottables: '''plottables-backtest'
                   ensure-min-ratio: '''ensure-min-ratio-chart'
@@ -242,10 +240,8 @@ scenarios:
               backtest:
                 runs: 1
                 blocks:
-                  type: RangeWithInterval
-                  value:
-                    range: [59857426..]
-                    interval: 1000
+                  range: [59857426..]
+                  interval: 1000
                 bindings:
                   plottables: '''plottables-backtest'
                   ensure-min-ratio: '''ensure-min-ratio-chart'

@@ -5,7 +5,7 @@ import {console2, Test} from "forge-std/Test.sol";
 import {
     IOrderBookV3,
     IO
-} from "rain.orderbook.interface/interface/IOrderBookV3.sol";
+} from "rain.orderbook.interface/interface/deprecated/v3/IOrderBookV3.sol";
 import {
     IOrderBookV4,
     OrderV3,
@@ -13,11 +13,11 @@ import {
     TakeOrderConfigV3,
     TakeOrdersConfigV3,
     ActionV1
-} from "rain.orderbook.interface/interface/unstable/IOrderBookV4.sol"; 
-import {IParserV2} from "rain.interpreter.interface/interface/unstable/IParserV2.sol";
-import {IOrderBookV4ArbOrderTaker} from "rain.orderbook.interface/interface/unstable/IOrderBookV4ArbOrderTaker.sol";
-import {IExpressionDeployerV3} from "rain.interpreter.interface/interface/IExpressionDeployerV3.sol";
-import {IInterpreterV3} from "rain.interpreter.interface/interface/unstable/IInterpreterV3.sol";
+} from "rain.orderbook.interface/interface/IOrderBookV4.sol"; 
+import {IParserV2} from "rain.interpreter.interface/interface/IParserV2.sol";
+import {IOrderBookV4ArbOrderTaker} from "rain.orderbook.interface/interface/IOrderBookV4ArbOrderTaker.sol";
+import {IExpressionDeployerV3} from "rain.interpreter.interface/interface/deprecated/IExpressionDeployerV3.sol";
+import {IInterpreterV3} from "rain.interpreter.interface/interface/IInterpreterV3.sol";
 import {IInterpreterStoreV2} from "rain.interpreter.interface/interface/IInterpreterStoreV2.sol";
 import {StrategyTests, IRouteProcessor, LibStrategyDeployment, LibComposeOrders,IInterpreterV3} from "h20.test-std/StrategyTests.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";

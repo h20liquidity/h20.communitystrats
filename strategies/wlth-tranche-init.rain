@@ -34,11 +34,11 @@ networks:
     currency: ETH
 
 subgraphs:
-  base-community: https://api.thegraph.com/subgraphs/name/h20liquidity/base-0x2aee87
+  base-community: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-base/0.3/gn
   
 orderbooks:
   base-community:
-    address: 0xA2f56F8F74B7d04d61f281BE6576b6155581dcBA
+    address: 0x7A44459893F99b9d9a92d488eb5d16E4090f0545
     network: base-community
     subgraph: base-community
 
@@ -100,7 +100,7 @@ scenarios:
           reference-token: 0x99b2B1A2aDB02B38222ADcD057783D7e5D1FCC7D
           reference-stable: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
-          orderbook-subparser: 0x8D96ea3EF24D7123882c51CE4325b89bc0d63f9e
+          orderbook-subparser: 0x762adD85a30A83722feF2e029087C9D110B6a7b3
 
           # How far we move through tranche space in a second.
           # 1e18 is a whole tranche, so we divide 1 by the number of seconds

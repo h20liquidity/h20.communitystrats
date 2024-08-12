@@ -14,11 +14,11 @@ networks:
     currency: ETH
 
 subgraphs:
-  base-community: https://api.thegraph.com/subgraphs/name/h20liquidity/base-0x2aee87
+  base-community: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-base/0.3/gn
 
 orderbooks:
   base-community:
-    address: 0xA2f56F8F74B7d04d61f281BE6576b6155581dcBA
+    address: 0x7A44459893F99b9d9a92d488eb5d16E4090f0545
     network: base-community
     subgraph: base-community
 
@@ -62,7 +62,7 @@ scenarios:
       bindings:
         # Ask for now, registry in future.
         uniswap-words: 0xD6B34F97d4A8Cb38D0544dB241CB3f335866f490
-        orderbook-subparser: 0x8D96ea3EF24D7123882c51CE4325b89bc0d63f9e
+        orderbook-subparser: 0x762adD85a30A83722feF2e029087C9D110B6a7b3
 
         # Uniswap V3 factory addresses and init code
         uniswap-v3-factory: 0x33128a8fC17869897dcE68Ed026d694621f6FDfD
@@ -102,10 +102,8 @@ scenarios:
             backtest:
               runs: 1
               blocks:
-                type: RangeWithInterval
-                value:
-                  range: [17245659..17257087]
-                  interval: 1000
+                range: [17245659..17257087]
+                interval: 1000
               bindings:
                 plottables: '''plottables-backtest'
                 get-trade-count: '''get-trade-count-prod'
@@ -141,10 +139,8 @@ scenarios:
             backtest:
               runs: 1
               blocks:
-                type: RangeWithInterval
-                value:
-                  range: [17245659..17257087]
-                  interval: 1000
+                range: [17245659..17257087]
+                interval: 1000
               bindings:
                 plottables: '''plottables-backtest'
                 get-trade-count: '''get-trade-count-prod'
@@ -352,3 +348,6 @@ deployments:
   trade-count-key: hash(order-hash() count-key), 
   trade-count: get(trade-count-key), 
   :set(trade-count-key add(trade-count 1));
+
+#post-add-order
+ :;

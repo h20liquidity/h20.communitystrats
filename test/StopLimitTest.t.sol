@@ -12,7 +12,8 @@ import {
     OrderConfigV3,
     TakeOrderConfigV3,
     TakeOrdersConfigV3,
-    ActionV1
+    ActionV1,
+    SignedContextV1
 } from "rain.orderbook.interface/interface/IOrderBookV4.sol"; 
 
 import {IParserV2} from "rain.interpreter.interface/interface/IParserV2.sol";
@@ -79,7 +80,7 @@ contract StopLimitTest is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = baseWlthIo();
 
-        LibStrategyDeployment.StrategyDeploymentV3 memory strategy = LibStrategyDeployment.StrategyDeploymentV3(
+        LibStrategyDeployment.StrategyDeploymentV4 memory strategy = LibStrategyDeployment.StrategyDeploymentV4(
             getEncodedBuyWlthRoute(),
             getEncodedSellWlthRoute(),
             0,
@@ -94,7 +95,7 @@ contract StopLimitTest is StrategyTests {
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
             outputVaults,
-            new ActionV1[](0)
+            new SignedContextV1[](0)
         );
 
         OrderV3 memory order = addOrderDepositOutputTokens(strategy);
@@ -138,7 +139,7 @@ contract StopLimitTest is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = baseUsdcIo();
 
-        LibStrategyDeployment.StrategyDeploymentV3 memory strategy = LibStrategyDeployment.StrategyDeploymentV3(
+        LibStrategyDeployment.StrategyDeploymentV4 memory strategy = LibStrategyDeployment.StrategyDeploymentV4(
             getEncodedSellWlthRoute(),
             getEncodedBuyWlthRoute(),
             0,
@@ -153,7 +154,7 @@ contract StopLimitTest is StrategyTests {
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
             outputVaults,
-            new ActionV1[](0)
+            new SignedContextV1[](0)
         );
 
         OrderV3 memory order = addOrderDepositOutputTokens(strategy);

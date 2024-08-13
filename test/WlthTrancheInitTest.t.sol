@@ -83,7 +83,7 @@ contract StopLimitTest is StrategyTests {
         uint256 expectedOrderAmount = 5.3e18;
 
         
-        LibStrategyDeployment.StrategyDeploymentV3 memory strategy = LibStrategyDeployment.StrategyDeploymentV3(
+        LibStrategyDeployment.StrategyDeploymentV4 memory strategy = LibStrategyDeployment.StrategyDeploymentV4(
             getEncodedSellWlthRoute(),
             getEncodedBuyWlthRoute(),
             0,
@@ -98,24 +98,8 @@ contract StopLimitTest is StrategyTests {
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
             outputVaults,
-            new ActionV1[](0)
+            new SignedContextV1[](0)
         );
-        ActionV1[] memory postOrderActions;
-        
-        {
-            bytes memory postOrderCompose = iParser.parse2(
-                LibComposeOrders.getComposedPostAddOrder(
-                    vm, strategy.strategyFile, strategy.strategyScenario, strategy.buildPath, strategy.manifestPath
-                )
-            )
-            ;
-            EvaluableV3 memory postOrderEvaluable = EvaluableV3(iInterpreter, iStore, postOrderCompose);
-
-            ActionV1 memory postOrderAction = ActionV1(postOrderEvaluable,new SignedContextV1[](0));
-            postOrderActions = new ActionV1[](1);
-            postOrderActions[0] = postOrderAction;
-        }
-        strategy.postActions = postOrderActions;
 
         checkStrategyCalculationsArbOrder(strategy);
 

@@ -6,6 +6,11 @@ libs = ["lib"]
 solc = "0.8.25"
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+optimizer = true
+optimizer_runs = 1000000
+evm_version = "cancun"
+bytecode_hash = "none"
+cbor_metadata = false
 
 # Needed for dotrain compose
 ffi = true 

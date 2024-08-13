@@ -176,6 +176,7 @@ scenarios:
                   # If the market is outside the chart then set this to 0.
                   initial-tranche-space: 0
                   post-action: '''post-action-buy'
+                  post-action-tranche: '''post-action-tranche-linear'
                 scenarios:
                   prod:
                     bindings:
@@ -227,6 +228,7 @@ scenarios:
                   # If the market is outside the chart then set this to 0.
                   initial-tranche-space: 0
                   post-action: '''post-action-sell'
+                  post-action-tranche: '''post-action-tranche-linear'
                 scenarios:
                   prod:
                     bindings:
@@ -439,6 +441,7 @@ deployments:
 #plottables !The binding for additional things we want to plot during testing.
 
 #post-action !Post action source to get current ratio
+#post-action-tranche !Binding to calculate tranche space for post action.
 #io-ratio-current !Current io-ratio to set the 
 
 #uniswap-words !The subparser for the Uniswap words
@@ -577,25 +580,24 @@ deployments:
 #post-action-constant
   _: io-ratio-current;
 
+#post-action-tranche-linear
+  current-ratio: ,
+  init-tranche: div(
+    saturating-sub(current-ratio io-ratio-base)
+    io-ratio-growth
+  );
+
+#post-action-tranche-exponential
+  current-ratio: ,
+  init-tranche: div(
+    saturating-sub(ln(current-ratio) ln(io-ratio-base))
+    ln(add(1 io-ratio-growth))
+  );
+
 #post-add-order
   using-words-from uniswap-words orderbook-subparser
   current-ratio: call<'post-action>(),
-  tranche-0-ratio: call<'io-ratio-expr>(io-ratio-base io-ratio-growth 0),
-  tranche-1-ratio: call<'io-ratio-expr>(io-ratio-base io-ratio-growth 1),
-  tranche-2-ratio: call<'io-ratio-expr>(io-ratio-base io-ratio-growth 2),
-  tranche-3-ratio: call<'io-ratio-expr>(io-ratio-base io-ratio-growth 3),
-  tranche-4-ratio: call<'io-ratio-expr>(io-ratio-base io-ratio-growth 4),
-  tranche-5-ratio: call<'io-ratio-expr>(io-ratio-base io-ratio-growth 5),
-
-  init-tranche: conditions(
-    greater-than(tranche-0-ratio current-ratio) 0
-    greater-than(tranche-1-ratio current-ratio) 1
-    greater-than(tranche-2-ratio current-ratio) 2
-    greater-than(tranche-3-ratio current-ratio) 3
-    greater-than(tranche-4-ratio current-ratio) 4
-    greater-than(tranche-5-ratio current-ratio) 5
-    "default" initial-tranche-space
-  ),
+  init-tranche: call<'post-action-tranche>(current-ratio),
   :set(hash(order-hash() init-key) 1),
   :set(hash(order-hash() tranche-space-key) init-tranche),
   :set(hash(order-hash() update-time-key) now());

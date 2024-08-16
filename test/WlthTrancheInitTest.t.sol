@@ -48,7 +48,7 @@ contract StopLimitTest is StrategyTests {
     using SafeERC20 for IERC20;
     using Strings for address;
 
-    uint256 constant FORK_BLOCK_NUMBER = 18376923;
+    uint256 constant FORK_BLOCK_NUMBER = 18463466;
     
     function selectFork() internal {
         uint256 fork = vm.createFork(vm.envString("RPC_URL_BASE"));
@@ -79,8 +79,8 @@ contract StopLimitTest is StrategyTests {
         IO[] memory outputVaults = new IO[](1);
         outputVaults[0] = baseUsdcIo();
 
-        uint256 expectedRatio = 22.5e18;
-        uint256 expectedOrderAmount = 1.676309165235004558e18;
+        uint256 expectedRatio = 20e18;
+        uint256 expectedOrderAmount = 6000000000000000000;
 
         
         LibStrategyDeployment.StrategyDeploymentV4 memory strategy = LibStrategyDeployment.StrategyDeploymentV4(
@@ -88,12 +88,46 @@ contract StopLimitTest is StrategyTests {
             getEncodedBuyWlthRoute(),
             0,
             0,
-            100000e18,
+            1e18,
             10000e6,
             expectedRatio,
             expectedOrderAmount,
             "strategies/wlth-tranche-init.rain",
             "wlth-tranches.buy.initialized.prod",
+            "./lib/h20.test-std/lib/rain.orderbook",
+            "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
+            inputVaults,
+            outputVaults,
+            new SignedContextV1[](0)
+        );
+
+        checkStrategyCalculationsArbOrder(strategy);
+
+    }
+
+    function testWlthTrancheInitSell() public {
+
+        IO[] memory inputVaults = new IO[](1);
+        inputVaults[0] = baseUsdcIo();
+
+        IO[] memory outputVaults = new IO[](1);
+        outputVaults[0] = baseWlthIo();
+
+        uint256 expectedRatio = 42000000000000000;
+        uint256 expectedOrderAmount = 123809523809523809523;
+
+        
+        LibStrategyDeployment.StrategyDeploymentV4 memory strategy = LibStrategyDeployment.StrategyDeploymentV4(
+            getEncodedBuyWlthRoute(),
+            getEncodedSellWlthRoute(),
+            0,
+            0,
+            1e6,
+            1000000e18,
+            expectedRatio,
+            expectedOrderAmount,
+            "strategies/wlth-tranche-init.rain",
+            "wlth-tranches.sell.initialized.prod",
             "./lib/h20.test-std/lib/rain.orderbook",
             "./lib/h20.test-std/lib/rain.orderbook/Cargo.toml",
             inputVaults,
@@ -142,8 +176,8 @@ contract StopLimitTest is StrategyTests {
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
 
-            uint256 expectedTrancheAmount = 1.676309165235004558e18;
-            uint256 expectedTrancheRatio = 22.5e18;
+            uint256 expectedTrancheAmount = 6000000000000000000;
+            uint256 expectedTrancheRatio = 20e18;
 
             assertEq(strategyAmount, expectedTrancheAmount);
             assertEq(strategyRatio, expectedTrancheRatio);
@@ -157,8 +191,8 @@ contract StopLimitTest is StrategyTests {
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
 
-            uint256 expectedTrancheAmount = 5.8e18;
-            uint256 expectedTrancheRatio = 23e18;
+            uint256 expectedTrancheAmount = 6100000000000000000;
+            uint256 expectedTrancheRatio = 20500000000000000000;
 
             assertEq(strategyAmount, expectedTrancheAmount);
             assertEq(strategyRatio, expectedTrancheRatio);
@@ -172,8 +206,8 @@ contract StopLimitTest is StrategyTests {
             Vm.Log[] memory entries = vm.getRecordedLogs();
             (uint256 strategyAmount, uint256 strategyRatio) = getCalculationContext(entries);
 
-            uint256 expectedTrancheAmount = 5.9e18;
-            uint256 expectedTrancheRatio = 23.5e18;
+            uint256 expectedTrancheAmount = 6200000000000000000;
+            uint256 expectedTrancheRatio = 21000000000000000000;
 
             assertEq(strategyAmount, expectedTrancheAmount);
             assertEq(strategyRatio, expectedTrancheRatio);

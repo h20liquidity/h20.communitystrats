@@ -161,7 +161,7 @@ scenarios:
                 # buying WLTH with it, then the amount is the OUTPUT.
                 amount-is-output: 1
                 io-ratio-expr: '''linear-growth'
-                io-ratio-base: 19
+                io-ratio-base: 15
                 io-ratio-growth: 0.5
                 tranche-size-expr: '''linear-growth'
                 tranche-size-base: 5
@@ -175,8 +175,9 @@ scenarios:
                   # tranche that won't immediately dump into the market.
                   # If the market is outside the chart then set this to 0.
                   initial-tranche-space: 0
-                  post-action: '''post-action-buy'
+                  post-action: '''post-action-constant'
                   post-action-tranche: '''post-action-tranche-linear'
+                  io-ratio-current: 20
                 scenarios:
                   prod:
                     bindings:
@@ -213,7 +214,7 @@ scenarios:
                 # selling WLTH for it, then the amount is the INPUT.
                 amount-is-output: 0
                 io-ratio-expr: '''linear-growth'
-                io-ratio-base: 0.015
+                io-ratio-base: 0.040
                 io-ratio-growth: 0.001
                 tranche-size-expr: '''linear-growth'
                 tranche-size-base: 5
@@ -227,8 +228,9 @@ scenarios:
                   # tranche that won't immediately dump into the market.
                   # If the market is outside the chart then set this to 0.
                   initial-tranche-space: 0
-                  post-action: '''post-action-sell'
+                  post-action: '''post-action-constant'
                   post-action-tranche: '''post-action-tranche-linear'
+                  io-ratio-current: 0.042
                 scenarios:
                   prod:
                     bindings:
@@ -539,7 +541,7 @@ deployments:
   tranche-io-ratio: call<'io-ratio-expr>(io-ratio-base io-ratio-growth floor(tranche-space-now)),
   final-io-ratio: mul(tranche-io-ratio call<'io-ratio-multiplier>()),
   amount-available: mul(tranche-total-size tranche-space-available),
-  amount: if(amount-is-output amount-available div(amount-available final-io-ratio)),
+  amount: if(amount-is-output amount-available div(amount-available final-io-ratio)), 
   io-ratio: final-io-ratio,
   :call<'plottables>(amount io-ratio);
 

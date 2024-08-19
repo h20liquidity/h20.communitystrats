@@ -161,7 +161,8 @@ scenarios:
                 # buying WLTH with it, then the amount is the OUTPUT.
                 amount-is-output: 1
                 io-ratio-expr: '''linear-growth'
-                io-ratio-base: 19
+                io-ratio-base: 15
+                io-ratio-spread: 0.025 #this is in %
                 io-ratio-growth: 0.5
                 tranche-size-expr: '''linear-growth'
                 tranche-size-base: 5
@@ -175,8 +176,9 @@ scenarios:
                   # tranche that won't immediately dump into the market.
                   # If the market is outside the chart then set this to 0.
                   initial-tranche-space: 0
-                  post-action: '''post-action-buy'
+                  post-action: '''post-action-constant'
                   post-action-tranche: '''post-action-tranche-linear'
+                  io-ratio-current: 20
                 scenarios:
                   prod:
                     bindings:
@@ -213,7 +215,8 @@ scenarios:
                 # selling WLTH for it, then the amount is the INPUT.
                 amount-is-output: 0
                 io-ratio-expr: '''linear-growth'
-                io-ratio-base: 0.015
+                io-ratio-base: 0.040
+                io-ratio-spread: 0.025 #this is in %
                 io-ratio-growth: 0.001
                 tranche-size-expr: '''linear-growth'
                 tranche-size-base: 5
@@ -227,8 +230,9 @@ scenarios:
                   # tranche that won't immediately dump into the market.
                   # If the market is outside the chart then set this to 0.
                   initial-tranche-space: 0
-                  post-action: '''post-action-sell'
+                  post-action: '''post-action-constant'
                   post-action-tranche: '''post-action-tranche-linear'
+                  io-ratio-current: 0.042
                 scenarios:
                   prod:
                     bindings:
@@ -404,11 +408,12 @@ deployments:
 #tranche-space-recharge-delay !The duration in seconds that no recharging occurs after a trade occurs.
 
 #tranche-size-expr !The binding to get the tranche size for the current tranche space.
-#tranche-size-base !Base tranche size is the size of the smallest tranche, denominated in output token.
+#tranche-size-base !Base tranche size is the size of the smallest tranche, denominated in output token. 
 #tranche-size-growth !The exponential growth factor of the size of each tranche. E.g. 0.01 is 1% output amount growth per tranche.
 
 #io-ratio-expr !The binding to get the IO ratio for the current tranche space.
-#io-ratio-base !The base IO ratio, as a decimal 18 fixed point number. This is the IO ratio at tranche space 0 and grows according to the growth factor per tranche.
+/* #io-ratio-base !The base IO ratio, as a decimal 18 fixed point number. This is the IO ratio at tranche space 0 and grows according to the growth factor per tranche. */
+#io-ratio-spread !The size of the spread in percentage terms which is the distance of the first tranche away from the midpoint.
 #io-ratio-growth !The exponential growth factor of the IO ratio. E.g. 0.01 is 1% io-ratio growth per tranche.
 
 #reference-token !Strategy token for which the budget is written.
@@ -437,6 +442,10 @@ deployments:
 #init-key "init"
 #tranche-space-key "tranche-space"
 #update-time-key "update-time"
+#cumulative-sale-volume "cumulative-sale-volume"
+#cumulative-sale-cost "cumulative-sale-cost"
+#cumulative-buy-volume "cumulative-buy-volume"
+#cumulative-buy-cost "cumulative-buy-cost"
 
 #plottables !The binding for additional things we want to plot during testing.
 
@@ -531,15 +540,40 @@ deployments:
 #io-ratio-multiplier-identity
   multiplier: 1;
 
+#calculate-midpoint
+  cumulative-sale-volumeb: get(hash(order-hash() cumulative-sale-volume)),
+  cumulative-sale-costb: get(hash(order-hash() cumulative-sale-cost)),
+  cumulative-buy-volumeb: get(hash(order-hash() cumulative-buy-volume)),
+  cumulative-buy-costb: get(hash(order-hash() cumulative-buy-cost)),
+
+  total-volume: add(cumulative-sale-volumeb cumulative-buy-volumeb),
+
+  sale-cost-basis: div(cumulative-sale-costb cumulative-sale-volumeb),
+  buy-cost-basis: div(cumulative-buy-costb cumulative-buy-volumeb),
+
+  /* ADD : if initized hasnt change then use the initialised price*/
+  /* the below should be in dollar terms */
+  current-cost-basis: div(add(mul(sale-cost-basis cumulative-sale-volumeb) mul(buy-cost-basis cumulative-buy-volumeb)) total-volume);
+
+#apply-spread
+  amount-is-output :,
+  io-ratio-spread :,
+  cost-basis : call<'calculate-midpoint>(),
+  spread-basis : if(amount-is-output
+    mul(inv(cost-basis) sub(1 io-ratio-spread))
+    mul(cost-basis sub(1 io-ratio-spread)));  /*have to invert the cost basis as its in dollar terms for the buy side*/
+
+
 #calculate-io
   using-words-from uniswap-words orderbook-subparser
   tranche-space-now
   tranche-space-available
   tranche-total-size: call<'calculate-tranche>(),
+  io-ratio-base: call<'apply-spread>(amount-is-output io-ratio-spread),
   tranche-io-ratio: call<'io-ratio-expr>(io-ratio-base io-ratio-growth floor(tranche-space-now)),
   final-io-ratio: mul(tranche-io-ratio call<'io-ratio-multiplier>()),
   amount-available: mul(tranche-total-size tranche-space-available),
-  amount: if(amount-is-output amount-available div(amount-available final-io-ratio)),
+  amount: if(amount-is-output amount-available div(amount-available final-io-ratio)), 
   io-ratio: final-io-ratio,
   :call<'plottables>(amount io-ratio);
 
@@ -561,7 +595,8 @@ deployments:
     greater-than-or-equal-to(tranche-space-after-snapped add(tranche-space-before min-tranche-space-diff))
     "Minimum trade size not met."
   ),
-  :call<'set-last-tranche>(tranche-space-after-snapped current-time);
+  :call<'set-last-tranche>(tranche-space-after-snapped current-time),
+  :call<'post-update-cost-basis>(amount-is-output);
 
 #post-action-buy
   _: uniswap-v3-twap-output-ratio(
@@ -582,6 +617,7 @@ deployments:
 
 #post-action-tranche-linear
   current-ratio: ,
+  io-ratio-base: ,
   init-tranche: div(
     saturating-sub(current-ratio io-ratio-base)
     io-ratio-growth
@@ -589,6 +625,7 @@ deployments:
 
 #post-action-tranche-exponential
   current-ratio: ,
+  io-ratio-base: ,
   init-tranche: div(
     saturating-sub(ln(current-ratio) ln(io-ratio-base))
     ln(add(1 io-ratio-growth))
@@ -601,3 +638,35 @@ deployments:
   :set(hash(order-hash() init-key) 1),
   :set(hash(order-hash() tranche-space-key) init-tranche),
   :set(hash(order-hash() update-time-key) now());
+
+#post-update-cost-basis
+/* will this just run or do i need to call it in handle io?
+
+sudo code of what i want to achieve below, deonminated in USDC
+    if side == 'sell':
+        cumulative_sale_volume += volume
+        cumulative_sale_cost += volume * price
+    elif side == 'buy':
+        cumulative_buy_volume += volume
+        cumulative_buy_cost += volume * price
+*/
+  amount-is-output:,
+  :set(hash(order-hash() cumulative-buy-volume)
+    if(amount-is-output
+      add(get(hash(order-hash()cumulative-buy-volume)) output-vault-decrease()) 
+      get(hash(order-hash()cumulative-buy-volume)))),
+      
+  :set(hash(order-hash() cumulative-buy-cost)
+    if(is-zero(amount-is-output) 
+      add(get(hash(order-hash() cumulative-buy-volume)) mul(output-vault-decrease() inv(calculated-io-ratio()))) 
+      get(hash(order-hash() cumulative-buy-cost)))),
+
+  :set(hash(order-hash()cumulative-sale-volume)
+    if(is-zero(amount-is-output) 
+      add(get(hash(order-hash()cumulative-sale-volume)) input-vault-increase()) 
+      get(hash(order-hash() cumulative-sale-volume)))),
+      
+  :set(hash(order-hash()cumulative-sale-cost)
+    if(is-zero(amount-is-output) 
+      add(get(hash(order-hash() cumulative-sale-volume)) mul(input-vault-increase() calculated-io-ratio())) 
+      get(hash(order-hash() cumulative-sale-cost))));

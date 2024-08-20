@@ -1,0 +1,207 @@
+# Ruby Sell Strategy
+
+networks:
+  base-community: 
+    rpc: https://base-mainnet.g.alchemy.com/v2/XyVLmLGWLUWMZ3VKrB_npxe6zY23t3dV
+    chain-id: 8453 
+    network-id: 8453 
+    currency: ETH
+
+subgraphs:
+  base-community: https://api.goldsky.com/api/public/project_clv14x04y9kzi01saerx7bxpg/subgraphs/ob4-base/0.1/gn
+  
+orderbooks:
+  base-community:
+    address: 0xA2f56F8F74B7d04d61f281BE6576b6155581dcBA
+    network: base-community
+    subgraph: base-community
+
+deployers:
+  base-community:
+    address: 0x56394785a22b3BE25470a0e03eD9E0a939C47b9b
+    network: base-community
+
+tokens:
+  base-red:
+    network: base-community
+    address: 0x222789334D44bB5b2364939477E15A6c981Ca165
+  base-blue:
+    network: base-community
+    address: 0x6d3AbB80c3CBAe0f60ba274F36137298D8571Fbe
+
+orders:
+  # vault-id generated with `openssl rand -hex 32`
+  base-ruby-sell:
+    orderbook: base-community
+    inputs:
+      - token: base-blue
+        vault-id: 0xe8c8cd1fae13ab9fa00c611a0d57cbd9298e939e34f1a38361fd37f917d4b065
+    outputs:
+      - token: base-red
+        vault-id: 0xe8c8cd1fae13ab9fa00c611a0d57cbd9298e939e34f1a38361fd37f917d4b065 
+
+scenarios:
+   sell-curve:
+     network: base-community
+     deployer: base-community
+     orderbook: base-community
+     bindings:
+        # Ask for now, registry in future.
+        uniswap-words: 0xD6B34F97d4A8Cb38D0544dB241CB3f335866f490
+        orderbook-subparser: 0x8D96ea3EF24D7123882c51CE4325b89bc0d63f9e
+
+        # Sale token address
+        sale-token-address: 0x222789334D44bB5b2364939477E15A6c981Ca165
+
+        # Start and end time for the token sale.
+        start-time: 1722256213
+        end-time: 1730896213  
+
+        # Start and end market cap for the token sale.
+        start-mc: 0.9 
+        end-mc: 3
+
+        # Initial token amount offered for sale
+        initial-token-amount: 3
+     scenarios:
+        prod:
+          runs: 1
+          bindings:
+            ensure-sale-start: '''ensure-sale-start-prod'
+            plottables: '''plottables-prod'
+        chart:
+          runs: 1000
+          bindings:
+            ensure-sale-start: '''ensure-sale-start-chart'
+            plottables: '''plottables-chart'
+        metric:
+          runs: 1
+          bindings:
+            ensure-sale-start: '''ensure-sale-start-chart'
+            plottables: '''plottables-chart'
+
+charts:
+  Ruby Sell Metric: 
+    scenario: sell-curve.metric
+    metrics:
+      - label: Start timestamp
+        value: 0.3.0
+        description: Unix timestamp for the start of the sell
+      - label: End timestamp
+        value: 0.3.1
+        description: Unix timestamp for the send of the sell
+      - label: Start Market Capitalization
+        value: 0.3.2
+        description: Market capitalization at the start of the sell.
+      - label: End Market Capitalization
+        value: 0.3.3
+        description: Market capitalization at the start of the sell.
+      - label: Initial Amount
+        value: 0.3.4
+        description: Initial token amount at the start of the sell.
+    plots:
+    
+  Ruby Sell Simulation:
+    scenario: sell-curve.chart
+    plots:
+      Order Amount vs Time:     
+        marks:
+          - type: dot
+            options:
+              x: 0.0
+              y: 0.6
+              
+      Order Ratio vs Time:     
+        marks:
+          - type: dot
+            options:
+              x: 0.0
+              y: 0.7
+
+deployments:
+  h20-ruby-sell:
+    scenario: sell-curve.prod
+    order: base-ruby-sell           
+---
+#orderbook-subparser !The address for uniswap subparser.
+#uniswap-words !The address for orderbook subparser.
+
+#start-time !Start time for the token sale.
+#end-time !End time for the token sale.
+#start-mc !Market capitalization for the token at the start of the sale.
+#end-mc !Market capitalization for the token at the end of the token sale.
+
+#initial-token-amount !Initial amout offered for sale.
+#sale-token-address !Address of sale token.
+
+#plottables !Bindings for the plottable source.
+#ensure-sale-start !Binding to ensure sale has began.
+#test-now !Binding to simulate current time.
+
+#in-token-key "in-token-key"
+#out-token-key "out-token-key"
+#in-reserve-key "in-reserve-key"
+#out-reserve-key "out-reserve-key"
+
+#plottables-prod
+  :;
+
+#plottables-chart
+  _: start-time,
+  _: end-time,
+  _: start-mc,
+  _: end-mc,
+  _: initial-token-amount; 
+
+#ensure-sale-start-prod
+  current-time: now(),
+  :ensure(
+    greater-than(current-time start-time)
+    "Sale start"
+  );
+
+#ensure-sale-start-chart
+  _: add(
+      start-time
+      mod(
+        test-now
+        sub(end-time start-time)
+      )
+  );
+
+#calculate-io 
+  using-words-from orderbook-subparser uniswap-words
+
+  current-time: call<'ensure-sale-start>(),
+  completion: saturating-sub(
+     1
+     div(
+       saturating-sub(end-time current-time)
+       sub(end-time start-time)
+     )
+  ),
+  /* must match the buy side tracking */
+  normalised-in-tkn-amount: get(in-token-key),
+  total-tkn-amount: add(initial-token-amount normalised-in-tkn-amount),
+
+  /* Calculate current market cap*/
+  current-mc: add(start-mc mul(completion sub(end-mc start-mc))),
+  sale-token-supply: erc20-total-supply(sale-token-address),
+  max-amount: mul(completion total-tkn-amount),
+  io-ratio: div(current-mc sale-token-supply),
+  :call<'plottables>();
+
+#handle-io
+  /*round up how much tkn we've sent out for conservative buy offers */
+  normalised-out-tkn-amount: scale-18-dynamic<1 0>(output-token-decimals() uint256-output-vault-decrease()),
+  :set(
+    out-token-key
+    add(get(out-token-key) normalised-out-tkn-amount)
+  ),
+
+  /* round down how much reserve we've received for conservative buy offers */
+  normalised-in-reserve-amount: scale-18-dynamic<0 0>(input-token-decimals() uint256-input-vault-increase()),
+  :set(
+    in-reserve-key
+    add(get(in-reserve-key) normalised-in-reserve-amount)
+  );
